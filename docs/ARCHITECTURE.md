@@ -28,7 +28,10 @@
 | PUT | `/api/me/requirements` | 保存理想型 |
 | PUT | `/api/me/consent` | 记录同意（三项） |
 | GET | `/api/me/results` | 计算五组结果（需同意计算） |
-| PUT | `/api/me/plan` | 演示用的套餐切换，仅模拟模式可用；正式由支付回调设置 |
+| POST | `/api/me/orders` | 创建 VIP 订单，返回二维码内容（见 PAYMENTS.md） |
+| GET | `/api/me/orders/<订单号>` | 查询订单状态，前端每 2 秒轮询 |
+| POST | `/api/me/orders/<订单号>/mock-pay` | 模拟支付成功，仅 `payments.mode = mock` 时可用 |
+| POST | `/api/payments/notify/<wechat\|alipay>` | 支付渠道的异步通知，验签后升级套餐 |
 | GET | `/api/me/export` | 导出全部自己的资料 |
 | DELETE | `/api/me` | 永久删除 |
 | GET | `/api/stats?field=` | k-匿名分布，仅基础字段 |
@@ -39,6 +42,7 @@
 - `plans`：`free` 每组 3 位，`vip` 每组 5 位（理想型人选、TA 心中的人选、在找你的人、双向相合分别可设）。
 - `scorer`：评分器 id 和参数覆盖。
 - `privacy`：同意版本、k 值、不活跃保留天数。
+- `payments`：支付模式（`mock` 或 `live`）、启用的渠道、订单有效期、通知地址；`plans.*.priceFen` 是价格（分）。
 
 环境变量：`PORT`、`VIER_DATA_DIR`、`VIER_CONFIG`、`VIER_DATA_KEY`（生产必填，32 字节 base64），`NODE_ENV=production`。
 

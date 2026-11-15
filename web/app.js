@@ -349,16 +349,13 @@ async function renderResults() {
     <h2>在找你的人 <small>你的条件符合 TA 的理想型。只表示条件相合，不代表对方已经对你有兴趣。</small></h2>
     <div class="grid">${r.seekers.map((m) => personCard(m, meter('你符合 TA 的理想型', m.myFitToThem.total) + `<small class="sub">TA 符合你的理想型：${m.theirFitEligible ? score(m.theirFitToMyIdeal) : '未通过你的门槛'}</small>`)).join('') || '<p class="empty">暂时没有。</p>'}</div>
 
-    ${S.config.poolMode === 'simulated' ? `<div class="plan-switch">演示：切换套餐
-      <button class="btn small ${r.plan === 'free' ? 'primary' : ''}" data-plan="free">免费 ${S.config.plans.free.matches} 位</button>
-      <button class="btn small ${r.plan === 'vip' ? 'primary' : ''}" data-plan="vip">VIP ${S.config.plans.vip.matches} 位</button></div>` : ''}
+    ${r.plan === 'vip' ? `<div class="plan-switch">你是 VIP，每组可看 ${S.config.plans.vip.matches} 位。</div>`
+      : `<div class="plan-switch upgrade"><div><b>升级 VIP</b><br>每组从 ${S.config.plans.free.matches} 位增加到 ${S.config.plans.vip.matches} 位 · ¥${(S.config.plans.vip.priceFen / 100).toFixed(2)}</div>
+        <button class="btn primary" id="upgrade">扫码升级</button></div>`}
     <div class="actions"><a class="btn" href="#/ideal">调整理想型</a></div>
   </section>`;
-  view.querySelectorAll('[data-plan]').forEach((b) => (b.onclick = async () => {
-    await api('PUT', '/api/me/plan', { plan: b.dataset.plan });
-    await loadResults(true);
-    renderResults();
-  }));
+  const up = document.getElementById('upgrade');
+  if (up) up.onclick = () => openPayment('vip');
 }
 
 function itemsTable(sc) {
@@ -394,6 +391,72 @@ async function renderMatch(idx) {
     <h2>TA 心中的人选 <small>池中最接近 TA 理想型的人（与你同一性别）</small></h2>
     <div class="grid">${m.theirPicks.map((p) => personCard(p, meter('符合 TA 的理想型', p.score))).join('') || '<p class="empty">暂时没有。</p>'}</div>
   </section>`;
+}
+
+// ---------- 扫码支付弹窗 ----------
+function qrSvg(text) {
+  const qr = window.qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  return qr.createSvgTag({ cellSize: 5, margin: 2, scalable: true });
+}
+
+function openPayment(planId) {
+  const plan = S.config.plans[planId];
+  const providers = S.config.payments?.providers || [];
+  const dlg = document.createElement('div');
+  dlg.className = 'modal';
+  dlg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="扫码支付">
+    <button class="close" aria-label="关闭">×</button>
+    <h2>升级 ${esc(plan.label)}</h2>
+    <p class="price">¥${(plan.priceFen / 100).toFixed(2)}</p>
+    ${providers.length ? `<div class="tabs pay-tabs">${providers.map((p, i) => `<a href="#" data-p="${p.id}" class="${i ? '' : 'on'}">${esc(p.label)}</a>`).join('')}</div>
+    <div class="qr" id="qr"><p class="loading">正在生成二维码…</p></div>
+    <p class="fine" id="pay-hint"></p>` : '<p class="err">暂未开通在线支付。如果刚更新过代码，请重启服务（npm start）后刷新页面。</p>'}
+  </div>`;
+  document.body.appendChild(dlg);
+  let timer = null, closed = false, current = null;
+  const close = () => { closed = true; clearTimeout(timer); dlg.remove(); };
+  dlg.querySelector('.close').onclick = close;
+  dlg.onclick = (e) => { if (e.target === dlg) close(); };
+
+  async function start(providerId) {
+    clearTimeout(timer);
+    dlg.querySelectorAll('[data-p]').forEach((a) => a.classList.toggle('on', a.dataset.p === providerId));
+    const box = dlg.querySelector('#qr'), hint = dlg.querySelector('#pay-hint');
+    box.innerHTML = '<p class="loading">正在生成二维码…</p>';
+    try {
+      const o = await api('POST', '/api/me/orders', { plan: planId, provider: providerId });
+      if (closed) return;
+      current = o.orderNo;
+      const appName = providerId === 'alipay' ? '支付宝' : '微信';
+      box.innerHTML = qrSvg(o.codeUrl);
+      hint.innerHTML = `请用${appName}扫码支付，二维码 ${Math.round((o.expireAt - Date.now()) / 60000)} 分钟内有效。支付完成后会自动升级。`
+        + (o.mock ? '<br><b>当前是模拟支付</b>，不会真的扣款。<button class="btn small" id="mock-pay">模拟支付成功</button>' : '');
+      const mp = dlg.querySelector('#mock-pay');
+      if (mp) mp.onclick = () => api('POST', `/api/me/orders/${o.orderNo}/mock-pay`);
+      poll(o.orderNo);
+    } catch (e) { box.innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+  }
+
+  async function poll(orderNo) {
+    if (closed || orderNo !== current) return;
+    try {
+      const s = await api('GET', `/api/me/orders/${orderNo}`);
+      if (s.status === 'paid') {
+        dlg.querySelector('.sheet').innerHTML = '<h2>支付成功</h2><p class="lead">已升级为 VIP，正在刷新结果…</p>';
+        S.me = await api('GET', '/api/me');
+        await loadResults(true);
+        setTimeout(() => { close(); renderResults(); }, 900);
+        return;
+      }
+      if (s.status === 'expired') { dlg.querySelector('#pay-hint').textContent = '二维码已过期，请重新选择支付方式。'; return; }
+    } catch { /* 网络抖动时继续轮询 */ }
+    timer = setTimeout(() => poll(orderNo), 2000);
+  }
+
+  dlg.querySelectorAll('[data-p]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); start(a.dataset.p); }));
+  if (providers.length) start(providers[0].id);
 }
 
 // ---------- 我的数据 ----------

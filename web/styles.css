@@ -101,3 +101,13 @@ a.card[href]:hover { border-color: var(--accent); }
 .plain { padding-left: 18px; }
 .loading { color: var(--muted); }
 .demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; padding: 10px 12px; border: 1px dashed var(--teal); border-radius: var(--radius); font-size: 14px; color: var(--muted); }
+.plan-switch.upgrade { justify-content: space-between; border-style: solid; border-color: var(--accent); color: var(--ink); }
+.modal { position: fixed; inset: 0; background: rgb(0 0 0 / .45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.sheet { position: relative; background: var(--paper); border-radius: 18px; padding: 20px; width: min(360px, 100%); text-align: center; }
+.sheet h2 { margin: 4px 0; }
+.sheet .close { position: absolute; right: 10px; top: 6px; border: 0; background: none; font-size: 26px; color: var(--muted); cursor: pointer; }
+.price { font-size: 28px; font-weight: 800; margin: 4px 0 8px; }
+.pay-tabs { justify-content: center; }
+.qr { width: 220px; height: 220px; margin: 8px auto; display: grid; place-items: center; background: #fff; border-radius: 12px; }
+.qr svg { width: 100%; height: 100%; }
+.sheet .fine .btn { margin-top: 8px; }

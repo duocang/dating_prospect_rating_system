@@ -8,7 +8,7 @@
 
 ```bash
 npm start          # 或 node server/server.mjs，然后打开 http://localhost:8787
-npm test           # 评分、关系引擎、接口与隐私行为共 21 项测试
+npm test           # 评分、关系引擎、接口、隐私与支付共 23 项测试
 ```
 
 默认是**模拟模式**：人选池是 archive 里上海 500 人模拟库转换来的档案，页面顶部会一直提示“全部是模拟档案”。切到真人模式见 `docs/ARCHITECTURE.md`。
@@ -18,7 +18,7 @@ npm test           # 评分、关系引擎、接口与隐私行为共 21 项测�
 | 路径 | 内容 |
 |---|---|
 | `web/` | 新网页前端（关于你 → 理想型 → 同意 → 结果 → 人选详情 → 我的数据，每步独立页面） |
-| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层 |
+| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层、扫码支付 |
 | `packages/schema/` | 字段注册表：资料、要求、评分、隐私分级共用的唯一来源 |
 | `packages/scoring/` | **可替换的评分模块**（当前 `fit-v1`），只通过接口被调用 |
 | `packages/matching/` | 关系引擎：理想型人选、TA 的理想型、你与 TA 理想型的契合度、在找你的人、双向相合 |
@@ -34,4 +34,5 @@ npm test           # 评分、关系引擎、接口与隐私行为共 21 项测�
 - [新命名（取代 A/B/C/D）](docs/NAMING.md)
 - [评分算法 fit-v1 与替换方法](docs/SCORING.md)
 - [隐私与数据保护](docs/PRIVACY.md)
+- [扫码支付接入](docs/PAYMENTS.md)
 - [关键决策与理由](docs/DECISIONS.md)

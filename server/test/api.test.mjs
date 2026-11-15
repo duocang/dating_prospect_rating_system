@@ -49,7 +49,18 @@ test('完整流程：注册、填写、同意、结果、导出、删除', async
   assert.match(m.facts['年收入（税前劳动收入）'], /–|以上/);
   assert.ok(!JSON.stringify(free.body).includes('SIM-'), '结果里没有内部编号');
 
-  await call('PUT', '/api/me/plan', token, { plan: 'vip' });
+  // 扫码升级 VIP（模拟支付）
+  const cfg = await call('GET', '/api/config');
+  assert.deepEqual(cfg.body.payments.providers.map((p) => p.id), ['wechat', 'alipay']);
+  const order = await call('POST', '/api/me/orders', token, { plan: 'vip', provider: 'wechat' });
+  assert.equal(order.status, 201);
+  assert.equal(order.body.amountFen, 199);
+  assert.ok(order.body.codeUrl);
+  assert.equal((await call('GET', `/api/me/orders/${order.body.orderNo}`, token)).body.status, 'pending');
+  assert.equal((await call('GET', '/api/me/results', token)).body.idealMatches.length, 3, '付款前仍是免费版');
+  assert.equal((await call('POST', `/api/me/orders/${order.body.orderNo}/mock-pay`, token)).status, 200);
+  assert.equal((await call('GET', `/api/me/orders/${order.body.orderNo}`, token)).body.status, 'paid');
+  assert.equal((await call('POST', '/api/me/orders', token, { plan: 'free', provider: 'wechat' })).status, 400);
   const vip = await call('GET', '/api/me/results', token);
   assert.equal(vip.body.idealMatches.length, 5);
   assert.equal(vip.body.idealMatches[0].theirPicks.length, 5);
@@ -68,9 +79,16 @@ test('完整流程：注册、填写、同意、结果、导出、删除', async
   const exp = await call('GET', '/api/me/export', token);
   assert.equal(exp.body.account.profile.incomeAnnual, 180000);
 
+  // 别人查不到你的订单
+  const other = (await call('POST', '/api/session')).body.token;
+  assert.equal((await call('GET', `/api/me/orders/${order.body.orderNo}`, other)).status, 404);
+
   assert.equal((await call('DELETE', '/api/me', token)).status, 200);
+  // 订单保留但不再关联到个人
+  const [ofile] = readdirSync(join(dataDir, 'orders'));
+  assert.match(JSON.parse(readFileSync(join(dataDir, 'orders', ofile), 'utf8')).userId, /^deleted:/);
   assert.equal((await call('GET', '/api/me', token)).status, 401);
-  assert.equal(readdirSync(join(dataDir, 'users')).length, 0);
+  assert.ok(!readdirSync(join(dataDir, 'users')).includes(file));
   assert.ok(!readFileSync(join(dataDir, 'audit.log'), 'utf8').includes(file.slice(0, -5)), '审计日志不含原 id');
 });
 
