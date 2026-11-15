@@ -1,0 +1,13 @@
+{
+  "name": "vier",
+  "private": true,
+  "type": "module",
+  "description": "VIER 择偶坐标：网页 + 服务端 + 可替换评分模块（零第三方依赖）",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server/server.mjs",
+    "test": "node --test packages/scoring/test/scoring.test.mjs packages/matching/test/relations.test.mjs server/test/api.test.mjs",
+    "build:sim-pool": "node scripts/build-sim-pool.mjs",
+    "purge:inactive": "node scripts/purge-inactive.mjs"
+  }
+}

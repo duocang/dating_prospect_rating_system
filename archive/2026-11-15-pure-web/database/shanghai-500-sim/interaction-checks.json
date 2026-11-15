@@ -1,0 +1,28 @@
+{
+  "method": "Generator-level distribution checks using the same pure bucket function embedded in the dashboard; no browser DOM rendering test",
+  "checks": [
+    "500个异性恋样本，女250/男250，寻求对象均为异性",
+    "父母婚姻状态、家庭净资产分档、个人净资产分档在500条档案中均完整",
+    "所有个人/家庭资产值只使用允许的宽区间，最高区间不超过1,000万元",
+    "所有数值分布区间在完整样本及女性筛选子集中均覆盖每条数值记录一次",
+    "单选分类分布计数合计等于当前筛选档案数",
+    "多选分布以当前筛选档案数为分母，单项计数不超过分母",
+    "每项重视程度均展示1灵活、2重要、3很重要",
+    "筛选结果改变时更新底部分布图"
+  ],
+  "chartSpecCount": 51,
+  "fullSampleChartsExhaustive": true,
+  "filteredSubsetChartsExhaustive": true,
+  "renderCallsDistribution": true,
+  "rendering": "未做浏览器视觉与手机实机检查；CSS包含响应式布局，仍需在真实浏览器确认长图表的排版。",
+  "researchHandoffChecks": [
+    "剥离新增字段后逐条与 v1.2 完全相同",
+    "51 张图的全库和女性子集计数与 v1.2 一致",
+    "全部 500 条收入结构的金额与原值一致",
+    "字段证据均模拟未核验且无核对时间",
+    "内嵌 JSON 与完整 JSON 一致",
+    "浏览页全量 CSV 与静态 CSV 一致",
+    "女性筛选导出与 JSON 相应子集一致",
+    "档案详情显示证据及第三方建议区"
+  ]
+}

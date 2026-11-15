@@ -1,0 +1,21 @@
+<view class="page profile-page">
+  <view class="topbar"><view class="brand-mark">V</view><text class="brand">VIER</text><text class="edition">本机演示表单</text></view>
+  <view class="eyebrow">YOUR PROFILE</view>
+  <view class="page-title">先从你自己开始</view>
+  <view class="muted intro">填写能帮助描述生活状态与择偶期待的信息。家庭与经济情况可以跳过。</view>
+  <view class="privacy panel"><text class="privacy-title">资料只保存在当前手机</text><text>这是离线原型，没有后台，也不会上传。正式产品上线前会明确说明用途、保存时间和展示授权。</text></view>
+  <view class="section-title">个人情况</view>
+  <view class="form panel">
+    <label class="field"><text>昵称</text><input value="{{profile.name}}" data-field="name" bindinput="onInput" /></label>
+    <label class="field"><text>年龄</text><input type="number" value="{{profile.age}}" data-field="age" bindinput="onInput" /></label>
+    <label class="field"><text>身高</text><input value="{{profile.height}}" data-field="height" bindinput="onInput" /></label>
+    <label class="field"><text>城市</text><input value="{{profile.city}}" data-field="city" bindinput="onInput" /></label>
+    <label class="field"><text>教育</text><input value="{{profile.education}}" data-field="education" bindinput="onInput" /></label>
+    <label class="field"><text>职业</text><input value="{{profile.job}}" data-field="job" bindinput="onInput" /></label>
+    <label class="field"><text>年收入</text><input value="{{profile.income}}" data-field="income" bindinput="onInput" /></label>
+    <label class="field field-area"><text>住房与家庭支持</text><textarea value="{{profile.home}}；{{profile.family}}" data-field="family" bindinput="onInput" auto-height="true" /></label>
+    <label class="field field-area"><text>相处与未来计划</text><textarea value="{{profile.lookingFor}}" data-field="lookingFor" bindinput="onInput" auto-height="true" /></label>
+  </view>
+  <button class="primary-button save-button" bindtap="saveLocal">保存到本机</button>
+  <view class="tiny-note">{{saved ? '已保存。' : '这只是体验用示例，不要在此填写真实敏感资料。'}} 当前版本没有登录、实名认证、付费或分红功能。</view>
+</view>

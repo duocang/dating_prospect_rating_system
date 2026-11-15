@@ -1,0 +1,15 @@
+.intro { font-size:24rpx; }
+.compare-head { display:flex; align-items:center; justify-content:space-between; margin-top:24rpx; padding:20rpx; }
+.side { flex:1; min-width:0; }
+.side-right { text-align:right; }
+.side-label { color:#8b745b; font-size:19rpx; }
+.side-name { color:#303732; font-size:26rpx; font-weight:600; }
+.side-city { color:#85877f; font-size:20rpx; }
+.versus { color:#a9a191; font-family:Georgia,serif; font-size:35rpx; padding:0 12rpx; }
+.table { margin-top:16rpx; padding:0 16rpx; }
+.table-row { display:grid; grid-template-columns:1fr 1.2fr 1.2fr; gap:10rpx; padding:18rpx 0; border-bottom:1rpx solid #eee9e1; color:#414842; font-size:21rpx; }
+.table-row:last-child { border:0; }
+.table-labels { color:#92938b; font-size:19rpx; }
+.field { color:#555d56; }
+.insight { display:block; color:#9a856d; font-size:17rpx; line-height:1.4; }
+.reading { color:#626960; font-size:22rpx; }

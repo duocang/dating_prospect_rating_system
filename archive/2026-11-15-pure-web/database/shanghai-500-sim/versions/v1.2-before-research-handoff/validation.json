@@ -1,0 +1,975 @@
+{
+  "count": 500,
+  "uniqueIds": 500,
+  "genderCounts": {
+    "female": 250,
+    "male": 250
+  },
+  "orientationScope": true,
+  "ageRange": [
+    22,
+    39
+  ],
+  "incomeRange": [
+    30000,
+    650000
+  ],
+  "medianIncome": 160000,
+  "meanIncome": 174760,
+  "incomeOver350k": 22,
+  "assetBandCounts": {
+    "family": {
+      "净资产为负": 34,
+      "0–50万元": 70,
+      "50–150万元": 109,
+      "150–300万元": 101,
+      "300–600万元": 89,
+      "600–1,000万元": 36,
+      "不清楚": 34,
+      "不愿透露": 27
+    },
+    "personal": {
+      "净资产为负": 35,
+      "0–10万元": 86,
+      "10–50万元": 133,
+      "50–100万元": 95,
+      "100–300万元": 76,
+      "300–600万元": 40,
+      "600–1,000万元": 8,
+      "不清楚": 16,
+      "不愿透露": 11
+    }
+  },
+  "assetBandsUnderCap": true,
+  "fieldPresence": {
+    "parentsMarriage": true,
+    "familyNetAssetsBand": true,
+    "personalNetAssetsBand": true
+  },
+  "distributionSpecCount": 51,
+  "chartAudit": [
+    {
+      "group": "个人与城市情况",
+      "title": "年龄",
+      "type": "numeric",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "身高",
+      "type": "numeric",
+      "bucketCount": 8,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "个人年收入（税前）",
+      "type": "numeric",
+      "bucketCount": 4,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "在上海生活时间",
+      "type": "numeric",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "自述性别",
+      "type": "categorical",
+      "bucketCount": 2,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "性取向模拟范围",
+      "type": "categorical",
+      "bucketCount": 1,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "希望认识的对象性别",
+      "type": "multi",
+      "bucketCount": 2,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "关系状态",
+      "type": "categorical",
+      "bucketCount": 1,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "学历",
+      "type": "categorical",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "职业类别",
+      "type": "categorical",
+      "bucketCount": 9,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "当前住房安排",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "定居意向",
+      "type": "categorical",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "婚姻计划",
+      "type": "categorical",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "育儿计划",
+      "type": "categorical",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "沟通性格",
+      "type": "categorical",
+      "bucketCount": 4,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "个人与城市情况",
+      "title": "生活方式",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "父母居住地",
+      "type": "categorical",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "父母住房安排",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "父母婚姻状态",
+      "type": "categorical",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "家庭净资产分档",
+      "type": "categorical",
+      "bucketCount": 8,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "个人净资产分档",
+      "type": "categorical",
+      "bucketCount": 9,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "家庭支持能力",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "父母养老及医保保障",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "兄弟姐妹情况",
+      "type": "categorical",
+      "bucketCount": 4,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "家庭债务情况",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "家庭与资产情况",
+      "title": "照护责任",
+      "type": "categorical",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待年龄下限",
+      "type": "numeric",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待年龄上限",
+      "type": "numeric",
+      "bucketCount": 6,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待身高下限",
+      "type": "numeric",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待身高上限",
+      "type": "numeric",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待年收入下限",
+      "type": "numeric",
+      "bucketCount": 5,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "收入是否为硬门槛",
+      "type": "boolean",
+      "bucketCount": 2,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待最低学历",
+      "type": "categorical",
+      "bucketCount": 4,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的住房安排",
+      "type": "multi",
+      "bucketCount": 6,
+      "selectedCount": 2412,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的定居计划",
+      "type": "multi",
+      "bucketCount": 3,
+      "selectedCount": 1152,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的家庭支持状况",
+      "type": "multi",
+      "bucketCount": 6,
+      "selectedCount": 2715,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的婚姻计划",
+      "type": "multi",
+      "bucketCount": 3,
+      "selectedCount": 1136,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的育儿计划",
+      "type": "multi",
+      "bucketCount": 3,
+      "selectedCount": 1104,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "期待的沟通性格",
+      "type": "multi",
+      "bucketCount": 4,
+      "selectedCount": 1511,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好",
+      "title": "可接受的生活方式",
+      "type": "multi",
+      "bucketCount": 6,
+      "selectedCount": 2060,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "年龄重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "身高重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "收入重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "学历重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "住房重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "定居重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "家庭支持重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "婚姻重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "育儿重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "性格重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    },
+    {
+      "group": "理想对象偏好 · 重视程度",
+      "title": "生活方式重视程度",
+      "type": "importance",
+      "bucketCount": 3,
+      "selectedCount": 500,
+      "exhaustive": true
+    }
+  ],
+  "filteredChartAudit": [
+    {
+      "title": "年龄",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "身高",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "个人年收入（税前）",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "在上海生活时间",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "自述性别",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "性取向模拟范围",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "希望认识的对象性别",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "关系状态",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "学历",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "职业类别",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "当前住房安排",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "定居意向",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "婚姻计划",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "育儿计划",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "沟通性格",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "生活方式",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "父母居住地",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "父母住房安排",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "父母婚姻状态",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "家庭净资产分档",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "个人净资产分档",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "家庭支持能力",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "父母养老及医保保障",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "兄弟姐妹情况",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "家庭债务情况",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "照护责任",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待年龄下限",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待年龄上限",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待身高下限",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待身高上限",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待年收入下限",
+      "type": "numeric",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "收入是否为硬门槛",
+      "type": "boolean",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待最低学历",
+      "type": "categorical",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的住房安排",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的定居计划",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的家庭支持状况",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的婚姻计划",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的育儿计划",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "期待的沟通性格",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "可接受的生活方式",
+      "type": "multi",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "年龄重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "身高重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "收入重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "学历重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "住房重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "定居重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "家庭支持重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "婚姻重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "育儿重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "性格重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    },
+    {
+      "title": "生活方式重视程度",
+      "type": "importance",
+      "denominator": 250,
+      "exhaustive": true
+    }
+  ],
+  "chartLogic": {
+    "numericBinsCoverAllNonMissing": true,
+    "categoricalCountsSumToDenominator": true,
+    "multiSelectDenominator": "当前筛选档案人数，选项比例可相加超过100%",
+    "importanceLevels": [
+      1,
+      2,
+      3
+    ]
+  },
+  "chain": {
+    "A": "SH-SIM-003",
+    "B": "SH-SIM-264",
+    "C": "SH-SIM-001",
+    "D": "SH-SIM-263"
+  },
+  "edges": [
+    {
+      "target": "SH-SIM-003",
+      "seeker": "SH-SIM-264",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "target": "SH-SIM-264",
+      "seeker": "SH-SIM-001",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "target": "SH-SIM-001",
+      "seeker": "SH-SIM-263",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 1
+        }
+      ]
+    }
+  ]
+}

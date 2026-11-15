@@ -1,0 +1,43 @@
+<view class="page home-page">
+  <view class="topbar">
+    <view class="brand-mark">V</view><text class="brand">VIER</text><text class="edition">择偶坐标 · 手机体验版</text>
+  </view>
+  <view class="eyebrow">A CLEARER VIEW OF YOUR DATING MARKET</view>
+  <view class="page-title">把择偶期待，<br/>放进一张 Z 字图</view>
+  <view class="lead muted">看清你向往谁、对方在意什么，以及谁会向往你这样的你。</view>
+  <view class="demo-banner"><text class="dot"></text><text>以下人物和拟合度均为演示数据</text></view>
+
+  <view class="map-shell">
+    <view class="map-heading row"><view><text class="section-title">关系总览</text><text class="map-subtitle">点选人物，查看对应档案</text></view><text class="city-label">上海示例</text></view>
+    <view class="map">
+      <view class="edge edge-ab"></view><view class="edge edge-bc"></view><view class="edge edge-cd"></view>
+      <view class="node node-a" data-node="A" bindtap="openNode">
+        <view class="portrait portrait-a"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+        <view class="node-copy"><text class="node-role">B 所向往</text><text class="node-name">林知夏 · 30</text><text class="node-meta">168 cm · 医师</text><text class="node-meta">约 36 万 / 年</text></view><text class="open-mark">↗</text>
+      </view>
+      <view class="node node-b" data-node="B" bindtap="openNode">
+        <view class="portrait portrait-b"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+        <view class="node-copy"><text class="node-role">你的理想型</text><text class="node-name">周屿 · 33</text><text class="node-meta">180 cm · 产品经理</text><text class="node-meta">约 27 万 / 年</text></view><text class="open-mark">↗</text>
+      </view>
+      <view class="node node-c" data-node="C" bindtap="openNode">
+        <view class="portrait portrait-c"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+        <view class="node-copy"><text class="node-role role-you">你本人</text><text class="node-name">顾念 · 29</text><text class="node-meta">165 cm · 品牌运营</text><text class="node-meta">约 16 万 / 年</text></view><text class="open-mark">✎</text>
+      </view>
+      <view class="node node-d" data-node="D" bindtap="openNode">
+        <view class="portrait portrait-d"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+        <view class="node-copy"><text class="node-role">向往你的人</text><text class="node-name">陈奕舟 · 31</text><text class="node-meta">175 cm · 项目协调</text><text class="node-meta">约 18 万 / 年</text></view><text class="open-mark">↗</text>
+      </view>
+    </view>
+    <view class="legend">
+      <view><text class="legend-line"></text><text>期待关系路径</text></view>
+      <text class="legend-note">A ↗ B ↙ C ↘ D</text>
+    </view>
+  </view>
+
+  <view class="compare-grid">
+    <button class="compare-card" data-type="CA" bindtap="openCompare"><text class="compare-kicker">期待与现实</text><text class="compare-title">你与 A 的差距</text><text class="compare-arrow">查看对照　→</text></button>
+    <button class="compare-card" data-type="BD" bindtap="openCompare"><text class="compare-kicker">理想型的竞争坐标</text><text class="compare-title">B 与 D 的差距</text><text class="compare-arrow">查看对照　→</text></button>
+  </view>
+  <button class="primary-button profile-cta" bindtap="openProfile">填写 / 修改我的资料</button>
+  <view class="tiny-note disclaimer">本原型没有真实用户数据库；人物资料与拟合值均为演示。真实案例需在用户明确授权后才可展示。</view>
+</view>

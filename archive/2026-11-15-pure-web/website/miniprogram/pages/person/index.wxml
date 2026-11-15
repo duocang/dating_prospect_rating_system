@@ -1,0 +1,21 @@
+<view class="page person-page">
+  <view class="topbar"><view class="brand-mark">V</view><text class="brand">VIER</text><text class="edition">示例档案</text></view>
+  <view class="hero panel">
+    <view class="portrait large-portrait"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+    <view class="hero-copy"><view class="eyebrow">拟合度 · 演示算分</view><view class="fit-hero">{{fit}}<text>%</text></view><view class="person-name">{{person.name}} · {{person.age}} 岁</view><view class="muted">{{person.gender}} · {{person.city}} · {{person.height}}</view></view>
+  </view>
+  <view class="tiny-note">此档案由虚构资料构成，仅用于体验页面。拟合度不是对个人吸引力或关系成功率的预测。</view>
+  <view class="section-title">个人情况</view>
+  <view class="facts panel">
+    <view class="fact"><text>教育与职业</text><text>{{person.education}} · {{person.job}}</text></view>
+    <view class="fact"><text>收入区间示例</text><text>{{person.income}}</text></view>
+    <view class="fact"><text>住房安排</text><text>{{person.home}}</text></view>
+    <view class="fact"><text>家庭支持</text><text>{{person.family}}</text></view>
+    <view class="fact"><text>相处方式</text><text>{{person.relationship}}</text></view>
+    <view class="fact"><text>未来计划</text><text>{{person.plan}}</text></view>
+    <view class="fact"><text>日常兴趣</text><text>{{person.hobbies}}</text></view>
+  </view>
+  <view class="section-title">关于关系的想法</view>
+  <view class="panel thought"><text class="thought-label">自我介绍</text><text>{{person.intro}}</text><view class="divider"></view><text class="thought-label">期待的伴侣</text><text>{{person.lookingFor}}</text></view>
+  <view class="tiny-note end-note">{{person.note}}</view>
+</view>
