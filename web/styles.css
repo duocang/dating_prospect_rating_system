@@ -100,3 +100,4 @@ a.card[href]:hover { border-color: var(--accent); }
 .items tr.must td:first-child { font-weight: 700; }
 .plain { padding-left: 18px; }
 .loading { color: var(--muted); }
+.demo-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 16px; padding: 10px 12px; border: 1px dashed var(--teal); border-radius: var(--radius); font-size: 14px; color: var(--muted); }

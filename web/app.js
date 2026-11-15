@@ -36,6 +36,58 @@ const score = (t) => (t.low === t.high ? `${Math.round(t.low)}` : `${Math.round(
 const IMPORTANCE = [['1', '灵活'], ['2', '重要'], ['3', '很重要'], ['must', '必须']];
 const OPS = { range: '范围', atLeast: '至少', atMost: '至多', about: '约' };
 
+// ---------- 示例数据（一键填入，便于快速验证） ----------
+const DEMO = {
+  female: {
+    nickname: '示例·顾念',
+    profile: {
+      age: 29, heightCm: 165, city: '上海', settlement: '计划长期上海', education: '硕士', occupation: '设计与传媒',
+      incomeAnnual: 180000, personalNetAssets: '50–100万元', housing: '自有住房（无贷款）', familySupport: '可应急小额支持',
+      familyNetAssets: '150–300万元', parentsSecurity: '双方有基本养老与医保', siblings: '独生子女', care: '暂时无固定照护责任',
+      parentsMarriage: '父母目前为婚姻关系', marriagePlan: '1–3年内考虑结婚', childrenPlan: '希望育儿', personality: '直接沟通', lifestyle: '规律作息',
+    },
+    requirements: [
+      { field: 'age', op: 'range', target: [28, 35], importance: 3 },
+      { field: 'heightCm', op: 'atLeast', target: 175, importance: 2 },
+      { field: 'incomeAnnual', op: 'atLeast', target: 150000, importance: 3 },
+      { field: 'education', op: 'atLeast', target: '本科', importance: 2 },
+      { field: 'settlement', op: 'in', target: ['计划长期上海', '城市可协商'], importance: 2 },
+      { field: 'childrenPlan', op: 'in', target: ['希望育儿'], importance: 'must' },
+      { field: 'personality', op: 'in', target: ['直接沟通', '慢热温和'], importance: 1 },
+    ],
+  },
+  male: {
+    nickname: '示例·周启明',
+    profile: {
+      age: 31, heightCm: 178, city: '上海', settlement: '计划长期上海', education: '本科', occupation: '软件与技术',
+      incomeAnnual: 250000, personalNetAssets: '10–50万元', housing: '整租', familySupport: '可部分支持首付',
+      familyNetAssets: '50–150万元', parentsSecurity: '一方有养老金，双方有医保', siblings: '一位兄弟姐妹', care: '定期探望及协助',
+      parentsMarriage: '父母目前为婚姻关系', marriagePlan: '1–3年内考虑结婚', childrenPlan: '希望育儿', personality: '慢热温和', lifestyle: '户外运动',
+    },
+    requirements: [
+      { field: 'age', op: 'range', target: [25, 32], importance: 3 },
+      { field: 'heightCm', op: 'range', target: [158, 170], importance: 2 },
+      { field: 'education', op: 'atLeast', target: '本科', importance: 2 },
+      { field: 'marriagePlan', op: 'in', target: ['1–3年内考虑结婚', '婚姻安排可协商'], importance: 2 },
+      { field: 'childrenPlan', op: 'in', target: ['希望育儿', '尚未决定'], importance: 'must' },
+      { field: 'lifestyle', op: 'in', target: ['户外运动', '规律作息', '喜欢社交'], importance: 1 },
+    ],
+  },
+};
+const demoFor = (g) => DEMO[g === 'male' ? 'male' : 'female'];
+
+// 一键体验：直接保存示例资料、理想型和计算同意，然后看结果
+async function runFullDemo(gender) {
+  await ensureSession();
+  const d = demoFor(gender);
+  await api('PUT', '/api/me/profile', { gender, profile: d.profile, identity: { nickname: d.nickname } });
+  await api('PUT', '/api/me/requirements', { requirements: d.requirements });
+  if (!S.me.consent?.scoring) await api('PUT', '/api/me/consent', { scoring: true, pool: false, research: false });
+  S.me = await api('GET', '/api/me');
+  S.results = null;
+  location.hash = '#/results';
+}
+
 // ---------- 首页 ----------
 function renderHome() {
   view.innerHTML = `
@@ -49,8 +101,14 @@ function renderHome() {
       <li><b>你的理想型</b>每项分清“必须、很重要、重要、灵活”。</li>
       <li><b>看结果</b>五组反馈，每个分数都能看到逐项依据。</li>
     </ol>
-    <a class="btn primary" href="#/me">开始</a>
+    <div class="actions">
+      <a class="btn primary" href="#/me">开始</a>
+      <button class="btn" data-demo="female">一键体验（女性示例）</button>
+      <button class="btn" data-demo="male">一键体验（男性示例）</button>
+    </div>
+    <p class="fine">一键体验会自动填入示例资料和理想型，直接生成结果，方便快速验证。之后可以在“关于你”“理想型”里随意修改。</p>
   </section>`;
+  view.querySelectorAll('[data-demo]').forEach((b) => (b.onclick = () => runFullDemo(b.dataset.demo).catch((e) => { view.insertAdjacentHTML('beforeend', `<p class="err">${esc(e.message)}</p>`); })));
 }
 
 function zMap(r) {
@@ -94,6 +152,7 @@ function renderMe() {
     <p class="eyebrow">第 1 步 / 3</p>
     <h1>关于你</h1>
     <p class="lead">只有“性别”必填。不愿意说的就跳过，或选“不愿透露”；没填的项目按“未知”处理，不会当成 0 分。</p>
+    <div class="demo-bar">快速验证：<button type="button" class="btn small" data-fill="female">填入女性示例</button><button type="button" class="btn small" data-fill="male">填入男性示例</button></div>
     <form id="f-me" class="form">
       <fieldset><legend>基本</legend>
         <label>性别<select name="gender" required><option value="">请选择</option>
@@ -109,6 +168,11 @@ function renderMe() {
       <div class="actions"><button class="btn primary">保存，下一步</button></div>
     </form>
   </section>`;
+  view.querySelectorAll('[data-fill]').forEach((b) => (b.onclick = () => {
+    const d = demoFor(b.dataset.fill);
+    S.me = { ...S.me, gender: b.dataset.fill, profile: { ...d.profile }, identity: { nickname: d.nickname } };
+    renderMe(); // 只填入表单，点“保存”后才会提交
+  }));
   document.getElementById('f-me').onsubmit = async (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -164,12 +228,17 @@ function renderIdeal() {
     <p class="eyebrow">第 2 步 / 3</p>
     <h1>你的理想型</h1>
     <p class="lead">只勾选你真的在意的项目。<b>必须</b>是门槛，不满足就不进入结果，别的条件再好也不能抵消；其他等级决定权重。</p>
+    <div class="demo-bar">快速验证：<button type="button" class="btn small" data-fill-ideal>填入示例理想型</button></div>
     <form id="f-ideal" class="form">
       ${S.config.fields.map((f) => reqEditor(f, byField[f.key])).join('')}
       <p class="err" id="err"></p>
       <div class="actions"><a class="btn" href="#/me">上一步</a><button class="btn primary">保存，下一步</button></div>
     </form>
   </section>`;
+  view.querySelector('[data-fill-ideal]').onclick = () => {
+    S.me = { ...S.me, requirements: demoFor(S.me.gender).requirements.map((r) => ({ ...r })) };
+    renderIdeal(); // 只填入表单，点“保存”后才会提交
+  };
   const form = document.getElementById('f-ideal');
   form.addEventListener('change', (e) => {
     if (e.target.name?.startsWith('on_')) e.target.closest('.req').classList.toggle('on', e.target.checked);
