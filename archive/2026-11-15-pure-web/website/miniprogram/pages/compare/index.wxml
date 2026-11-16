@@ -1,0 +1,18 @@
+<view class="page compare-page">
+  <view class="topbar"><view class="brand-mark">V</view><text class="brand">VIER</text><text class="edition">条件对照</text></view>
+  <view class="eyebrow">COMPARE EXPECTATIONS</view>
+  <view class="page-title">{{title}}</view>
+  <view class="muted intro">把可描述的条件并排看，区分相似、差异与需要进一步沟通的部分。</view>
+  <view class="compare-head panel">
+    <view class="side"><view class="side-label">{{leftLabel}}</view><view class="side-name">{{left.name}}</view><view class="side-city">{{left.age}} 岁 · {{left.city}}</view></view>
+    <view class="versus">/</view>
+    <view class="side side-right"><view class="side-label">{{rightLabel}}</view><view class="side-name">{{right.name}}</view><view class="side-city">{{right.age}} 岁 · {{right.city}}</view></view>
+  </view>
+  <view class="table panel">
+    <view class="table-row table-labels"><text>维度</text><text>左侧</text><text>右侧</text></view>
+    <view class="table-row" wx:for="{{rows}}" wx:key="label"><view class="field">{{item.label}}<text class="insight">{{item.insight}}</text></view><text>{{item.left}}</text><text>{{item.right}}</text></view>
+  </view>
+  <view class="section-title">怎么读这份对照</view>
+  <view class="panel reading"><text>这张表比较的是自述条件和偏好方向，不是人的价值排名。收入、住房、家庭支持都只是生活背景的一部分；是否适合相处，仍需要真实沟通与相互选择。</text></view>
+  <view class="tiny-note">示例资料与差额均为虚构，用于演示页面结构，不是数据库统计结果。</view>
+</view>

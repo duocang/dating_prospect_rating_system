@@ -1,0 +1,39 @@
+{
+  "poolMode": "simulated",
+  "plans": {
+    "free": {
+      "label": "免费版",
+      "matches": 3,
+      "theirPicks": 3,
+      "seekers": 3,
+      "mutual": 3,
+      "priceFen": 0
+    },
+    "vip": {
+      "label": "VIP",
+      "matches": 5,
+      "theirPicks": 5,
+      "seekers": 5,
+      "mutual": 5,
+      "priceFen": 199
+    }
+  },
+  "scorer": {
+    "id": "fit-v1",
+    "params": {}
+  },
+  "privacy": {
+    "consentVersion": "consent-2026-11-15",
+    "kAnonymity": 10,
+    "inactiveRetentionDays": 365
+  },
+  "payments": {
+    "mode": "mock",
+    "providers": [
+      "wechat",
+      "alipay"
+    ],
+    "orderExpireMinutes": 15,
+    "notifyBaseUrl": ""
+  }
+}

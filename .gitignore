@@ -1,0 +1,19 @@
+# 运行时数据：含加密的用户资料与开发密钥，永远不进 git
+data/
+# 部署用的域名和加密密钥
+.env
+*.tmp
+.DS_Store
+node_modules/
+
+# 旧预览目录自带独立 git 仓库，保留在磁盘上但不纳入本仓库
+archive/2026-11-15-pure-web/website/miniprogram/remote-preview/
+
+# 旧阶段的内部工作记录与制图草稿，只保留在本地，不纳入仓库
+archive/2026-11-15-pure-web/PROJECT_CONTEXT.md
+archive/2026-11-15-pure-web/NEXT_SLEEP_TASKS.md
+archive/2026-11-15-pure-web/SLEEP_TODO.md
+archive/2026-11-15-pure-web/NIGHT_REVIEW.md
+archive/2026-11-15-pure-web/website/research/douyin-review/HANDOFF.md
+archive/2026-11-15-pure-web/promotion/*.txt
+archive/2026-11-15-pure-web/promotion/*说明.md

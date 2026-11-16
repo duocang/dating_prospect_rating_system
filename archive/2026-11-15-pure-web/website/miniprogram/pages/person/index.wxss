@@ -1,0 +1,14 @@
+.hero { display:flex; align-items:center; gap:22rpx; padding:24rpx; }
+.large-portrait { width:190rpx; height:236rpx; border-radius:90rpx 90rpx 22rpx 22rpx; }
+.hero-copy { flex:1; }
+.fit-hero { color:#3e6251; font-family:Georgia,serif; font-size:54rpx; line-height:1.1; margin:4rpx 0 10rpx; }
+.fit-hero text { font-size:26rpx; }
+.person-name { font-weight:600; font-size:28rpx; }
+.facts { padding:0 22rpx; }
+.fact { display:flex; justify-content:space-between; align-items:flex-start; gap:20rpx; padding:18rpx 0; border-bottom:1rpx solid #eee9e1; }
+.fact:last-child { border:0; }
+.fact text:first-child { width:144rpx; flex:none; color:#898a82; font-size:21rpx; }
+.fact text:last-child { text-align:right; color:#353b36; font-size:22rpx; }
+.thought { display:flex; flex-direction:column; color:#4e554f; }
+.thought-label { margin:4rpx 0 8rpx; color:#8b745b; font-size:21rpx; }
+.end-note { display:block; margin-top:18rpx; }

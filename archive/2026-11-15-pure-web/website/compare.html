@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4efe5">
+<title>择偶坐标｜版本选择</title>
+<style>
+:root{--ink:#29372f;--muted:#777d75;--line:#e3dccf;--sage:#718477;--sand:#ba9b70;--paper:#f4efe5;--white:#fffdf8}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 90% 5%,#e6e9df 0,transparent 28%),var(--paper);color:var(--ink);font-family:Inter,"Microsoft YaHei",system-ui,sans-serif}.wrap{max-width:1120px;margin:auto;padding:48px 26px 72px}.eyebrow{color:#8e7b5b;font-size:10px;letter-spacing:.2em;font-weight:800}.title{font:700 clamp(32px,5vw,58px)/1.15 "Noto Serif SC","Songti SC",serif;margin:14px 0}.lead{max-width:700px;color:var(--muted);line-height:1.9;font-size:14px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:15px;margin-top:32px}.card{display:flex;flex-direction:column;min-height:245px;padding:21px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(150deg,#fffdf8,#f8f5ed);box-shadow:0 10px 30px #3444370d}.version{font-size:10px;color:#817c6e;letter-spacing:.1em;font-weight:800}.card h2{font:700 20px "Noto Serif SC","Songti SC",serif;margin:12px 0 8px}.card p{font-size:12px;color:var(--muted);line-height:1.8;margin:0 0 16px}.button{display:inline-block;margin-top:auto;text-align:center;padding:12px;border-radius:10px;background:#e9e6dc;color:#4c5048;text-decoration:none;font-size:12px;font-weight:750;transition:transform .2s,background .2s}.button:hover{transform:translateY(-2px);background:#dedbcf}.recommended{border-color:#aab5a8;background:linear-gradient(150deg,#f8faf4,#e8eee6);box-shadow:0 14px 38px #5367551a}.recommended .version{color:#607360}.recommended .button{background:#354b3e;color:#fffdf8}.student{background:linear-gradient(150deg,#f3f7f3,#e3ece9);border-color:#cbd8d2}.student .version{color:#58766d}.foot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:10px;line-height:1.8;color:#88857b}.pill{display:inline-block;margin-top:12px;padding:5px 8px;border-radius:99px;background:#f0e7d8;color:#816a48;font-size:9px;font-weight:700}@media(max-width:560px){.wrap{padding:28px 15px 55px}.grid{gap:11px}.card{min-height:215px;padding:17px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="eyebrow">THE DON · 本地原型 · 版本预览</div>
+  <h1 class="title">择偶坐标<br>选择一个版本</h1>
+  <p class="lead">每个版本都单独保存，可以直接比较。V6 是当前默认版，提供三步快速体验和示例入口。V5 面向中国留学生及海外生活人群。</p>
+  <section class="grid">
+    <article class="card"><div class="version">V1 · 原始版本</div><h2>最初概念稿</h2><p>保留修改前的页面内容，作为早期对照。</p><a class="button" href="versions/v1-current/index.html">打开 V1</a></article>
+    <article class="card"><div class="version">V2 · 数据说明版</div><h2>信息结构版</h2><p>普通收入画像、A / B / C / D 关系图、详细档案与 C ↔ A、B ↔ D 条件对照。</p><a class="button" href="versions/v2-data-first/index.html">打开 V2</a></article>
+    <article class="card"><div class="version">V3 · 手机优先版</div><h2>手机操作版</h2><p>沿用原型信息结构，增加手机导航、更大的触控区域和固定操作位置。</p><a class="button" href="versions/v3-mobile-first/index.html">打开 V3</a></article>
+    <article class="card"><div class="version">V4 · 生动关系图版</div><h2>把 Z 字关系放在中心</h2><p>更有层次的暖色视觉，首屏展示关系图预览，可进入独立档案页。</p><a class="button" href="versions/v4-lively/index.html">打开 V4</a></article>
+    <article class="card student"><div class="version">V5 · 留学生专属版</div><h2>把海外生活放进匹配坐标</h2><p>加入留学地区、学业阶段、毕业去向、异地接受度、语言与跨文化沟通偏好。</p><a class="button" href="versions/v5-international-student/index.html">打开 V5 留学生版</a><span class="pill">专为海外生活场景设计</span></article>
+    <article class="card recommended"><div class="version">V6 · 默认体验版</div><h2>先看示例，也可以直接测试</h2><p>三步选出重要条件，再沿 Z 字查看资料、结果说明和两组对照。</p><a class="button" href="versions/v6-guided-experience/index.html">打开 V6</a><span class="pill">当前默认版</span></article>
+  </section>
+  <p class="foot">所有版本都是本地静态原型，人物和分值为虚构示例；没有真实匹配、用户账号、数据库或付费功能。公开托管需要另行发布，当前仅供本地查看。</p>
+</main>
+</body>
+</html>

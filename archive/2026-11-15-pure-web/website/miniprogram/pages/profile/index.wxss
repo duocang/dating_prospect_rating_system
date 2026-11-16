@@ -1,0 +1,9 @@
+.intro { font-size:24rpx; }
+.privacy { display:flex; flex-direction:column; gap:5rpx; margin-top:22rpx; color:#73776f; font-size:21rpx; background:#eff2ed; border-color:#dae1db; }
+.privacy-title { color:#3e6251; font-size:23rpx; font-weight:600; }
+.form { padding:0 22rpx; }
+.field { display:flex; flex-direction:column; gap:7rpx; padding:17rpx 0; border-bottom:1rpx solid #eee9e1; color:#7e8179; font-size:21rpx; }
+.field:last-child { border-bottom:0; }
+.field input,.field textarea { width:100%; min-height:42rpx; padding:0; color:#303732; font-size:24rpx; }
+.field-area textarea { min-height:92rpx; line-height:1.5; }
+.save-button { margin-top:22rpx; }

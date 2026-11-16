@@ -1,0 +1,212 @@
+{
+  "count": 500,
+  "uniqueIds": 500,
+  "ageRange": [
+    22,
+    39
+  ],
+  "incomeRange": [
+    30000,
+    650000
+  ],
+  "medianIncome": 150000,
+  "meanIncome": 175720,
+  "incomeOver350k": 28,
+  "chain": {
+    "A": "SH-SIM-012",
+    "B": "SH-SIM-268",
+    "C": "SH-SIM-001",
+    "D": "SH-SIM-270"
+  },
+  "edges": [
+    {
+      "target": "SH-SIM-012",
+      "seeker": "SH-SIM-268",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "target": "SH-SIM-268",
+      "seeker": "SH-SIM-001",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "target": "SH-SIM-001",
+      "seeker": "SH-SIM-270",
+      "eligible": true,
+      "score": 100,
+      "items": [
+        {
+          "field": "年龄",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "身高",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "收入",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "学历",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "住房",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "定居",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "家庭支持",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "婚姻",
+          "overlap": true,
+          "weight": 1
+        },
+        {
+          "field": "育儿",
+          "overlap": true,
+          "weight": 3
+        },
+        {
+          "field": "性格",
+          "overlap": true,
+          "weight": 2
+        },
+        {
+          "field": "生活方式",
+          "overlap": true,
+          "weight": 2
+        }
+      ]
+    }
+  ]
+}

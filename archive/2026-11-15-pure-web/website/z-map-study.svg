@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="1080" viewBox="0 0 1440 1080" role="img" aria-labelledby="title desc">
+<title id="title">卸测试 · 择偶关系图</title>
+<desc id="desc">一张暖纸色与淡紫色的无框 Z 字人物关系图。四位虚构人物以个人档案卡片呈现，三条细线箭头直接指向人物卡片，C 到 B 以深紫色突出。</desc>
+<defs>
+  <linearGradient id="paper" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#faf8f2"/><stop offset=".57" stop-color="#f3efe6"/><stop offset="1" stop-color="#ece7dc"/></linearGradient>
+  <radialGradient id="glowSage"><stop stop-color="#dfe8df" stop-opacity=".8"/><stop offset="1" stop-color="#dfe8df" stop-opacity="0"/></radialGradient>
+  <radialGradient id="glowRose"><stop stop-color="#eddcd7" stop-opacity=".64"/><stop offset="1" stop-color="#eddcd7" stop-opacity="0"/></radialGradient>
+  <linearGradient id="board" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fdfcf8"/><stop offset="1" stop-color="#f7f4ec"/></linearGradient>
+  <linearGradient id="profileA" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dbe4dc"/><stop offset="1" stop-color="#ebd9d0"/></linearGradient>
+  <linearGradient id="profileB" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e6ddd0"/><stop offset="1" stop-color="#d5ded9"/></linearGradient>
+  <linearGradient id="profileC" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9dcd6"/><stop offset="1" stop-color="#d7e0d8"/></linearGradient>
+  <linearGradient id="profileD" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e7e0d3"/><stop offset="1" stop-color="#d9e1df"/></linearGradient>
+  <linearGradient id="lineA" x1="1" y1="1" x2="0" y2="0"><stop stop-color="#b9aa92" stop-opacity=".35"/><stop offset="1" stop-color="#937a59" stop-opacity=".88"/></linearGradient>
+  <linearGradient id="lineB" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#a7b4a7" stop-opacity=".50"/><stop offset="1" stop-color="#81624e"/></linearGradient>
+  <linearGradient id="lineD" x1="1" y1="1" x2="0" y2="0"><stop stop-color="#c1b8a9" stop-opacity=".28"/><stop offset="1" stop-color="#788678" stop-opacity=".76"/></linearGradient>
+  <linearGradient id="cardB" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#f1eee5"/></linearGradient><filter id="cardShadow" x="-15%" y="-20%" width="130%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#514836" flood-opacity=".075"/></filter>
+  <filter id="paperGrain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="11"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="table" tableValues="0 .13"/></feComponentTransfer></filter>
+  <marker id="arrowA" viewBox="0 0 12 12" markerWidth="12" markerHeight="12" refX="9.6" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M2 2.1L9.4 6L2 9.9" fill="none" stroke="#807087" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrowB" viewBox="0 0 12 12" markerWidth="13" markerHeight="13" refX="9.6" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M2 2L9.4 6L2 10" fill="none" stroke="#493b52" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrowD" viewBox="0 0 12 12" markerWidth="11" markerHeight="11" refX="9.6" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M2 2.2L9.4 6L2 9.8" fill="none" stroke="#9c8da4" stroke-width="1.05" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <clipPath id="photoA"><rect x="118" y="318" width="126" height="132" rx="38"/></clipPath>
+  <clipPath id="photoB"><rect x="838" y="498" width="126" height="132" rx="38"/></clipPath>
+  <clipPath id="photoC"><rect x="118" y="678" width="126" height="132" rx="38"/></clipPath>
+  <clipPath id="photoD"><rect x="838" y="858" width="126" height="132" rx="38"/></clipPath>
+<pattern id="mapGrid" width="88" height="88" patternUnits="userSpaceOnUse"><path d="M88 0H0V88" fill="none" stroke="#99869f" stroke-width=".65" opacity=".20"/></pattern>
+<radialGradient id="mapFade"><stop stop-color="#e7dce8" stop-opacity=".35"/><stop offset="1" stop-color="#e7dce8" stop-opacity="0"/></radialGradient></defs>
+<rect width="1440" height="1080" fill="#f6f2ed"/><path d="M760 0H1440V1080H1030C1140 930 880 840 980 570S760 290 760 0Z" fill="#ece3ed" opacity=".55"/>
+
+
+<text x="62" y="55" fill="#514157" font-family="Inter,Microsoft YaHei,sans-serif" font-size="11" font-weight="750" letter-spacing="3">卸测试　/　RELATIONSHIP MAP</text>
+<text x="62" y="127" fill="#312b32" font-family="Noto Serif SC,Songti SC,serif" font-size="40" font-weight="500" letter-spacing=".4">把期待与现实，放进同一张图里。</text>
+<text x="64" y="168" fill="#544658" font-family="Microsoft YaHei,sans-serif" font-size="15">以你为参照，在关系地图上找到期待的方向。</text>
+
+
+<text x="82" y="253" fill="#514157" font-family="Inter,Microsoft YaHei,sans-serif" font-size="10" font-weight="750" letter-spacing="2.4">RELATIONSHIP MAP</text>
+<text x="1358" y="253" text-anchor="end" fill="#66546e" font-family="Microsoft YaHei,sans-serif" font-size="11">上海 / 四份虚构人物档案</text>
+
+<g transform="translate(60 25) scale(.92)"><!-- A conceptual map, not a numerical ranking of people. -->
+<g aria-label="关系坐标底图">
+<rect x="66" y="276" width="1308" height="770" fill="url(#mapGrid)"/>
+
+
+<path d="M76 282V1042H1368" fill="none" stroke="#8d7597" stroke-width=".8" opacity=".6"/>
+<g stroke="#8d7597" stroke-width=".8" opacity=".65">
+<path d="M76 326h7m-7 88h7m-7 88h7m-7 88h7m-7 88h7m-7 88h7m-7 88h7m-7 88h7m-7 88h7"/>
+<path d="M164 1042v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7m132 7v-7"/>
+</g>
+<g fill="#725b7c" font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" letter-spacing="1.5">
+<text x="87" y="294">RELATIONAL TERRAIN</text>
+<text x="151" y="1063">01</text><text x="415" y="1063">02</text><text x="679" y="1063">03</text><text x="943" y="1063">04</text><text x="1207" y="1063">05</text>
+<text x="1349" y="294" text-anchor="end">N ↑</text>
+</g>
+</g><!-- Relationship paths: light supporting links, highlighted C to B -->
+<g fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M820 524 C748 515 710 438 624 410" stroke="#807087" stroke-width="1.25" marker-end="url(#arrowA)"/>
+  <path d="M620 719 C710 705 726 608 816 575" stroke="#493b52" stroke-width="1.8" marker-end="url(#arrowB)"/>
+  <path d="M820 884 C750 875 710 793 624 760" stroke="#9c8da4" stroke-width=".85" marker-end="url(#arrowD)"/>
+</g>
+<!-- A profile -->
+
+<g clip-path="url(#photoA)"><rect x="118" y="318" width="126" height="132" fill="url(#profileA)"/><path d="M119 414Q151 383 183 407T244 393V452H119Z" fill="#c8d2c7" opacity=".55"/><circle cx="220" cy="335" r="28" fill="#f2e7dd" opacity=".55"/><path d="M126 454c5-29 22-42 56-42s51 13 56 42" fill="#718174"/><path d="M142 379c-4-31 10-49 40-49 28 0 42 21 37 52l-8 27h-61z" fill="#473d38"/><ellipse cx="182" cy="370" rx="19" ry="25" fill="#e9bfa1"/><path d="M162 362c3-23 16-35 34-34 18 1 29 14 27 38-9-4-17-12-20-23-8 10-21 16-41 19z" fill="#473d38"/><path d="M165 346q-9 8-8 24m50-40q16 8 17 27" fill="none" stroke="#594943" stroke-width="2" stroke-linecap="round"/><path d="M174 374q3 2 6 0m10 0q3 2 6 0m-11 11q4 3 8 0" fill="none" stroke="#674e44" stroke-width="1.6" stroke-linecap="round"/><path d="M169 430l13 10 13-10 12 24h-50z" fill="#f2e8dc"/><path d="M145 442l19-15m55 15-18-15" stroke="#637767" stroke-width="1.4" opacity=".8"/></g>
+<rect x="118" y="318" width="126" height="132" rx="38" fill="none" stroke="#fffdf9" stroke-width="1.5"/>
+<text x="581" y="325" text-anchor="middle" fill="#8c7b60" font-family="Noto Serif SC,Songti SC,serif" font-size="10" font-weight="700">A</text>
+<circle cx="270" cy="324" r="3" fill="#918297"/><text x="281" y="328" fill="#604969" font-family="Microsoft YaHei,sans-serif" font-size="11" font-weight="700" letter-spacing=".2">B 的理想型　·　推测画像</text>
+<text x="266" y="365" fill="#312b32" font-family="Noto Serif SC,Songti SC,serif" font-size="20" font-weight="600">周予宁</text><text x="342" y="364" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">31 岁　·　女性</text>
+<text x="266" y="388" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">产品负责人　/　硕士　/　上海静安</text>
+<g font-family="Microsoft YaHei,sans-serif" font-size="11" fill="#493e50"><text x="299" y="414" text-anchor="middle">身高 169</text><text x="380" y="414" text-anchor="middle">年入 32 万</text><text x="480" y="414" text-anchor="middle">购房计划清晰</text></g>
+<path d="M266 438h12" stroke="#b69b70" stroke-width="1.6" stroke-linecap="round"/><text x="284" y="442" fill="#544658" font-family="Noto Serif SC,Songti SC,serif" font-size="11" font-style="italic">“工作与生活，都想留出余地。”</text><path d="M118 463H602" stroke="#ddd2db"/><text x="118" y="482" fill="#65526d" font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" letter-spacing=".5">01 / 日常偏好</text><text x="264" y="482" fill="#544658" font-family="Microsoft YaHei,sans-serif" font-size="10">周末逛展、徒步；希望认真建立长期关系。</text>
+<!-- B profile -->
+
+<g clip-path="url(#photoB)"><rect x="838" y="498" width="126" height="132" fill="url(#profileB)"/><path d="M838 521q28-22 57-5t69-9v123H838z" fill="#c6d4cc" opacity=".52"/><circle cx="943" cy="512" r="25" fill="#f3e9dc" opacity=".6"/><path d="M845 634c5-30 23-43 56-43s50 13 56 43" fill="#3f544e"/><path d="M862 551c0-29 13-45 39-45 27 0 39 19 35 48l-7 21h-61z" fill="#373c3a"/><rect x="876" y="562" width="22" height="31" rx="9" fill="#cb9876"/><ellipse cx="901" cy="552" rx="19" ry="25" fill="#d7a681"/><path d="M882 546c-2-22 11-37 30-37 22 0 32 16 27 39l-11-10-5-17c-9 11-22 17-40 17z" fill="#373c3a"/><path d="M885 529q-5 10-4 22m42-36q11 8 12 23" fill="none" stroke="#4f514a" stroke-width="2" stroke-linecap="round"/><path d="M893 556q3 2 6 0m11 0q3 2 6 0m-12 12q5 3 9 0" fill="none" stroke="#57483e" stroke-width="1.5" stroke-linecap="round"/><path d="M877 610l24 12 23-12 10 24h-66z" fill="#d7ddd5"/></g>
+<rect x="838" y="498" width="126" height="132" rx="38" fill="none" stroke="#fffdf9" stroke-width="1.5"/>
+<text x="1301" y="505" text-anchor="middle" fill="#88765e" font-family="Noto Serif SC,Songti SC,serif" font-size="10" font-weight="700">B</text>
+<circle cx="990" cy="504" r="3" fill="#918297"/><text x="1001" y="508" fill="#604969" font-family="Microsoft YaHei,sans-serif" font-size="11" font-weight="700">你正在寻找的人　·　理想型示意</text>
+<text x="986" y="545" fill="#312b32" font-family="Noto Serif SC,Songti SC,serif" font-size="20" font-weight="600">陈予川</text><text x="1062" y="544" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">33 岁　·　男性</text>
+<text x="986" y="568" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">软件产品经理　/　本科　/　上海徐汇</text>
+<g font-family="Microsoft YaHei,sans-serif" font-size="11" fill="#493e50"><text x="1019" y="594" text-anchor="middle">身高 178</text><text x="1100" y="594" text-anchor="middle">年入 25 万</text><text x="1200" y="594" text-anchor="middle">重视沟通</text></g>
+<path d="M986 618h12" stroke="#ac8a68" stroke-width="1.6" stroke-linecap="round"/><text x="1004" y="622" fill="#544658" font-family="Noto Serif SC,Songti SC,serif" font-size="11" font-style="italic">“未来计划，希望能并肩商量。”</text><path d="M838 643H1322" stroke="#ddd2db"/><text x="838" y="662" fill="#65526d" font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" letter-spacing=".5">02 / 生活计划</text><text x="984" y="662" fill="#544658" font-family="Microsoft YaHei,sans-serif" font-size="10">喜欢做饭与骑行；计划继续留在上海。</text>
+<!-- C profile -->
+
+<g clip-path="url(#photoC)"><rect x="118" y="678" width="126" height="132" fill="url(#profileC)"/><path d="M118 703q40-30 71-9t55-5v121H118z" fill="#d6d8cb" opacity=".62"/><circle cx="139" cy="696" r="24" fill="#f4e5dd" opacity=".62"/><path d="M126 814c5-31 23-44 56-44s50 13 56 44" fill="#9a7567"/><path d="M141 736c-3-30 9-46 39-46 28 0 41 20 36 50l-7 24h-61z" fill="#463c38"/><ellipse cx="182" cy="726" rx="19" ry="25" fill="#efc4a7"/><path d="M162 718c3-23 16-35 34-34 18 1 29 14 27 38-9-4-17-12-20-23-8 10-21 16-41 19z" fill="#463c38"/><path d="M164 700q-8 9-7 28m49-43q16 8 17 27" fill="none" stroke="#5b4940" stroke-width="2" stroke-linecap="round"/><path d="M174 730q3 2 6 0m10 0q3 2 6 0m-11 11q4 3 8 0" fill="none" stroke="#664e45" stroke-width="1.6" stroke-linecap="round"/><path d="M169 788l13 10 14-10 12 26h-51z" fill="#f0e6dc"/><path d="M149 803l17-14m51 14-17-14" stroke="#8e7168" stroke-width="1.4"/></g>
+<rect x="118" y="678" width="126" height="132" rx="38" fill="none" stroke="#fffdf9" stroke-width="1.5"/>
+<text x="581" y="685" text-anchor="middle" fill="#6f7f70" font-family="Noto Serif SC,Songti SC,serif" font-size="10" font-weight="700">C</text>
+<circle cx="270" cy="684" r="3" fill="#685471"/><text x="281" y="688" fill="#493b52" font-family="Microsoft YaHei,sans-serif" font-size="11" font-weight="700">你本人　·　现实坐标</text>
+<text x="266" y="725" fill="#312b32" font-family="Noto Serif SC,Songti SC,serif" font-size="20" font-weight="600">顾念</text><text x="316" y="724" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">29 岁　·　女性</text>
+<text x="266" y="748" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">UX 设计师　/　本科　/　上海长宁</text>
+<g font-family="Microsoft YaHei,sans-serif" font-size="11" fill="#493e50"><text x="299" y="774" text-anchor="middle">身高 165</text><text x="380" y="774" text-anchor="middle">年入 18 万</text><text x="480" y="774" text-anchor="middle">长期关系</text></g>
+<path d="M266 798h12" stroke="#685471" stroke-width="1.6" stroke-linecap="round"/><text x="284" y="802" fill="#544658" font-family="Noto Serif SC,Songti SC,serif" font-size="11" font-style="italic">“希望有人一起认真过日常。”</text><path d="M118 823H602" stroke="#ddd2db"/><text x="118" y="842" fill="#65526d" font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" letter-spacing=".5">03 / 相处方式</text><text x="264" y="842" fill="#544658" font-family="Microsoft YaHei,sans-serif" font-size="10">读书、练瑜伽；重视回应与稳定陪伴。</text>
+<!-- D profile -->
+
+<g clip-path="url(#photoD)"><rect x="838" y="858" width="126" height="132" fill="url(#profileD)"/><path d="M838 882q34-26 64-10t62-7v125H838z" fill="#c9d3cf" opacity=".58"/><circle cx="945" cy="876" r="25" fill="#f1e7d8" opacity=".62"/><path d="M845 994c5-31 23-44 56-44s50 13 56 44" fill="#596970"/><path d="M862 913c0-29 13-45 39-45 27 0 39 19 35 48l-7 23h-61z" fill="#383b3a"/><rect x="876" y="924" width="22" height="31" rx="9" fill="#ce9b7b"/><ellipse cx="901" cy="914" rx="19" ry="25" fill="#deb08d"/><path d="M882 907c-2-22 11-37 30-37 22 0 32 16 27 39l-11-10-5-17c-9 11-22 17-40 17z" fill="#383b3a"/><path d="M885 891q-5 10-4 22m42-36q11 8 12 23" fill="none" stroke="#55534c" stroke-width="2" stroke-linecap="round"/><path d="M893 918q3 2 6 0m11 0q3 2 6 0m-12 12q5 3 9 0" fill="none" stroke="#5c493e" stroke-width="1.5" stroke-linecap="round"/><path d="M877 970l24 12 23-12 10 24h-66z" fill="#e2e5df"/></g>
+<rect x="838" y="858" width="126" height="132" rx="38" fill="none" stroke="#fffdf9" stroke-width="1.5"/>
+<text x="1301" y="865" text-anchor="middle" fill="#877f6e" font-family="Noto Serif SC,Songti SC,serif" font-size="10" font-weight="700">D</text>
+<circle cx="990" cy="864" r="3" fill="#aaa1af"/><text x="1001" y="868" fill="#66506e" font-family="Microsoft YaHei,sans-serif" font-size="11" font-weight="700">把 C 当作理想型　·　期待认识你的人</text>
+<text x="986" y="905" fill="#312b32" font-family="Noto Serif SC,Songti SC,serif" font-size="20" font-weight="600">许行舟</text><text x="1062" y="904" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">31 岁　·　男性</text>
+<text x="986" y="928" fill="#5b5260" font-family="Microsoft YaHei,sans-serif" font-size="11">企业运营　/　本科　/　上海普陀</text>
+<g font-family="Microsoft YaHei,sans-serif" font-size="11" fill="#493e50"><text x="1019" y="954" text-anchor="middle">身高 174</text><text x="1100" y="954" text-anchor="middle">年入 17 万</text><text x="1200" y="954" text-anchor="middle">家庭边界清晰</text></g>
+<path d="M986 978h12" stroke="#879485" stroke-width="1.6" stroke-linecap="round"/><text x="1004" y="982" fill="#544658" font-family="Noto Serif SC,Songti SC,serif" font-size="11" font-style="italic">“相处舒服，比条件完美更重要。”</text><path d="M838 1003H1322" stroke="#ddd2db"/><text x="838" y="1022" fill="#65526d" font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" letter-spacing=".5">04 / 关系观念</text><text x="984" y="1022" fill="#544658" font-family="Microsoft YaHei,sans-serif" font-size="10">周末打羽毛球；愿意分担家务，尊重独处。</text>
+<!-- Crosshairs anchor each profile to the map. C is the viewer's origin. -->
+<g fill="none" stroke="#a58daa" stroke-width=".85">
+<path d="M91 310h18m-9-9v18M811 490h18m-9-9v18M811 850h18m-9-9v18"/>
+</g>
+<g fill="#71567e"><circle cx="100" cy="310" r="2.2"/><circle cx="820" cy="490" r="2.2"/><circle cx="820" cy="850" r="2.2"/></g>
+<g stroke="#604668" fill="none"><circle cx="100" cy="670" r="8" stroke-width=".8"/><path d="M87 670h26m-13-13v26" stroke-width=".8"/></g><circle cx="100" cy="670" r="3" fill="#604668"/>
+<g font-family="Inter,Microsoft YaHei,sans-serif" font-size="9" fill="#71567e" letter-spacing="1">
+<text x="118" y="294">A / 理想的延伸</text><text x="838" y="474">B / 你的向往</text><text x="118" y="654" fill="#604668">C / 你在这里</text><text x="838" y="834">D / 向你靠近</text>
+</g></g><text x="720" y="1036" text-anchor="middle" fill="#66546e" font-family="Microsoft YaHei,sans-serif" font-size="10">概念地图：位置用于展开关系，不代表条件评分或真实地理距离。人物资料均为虚构。</text>
+</svg>

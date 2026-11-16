@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f4f1ea">
+<title>择偶坐标｜理想型落差测试</title>
+<style>
+:root{--ink:#302f2b;--muted:#77756e;--paper:#fbfaf7;--line:#e7e2d9;--sand:#a99b82;--sage:#778477;--warm:#e9e3d8;--white:#fffefa;--shadow:0 10px 32px rgba(48,44,35,.06)}
+*{box-sizing:border-box}
+body{margin:0;background:#f4f1ea;color:var(--ink);font-family:Inter,"Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1280px;margin:auto;padding:28px 28px 72px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:46px}
+.brand{font-size:19px;font-weight:750;letter-spacing:.02em}
+.brand:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--sage);margin:0 10px 1px 0}
+.tag{font-size:11px;color:var(--muted);padding:9px 13px;border:1px solid var(--line);border-radius:99px;background:#fbfaf7}
+.hero{margin:0 auto 32px;max-width:800px;text-align:center}
+.eyebrow{font-size:10px;letter-spacing:.2em;color:#7a8274;font-weight:700}
+.hero h1{font-family:"Noto Serif SC","Songti SC",serif;font-size:clamp(31px,4vw,48px);letter-spacing:-.04em;line-height:1.18;margin:13px 0}
+.hero p{margin:0;color:var(--muted);font-size:14px;line-height:1.8}
+.steps{display:flex;justify-content:center;gap:10px;margin-top:21px;flex-wrap:wrap}
+.step{font-size:10px;color:#77746b;background:#efede6;border-radius:99px;padding:7px 11px}
+.step b{color:#94866f;margin-right:5px}
+.layout{display:grid;grid-template-columns:minmax(330px,390px) minmax(0,1fr);gap:20px;align-items:start}
+.panel{background:var(--white);border:1px solid var(--line);border-radius:19px;padding:22px;box-shadow:var(--shadow)}
+h2{font-size:17px;margin:0 0 5px;letter-spacing:-.02em}
+.sub{font-size:11px;color:var(--muted);margin-bottom:15px;line-height:1.6}
+.form-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.completion{min-width:98px;text-align:right;font-size:10px;color:var(--muted)}
+.meter{height:4px;background:#eeeae1;border-radius:99px;overflow:hidden;margin-top:7px}
+.meter span{display:block;height:100%;width:0;background:var(--sage);border-radius:99px;transition:width .25s}
+.form-section{border-top:1px solid #eeebe4;padding:13px 0 0;margin-top:13px}
+.form-section summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;font-size:12px;font-weight:700}
+.form-section summary::-webkit-details-marker{display:none}
+.form-section summary:after{content:"＋";font-size:17px;line-height:1;color:#8b877e;font-weight:400}
+.form-section[open] summary:after{content:"−"}
+.section-hint{font-size:10px;color:#99958c;font-weight:400;margin-left:auto;margin-right:2px}
+.fields{padding-top:10px}
+.field{margin:10px 0}
+.field label{display:block;font-weight:600;font-size:10px;margin-bottom:5px;color:#514f49}
+.field .optional{font-size:9px;font-weight:400;color:#98948b;margin-left:4px}
+.field input,.field select,.field textarea{width:100%;min-height:37px;border:1px solid #e2ded5;background:#fbfaf7;border-radius:8px;padding:8px 10px;font:inherit;font-size:11px;color:var(--ink);outline:0}
+.input-suffix{display:flex;align-items:center;gap:7px}.input-suffix input{min-width:0;flex:1}.input-suffix span{font-size:9px;white-space:nowrap;color:#817d74}
+.field textarea{min-height:62px;resize:vertical;line-height:1.5}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sand);box-shadow:0 0 0 3px #a99b821c}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row.three{grid-template-columns:repeat(3,1fr)}
+.preferences{display:grid;gap:8px;padding-top:10px}
+.pref-row{display:grid;grid-template-columns:1fr 1.4fr 85px;gap:7px;align-items:center;border:1px solid #efede7;background:#fcfbf8;border-radius:9px;padding:7px 8px}
+.pref-row span{font-size:10px;font-weight:600}
+.pref-row input,.pref-row select{width:100%;min-width:0;height:31px;border:1px solid #e4e0d7;border-radius:7px;padding:0 7px;background:#fffefa;font:inherit;font-size:10px;color:var(--ink)}
+.pref-row label{font-size:9px;color:#8a867d}
+.btn{width:100%;border:0;border-radius:10px;background:#393832;color:#fffefa;padding:13px;font-size:13px;font-weight:650;cursor:pointer;margin-top:13px}
+.btn:hover{background:#55534b}
+.privacy{font-size:9px;line-height:1.65;color:#96938c;margin:9px 2px 0}
+.toast{display:none;background:#eef0e9;color:#62705e;border-radius:9px;padding:10px;font-size:11px;margin-top:9px}
+.toast.show{display:block}
+.result{padding:22px 23px 17px}
+.reshead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:7px}
+.reshead h2{font-size:17px}
+.res-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.pill{font-size:9px;white-space:nowrap;border-radius:99px;background:#f0eee7;color:#777267;padding:7px 10px}
+.notice{font-size:10px;color:#88847b;margin:10px 0 4px;line-height:1.6}
+.map{height:530px;max-width:900px;margin:0 auto;position:relative;isolation:isolate}
+.edges{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible}
+.edge{fill:none;stroke:#a99b82;stroke-width:2.2;stroke-linecap:round}
+.edge.alt{stroke:#778477}
+.arrow{fill:#a99b82}.arrow.alt{fill:#778477}
+.person{position:absolute;z-index:1;width:255px;min-height:112px;padding:12px;display:flex;align-items:center;gap:11px;background:#fffefa;border:1px solid #e8e3da;border-radius:14px;box-shadow:0 7px 22px rgba(48,44,35,.07)}
+.person .photo{width:61px;height:70px;flex:none;overflow:hidden;border-radius:9px;background:#eee}
+.photo svg{width:100%;height:100%;display:block}
+.person h3{font-size:13px;margin:0 0 4px}
+.person .role{font-size:9px;color:var(--muted);margin-bottom:6px}
+.person .bio{font-size:9px;line-height:1.55;color:#6e6b63}
+.self{border-color:#a7aa9b;box-shadow:0 0 0 2px #8d978324,0 8px 24px rgba(48,44,35,.08)}
+.self .nameflag{font-size:8px;color:#687466;background:#edf0e9;border-radius:99px;padding:3px 6px;margin-left:5px;vertical-align:1px}
+.p-a{left:1.5%;top:3%}
+.p-b{right:1.5%;top:22%}
+.p-c{left:4%;top:49%}
+.p-d{right:1.5%;top:75%}
+.rel{position:absolute;z-index:2;background:#fbfaf7f2;border:1px solid #e7e2d9;border-radius:99px;padding:6px 9px;font-size:9px;color:#68665e;white-space:nowrap;box-shadow:0 3px 10px rgba(48,44,35,.04)}
+.rel-ba{left:39%;top:8%}.rel-cb{left:43%;top:39%}.rel-dc{left:41%;top:84%}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin:2px 2px 13px;font-size:9px;color:#817d74}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:7px;height:7px;border-radius:50%;background:var(--sand)}
+.legend .green{background:var(--sage)}
+.gap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 1px 4px}
+.gap{border:1px solid var(--line);background:#faf9f5;border-radius:11px;padding:12px}
+.gap-head{display:flex;justify-content:space-between;align-items:center;gap:7px}
+.gap strong{font-size:10px}
+.score{font-size:9px;font-weight:700;background:#eeece5;border-radius:99px;padding:5px 7px;color:#67655d;white-space:nowrap}
+.gap p{font-size:9px;color:var(--muted);line-height:1.6;margin:7px 0 0}
+.report-note{margin:12px 1px 0;padding:10px 12px;border-left:2px solid var(--sage);background:#f5f4ee;color:#77746c;font-size:9px;line-height:1.65}
+.foot{text-align:center;font-size:9px;color:#97938a;margin:11px 0 0;line-height:1.6}
+@media(max-width:1020px){.layout{grid-template-columns:1fr}.form-panel{max-width:none}.map{height:530px}}
+@media(max-width:620px){.wrap{padding:17px 12px 42px}.top{margin-bottom:30px}.hero{margin-bottom:22px}.hero p{font-size:12px}.panel{padding:16px;border-radius:15px}.row.three{grid-template-columns:1fr 1fr}.pref-row{grid-template-columns:.9fr 1.2fr 76px}.result{padding:17px 12px}.map{height:570px}.person{width:44%;min-height:104px;padding:8px;gap:7px}.person .photo{width:45px;height:56px}.person h3{font-size:11px}.person .role,.person .bio{font-size:8px}.p-a{left:0;top:2%}.p-b{right:0;top:22%}.p-c{left:0;top:49%}.p-d{right:0;top:76%}.rel{font-size:7px;padding:5px 6px;max-width:47%;white-space:normal;text-align:center}.rel-ba{left:45%;top:14%}.rel-cb{left:42%;top:41%}.rel-dc{left:4%;top:72%}.gap-grid{grid-template-columns:1fr}.edges{opacity:.92}}
+
+.journey{display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);align-items:center;gap:12px;margin:16px 0 22px}
+.journey-card{display:flex;align-items:center;gap:13px;min-height:118px;padding:15px;border:1px solid var(--line);border-radius:14px;background:#fcfbf8}
+.ideal-card{background:#f7f5ef;border-color:#dcd5c8}
+.avatar{width:55px;height:55px;flex:none;border-radius:50%;display:grid;place-items:center;font-family:"Noto Serif SC","Songti SC",serif;font-size:22px;color:#fffefa}
+.avatar-user{background:linear-gradient(145deg,#8c9585,#6f786d)}
+.avatar-ideal{background:linear-gradient(145deg,#b5a68d,#958873)}
+.journey-copy{min-width:0}
+.kicker{display:block;font-size:9px;letter-spacing:.04em;color:#8b877d;margin-bottom:3px}
+.journey-copy h3{margin:0 0 5px;font-size:14px}
+.journey-copy p{margin:0;font-size:10px;line-height:1.6;color:#69665f}
+.small-note{font-size:9px;color:#99958c;margin-top:5px}
+.journey-arrow{font-size:24px;color:#a99b82;text-align:center}
+.compare-section,.matches{margin-top:19px}
+.section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+.section-title h3{font-size:13px;margin:0 0 4px}
+.section-title p{font-size:9px;line-height:1.55;color:var(--muted);margin:0}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+.compare-table{border-collapse:collapse;width:100%;min-width:720px;font-size:10px;line-height:1.55}
+.compare-table th,.compare-table td{padding:9px 10px;text-align:left;vertical-align:top;border-bottom:1px solid #ece9e2}
+.compare-table thead th{background:#f1eee7;color:#625e55;font-size:9px;font-weight:700}
+.compare-table tbody th{width:17%;background:#faf9f5;color:#625e55;font-size:9px;font-weight:650}
+.compare-table td{color:#514f49}
+.compare-table tbody tr:last-child th,.compare-table tbody tr:last-child td{border-bottom:0}
+.compare-table td:last-child{color:#77746c}
+.match-heading{margin-bottom:9px}
+.score-explain{padding:9px 11px;margin:0 0 10px;border-radius:8px;background:#f4f2ec;color:#77736a;font-size:9px;line-height:1.6}
+.candidate-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.candidate-card{border:1px solid var(--line);border-radius:12px;background:#fffefa;padding:12px;min-width:0}
+.candidate-details{display:grid;gap:5px;margin:9px 0 8px}
+.candidate-details p{margin:0;font-size:9px;line-height:1.6;color:#716d64}
+.candidate-details b{color:#57564f;font-weight:650}
+.candidate-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.candidate-person{display:flex;align-items:center;gap:9px;min-width:0}
+.candidate-person h4{margin:0;font-size:12px}
+.candidate-person h4 span{font-size:9px;font-weight:400;color:var(--muted);margin-left:4px}
+.candidate-avatar{width:37px;height:37px;border-radius:50%;display:grid;place-items:center;flex:none;font-family:"Noto Serif SC","Songti SC",serif;font-size:15px;color:#fffefa}
+.avatar-one{background:#8e897b}.avatar-two{background:#879186}.avatar-three{background:#9c8978}.avatar-four{background:#7b827b}.avatar-five{background:#a69a88}
+.fit{text-align:right;flex:none}
+.fit strong{display:block;font-family:"Noto Serif SC","Songti SC",serif;font-size:18px;line-height:1;color:#6f786d}
+.fit small{display:block;margin-top:4px;color:#969187;font-size:8px}
+.candidate-facts{display:flex;gap:5px;flex-wrap:wrap;margin:10px 0 8px}
+.candidate-facts span{font-size:8px;color:#706c63;padding:4px 6px;background:#f4f2ec;border-radius:99px}
+.match-reason,.match-gap{font-size:9px;line-height:1.6;color:#77746b;margin:5px 0 0}
+.match-reason b{color:#687466}.match-gap b{color:#8d806d}
+@media(max-width:620px){
+  .journey{grid-template-columns:1fr;gap:6px;margin:13px 0 18px}
+  .journey-card{min-height:94px;padding:12px}
+  .journey-arrow{transform:rotate(90deg);font-size:19px;line-height:1}
+  .candidate-grid{grid-template-columns:1fr}
+  .section-title{align-items:center}
+  .compare-table{min-width:690px}
+}
+
+.photo-hint{display:block;font-size:9px;color:#96938c;margin-top:4px}
+.avatar-user{position:relative;overflow:hidden}
+.avatar-user img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.relationship-section{margin-top:14px}
+.z-map{height:540px;position:relative;max-width:950px;margin:10px auto 0;isolation:isolate}
+.z-links{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible}
+.z-link{fill:none;stroke:#b0a48f;stroke-width:2.4;stroke-linecap:round}
+.z-links marker path{fill:#a49378}
+
+.graph-node{position:absolute;z-index:1;width:40%;min-height:112px;padding:13px;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #e7e2d9;border-radius:14px;background:#fffefa;color:var(--ink);box-shadow:0 6px 19px rgba(48,44,35,.055)}
+button.graph-node{cursor:pointer;font:inherit}
+button.graph-node:hover,.graph-node.active{border-color:#a99b82;box-shadow:0 0 0 2px #a99b8222,0 8px 22px rgba(48,44,35,.08)}
+.node-a{left:2%;top:2%}.node-b{right:2%;top:24%}.node-c{left:2%;top:51%;background:#f2f3ee;border-color:#cfd3ca}.node-d{right:2%;top:76%}
+.node-code{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;background:#eeeae1;color:#756d5d;font-family:"Noto Serif SC","Songti SC",serif;font-size:19px}
+.node-code-user{background:#dfe5dc;color:#63705e;position:relative;overflow:hidden}
+.node-code-user img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.node-copy{display:grid;gap:5px;min-width:0}
+.node-copy b{font-size:12px}
+.node-copy small{font-size:9px;line-height:1.5;color:#817d74}
+.node-open,.node-self{margin-left:auto;flex:none;color:#9a907d;font-size:16px}
+.node-self{font-size:8px;padding:5px 7px;background:#e7ebe3;border-radius:99px}
+.graph-legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;font-size:9px;color:#88847b;margin:7px 0 15px}
+.graph-legend span{display:flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:50%;background:#b1a58e}
+.user-dot{background:#7f897a}.group-dot{background:#c3bba9}
+.pool-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0 14px}
+.pool-tab{border:1px solid var(--line);border-radius:9px;padding:10px 8px;background:#faf9f5;color:#68655d;font:inherit;font-size:10px;cursor:pointer}
+.pool-tab:hover,.pool-tab.active{background:#eae7de;border-color:#c9c0af;color:#504e46}
+.comparison-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.comparison-block{min-width:0;border:1px solid var(--line);border-radius:11px;background:#fffefa;padding:11px}
+.comparison-block h4{font-size:11px;margin:2px 2px 9px}
+.compare-table{min-width:500px}
+.candidate-portrait-placeholder{height:105px;border-radius:9px;margin:-1px -1px 10px;background:linear-gradient(135deg,#eeeae1,#e7e8e1);display:grid;place-items:center;text-align:center;color:#8e897d}
+.candidate-portrait-placeholder span{display:block;font-family:"Noto Serif SC","Songti SC",serif;font-size:12px}
+.candidate-portrait-placeholder small{display:block;font-size:8px;margin-top:4px}
+.candidate-card{display:flex;flex-direction:column}
+.candidate-card .candidate-head{order:1}
+.candidate-card .candidate-portrait-placeholder{order:0}
+.candidate-card .candidate-details{order:2}
+.candidate-card .match-reason,.candidate-card .match-gap{order:3}
+.candidate-open{align-self:flex-start;order:4;margin-top:9px;border:0;border-radius:8px;background:#efede6;color:#625f56;padding:8px 10px;font:inherit;font-size:9px;cursor:pointer}
+.candidate-open:hover{background:#e5e1d7}
+.profile-home{margin-top:15px;border:1px solid var(--line);border-radius:14px;background:#fcfbf8;padding:16px;scroll-margin-top:18px}
+.profile-home[hidden]{display:none}
+.profile-home-head{display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:center}
+.profile-home .candidate-portrait-placeholder{height:215px;margin:0;border-radius:12px}
+.profile-home-title{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.profile-home-title h3{font-size:18px;margin:0 0 6px}
+.profile-home-title p{font-size:10px;color:var(--muted);margin:0;line-height:1.6}
+.profile-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.profile-tags span{background:#f0eee7;color:#706c63;border-radius:99px;padding:5px 8px;font-size:9px}
+.profile-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.profile-fact{padding:9px;border:1px solid #edeae3;border-radius:9px;background:#fffefa}
+.profile-fact b{display:block;font-size:8px;color:#918c81;margin-bottom:4px}
+.profile-fact span{font-size:10px;color:#57554e;line-height:1.5}
+.profile-intro{font-size:10px;color:#6f6b63;line-height:1.7;margin:10px 0}
+.profile-home-actions{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.profile-home-actions small{font-size:8px;color:#9b978e}
+.profile-home-actions button{border:1px solid var(--line);border-radius:8px;background:#fffefa;padding:8px 10px;color:#625f56;font:inherit;font-size:9px;cursor:pointer}
+@media(max-width:760px){
+  .comparison-pair{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .z-map{height:555px;margin-top:8px}
+  .graph-node{width:43%;min-height:92px;padding:9px;gap:7px;border-radius:11px}
+  .node-a{top:2%}.node-b{top:25%}.node-c{top:51%}.node-d{top:76%}
+  .node-code{width:31px;height:31px;font-size:15px}
+  .node-copy b{font-size:10px}.node-copy small{font-size:8px}
+  .node-open,.node-self{font-size:7px}
+  
+  .pool-tabs{gap:5px}.pool-tab{font-size:9px;padding:9px 5px}
+  .profile-home{padding:11px}
+  .profile-home-head{grid-template-columns:1fr;gap:11px}
+  .profile-home .candidate-portrait-placeholder{height:150px}
+  .profile-home-title h3{font-size:15px}
+  .profile-facts{grid-template-columns:1fr 1fr}
+}
+.compare-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.compare-tab{display:grid;gap:3px;text-align:left;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#faf9f5;color:#625f56;font:inherit;cursor:pointer}
+.compare-tab b{font-size:11px}.compare-tab small{font-size:9px;color:#89857b}
+.compare-tab.active{background:#eae7de;border-color:#c8beac;box-shadow:inset 0 0 0 1px #d9d1c2}
+.comparison-view{border:1px solid var(--line);border-radius:13px;padding:13px;background:#fffefa}
+.comparison-view[hidden]{display:none}
+.compare-summary{display:flex;align-items:center;justify-content:center;gap:13px;padding:5px 0 9px}
+.compare-person{display:flex;align-items:center;gap:7px;font-size:10px}
+.compare-person i{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#efede6;color:#726b5e;font-style:normal;font-family:"Noto Serif SC","Songti SC",serif}
+.compare-person:first-child i{background:#e4e9e0;color:#677361}
+.compare-connector{font-size:8px;color:#9a958b}
+.compare-intro{margin:0 0 10px;text-align:center;font-size:9px;line-height:1.6;color:#858177}
+.dimension-list{display:grid;gap:7px}
+.dimension-row{min-width:0;padding:9px;border:1px solid #eeece6;border-radius:9px;background:#fcfbf8}
+.dimension-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dimension-heading b{font-size:10px;color:#5f5d55}
+.dimension-heading span{font-size:8px;color:#979287}
+.dimension-values{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:7px}
+.value-box{min-width:0;padding:7px 8px;border-radius:7px;background:#f2f0ea}
+.value-box:last-child{background:#f7f5ef}
+.value-box small{display:block;font-size:8px;color:#969187;margin-bottom:4px}
+.value-box strong{display:block;font-size:9px;line-height:1.5;color:#57554e;overflow-wrap:anywhere}
+.dimension-note{margin:6px 1px 0;font-size:8px;line-height:1.5;color:#89857b}
+@media(max-width:620px){
+  .comparison-view{padding:10px}
+  .compare-tabs{gap:6px}
+  .compare-tab{padding:9px}
+  .dimension-row{padding:8px}
+  .dimension-values{gap:6px}
+  .value-box{padding:7px 6px}
+}
+.data-ribbon{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 8px}
+.data-ribbon>div{border:1px solid #e9e5dc;border-radius:11px;background:#f8f7f2;padding:12px}
+.data-ribbon b{display:block;font-family:"Noto Serif SC","Songti SC",serif;font-size:17px;color:#526051;margin-bottom:4px}
+.data-ribbon small{display:block;color:#78756d;font-size:9px;line-height:1.55}
+.data-source{font-size:9px;color:#89857c;line-height:1.65;margin:7px 2px 13px}
+.data-source a{color:#6f786c;text-decoration:underline;text-underline-offset:2px}
+.gap-callout{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 12px}
+.gap-callout span{border-radius:9px;padding:8px 10px;background:#f0eee7;color:#615e55;font-size:10px;line-height:1.45}
+.gap-callout b{color:#53614f;margin-right:4px}
+.candidate-portrait-placeholder{position:relative;overflow:hidden;background:#efeee8}
+.portrait-svg{display:block;width:100%;height:100%;min-height:100px}
+.portrait-label{position:absolute;left:8px;bottom:7px;padding:4px 7px;border-radius:99px;background:#fbfaf7dc;color:#69665d;font-size:8px;backdrop-filter:blur(4px)}
+.candidate-card .candidate-portrait-placeholder{height:142px}
+.profile-home .candidate-portrait-placeholder{height:215px}
+@media(max-width:620px){.data-ribbon{grid-template-columns:1fr}.data-ribbon>div{padding:9px 11px}.data-ribbon b{font-size:15px}.candidate-card .candidate-portrait-placeholder{height:185px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><div class="brand">择偶坐标</div><div class="tag">V2 数据说明版 · 未接入真实用户数据</div></header>
+<section class="hero">
+  <div class="eyebrow">择偶坐标 · 理想型落差测试</div>
+  <h1>把择偶期待，放进现实坐标里</h1>
+  <p>填好自己的情况和理想型，看看你与 TA 的条件差距、TA 的理想型是什么样，以及谁会把你当作理想型。<br>一张关系图，看见期待与现实的距离；每个人都不止是条件。</p>
+  <div class="steps"><span class="step"><b>01</b>填写个人资料</span><span class="step"><b>02</b>设定理想型</span><span class="step"><b>03</b>查看关系图与差距</span></div>
+</section>
+<section class="layout">
+<form class="panel form-panel" id="profileForm">
+  <div class="form-top">
+    <div><h2>填写你的情况</h2><div class="sub">先说说你是谁，再写下你希望认识什么样的人</div></div>
+    <div class="completion"><span id="completionText">完善度 0%</span><div class="meter"><span id="completionBar"></span></div></div>
+  </div>
+  <details class="form-section" open>
+    <summary><span>个人资料</span><span class="section-hint">从基本情况开始</span></summary>
+    <div class="fields">
+      <div class="row">
+        <div class="field"><label for="gender">性别</label><select id="gender"><option>女性</option><option>男性</option><option>非二元</option><option>暂不填写</option></select></div>
+        <div class="field"><label for="orientation">希望认识</label><select id="orientation"><option>男性</option><option>女性</option><option>不限</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="displayName">展示昵称</label><input id="displayName" value="顾念" placeholder="填写你希望展示的昵称"></div>
+        <div class="field"><label for="profilePhoto">个人主页照片</label><input id="profilePhoto" type="file" accept="image/*"><small class="photo-hint">仅在本机预览，不会上传或保存</small></div>
+      </div>      <div class="row three">
+        <div class="field"><label for="age">年龄</label><input id="age" data-profile-field type="number" value="29" min="18" max="99" placeholder="岁"></div>
+        <div class="field"><label for="height">身高</label><input id="height" data-profile-field type="number" value="165" min="120" max="230" placeholder="cm"></div>
+        <div class="field"><label for="weight">体重<span class="optional">可选</span></label><input id="weight" data-profile-field type="number" placeholder="kg"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="city">常住城市</label><input id="city" data-profile-field value="上海" placeholder="例如：上海"></div>
+        <div class="field"><label for="hukou">户籍 / 家乡</label><input id="hukou" placeholder="可选填写"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="education">最高学历</label><select id="education" data-profile-field><option>本科</option><option>硕士</option><option>博士</option><option>大专</option><option>高中及以下</option><option>其他</option></select></div>
+        <div class="field"><label for="marital">婚恋状态</label><select id="marital"><option>未婚</option><option>离异无子女</option><option>离异有子女</option><option>暂不填写</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="income">个人年收入</label><div class="input-suffix"><input id="income" data-profile-field type="number" value="18" min="0" step="1" aria-label="个人年收入，单位万元"><span>万元/年</span></div></div>
+        <div class="field"><label for="job">职业 / 行业</label><input id="job" data-profile-field value="UX 设计师" placeholder="例如：教师、产品经理"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="stability">工作状态</label><select id="stability"><option>稳定在职</option><option>发展中</option><option>自由职业</option><option>创业</option><option>求职 / 暂未工作</option></select></div>
+        <div class="field"><label for="appearance">外貌自评<span class="optional">非必填</span></label><select id="appearance"><option>暂不评价</option><option>偏普通</option><option>中等</option><option>中上</option><option>比较出众</option></select></div>
+      </div>
+    </div>
+  </details>
+  <details class="form-section">
+    <summary><span>家庭情况</span><span class="section-hint">可选择暂不填写</span></summary>
+    <div class="fields">
+      <div class="row">
+        <div class="field"><label for="siblings">兄弟姐妹</label><select id="siblings"><option>独生子女</option><option>有兄弟姐妹，彼此独立</option><option>有兄弟姐妹，仍有家庭责任</option><option>暂不填写</option></select></div>
+        <div class="field"><label for="familyOrigin">家庭成长环境</label><select id="familyOrigin"><option>城市</option><option>县城 / 小城镇</option><option>农村</option><option>暂不填写</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="parentsIncome">父母养老保障</label><select id="parentsIncome"><option>有养老金 / 社保</option><option>部分有保障</option><option>主要由子女承担</option><option>不清楚 / 不填写</option></select></div>
+        <div class="field"><label for="parentsHealth">父母健康与照护</label><select id="parentsHealth"><option>目前无明显照护需求</option><option>未来可能需要照护</option><option>已有照护责任</option><option>不填写</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="housing">本人住房</label><select id="housing"><option>租房，暂无房产</option><option>有房有贷款</option><option>有房无贷款</option><option>无房，计划购房</option><option>无房，暂不计划购房</option></select></div>
+        <div class="field"><label for="savings">个人存款 / 负债</label><select id="savings"><option>有储蓄，无明显负债</option><option>有储蓄及贷款</option><option>储蓄较少</option><option>暂不填写</option></select></div>
+      </div>
+      <div class="field"><label for="familySupport">家庭可能提供的支持</label><select id="familySupport"><option>主要靠自己规划</option><option>可提供一定协助</option><option>可支持部分住房 / 婚育开支</option><option>暂不确定 / 不填写</option></select></div>
+      <div class="field"><label for="familyNotes">家庭情况补充<span class="optional">可选，避免填写具体姓名与账号</span></label><textarea id="familyNotes" placeholder="例如：父母工作与退休情况、家庭成员是否独立、对婚后城市的想法"></textarea></div>
+    </div>
+  </details>
+  <details class="form-section">
+    <summary><span>生活方式与相处期待</span><span class="section-hint">了解日常与未来安排</span></summary>
+    <div class="fields">
+      <div class="row">
+        <div class="field"><label for="smoking">烟酒与其他习惯</label><select id="smoking"><option>不吸烟，少量饮酒</option><option>不吸烟不饮酒</option><option>吸烟 / 经常饮酒</option><option>暂不填写</option></select></div>
+        <div class="field"><label for="children">对生育的想法</label><select id="children"><option>希望有孩子</option><option>暂不确定</option><option>不计划生育</option><option>暂不填写</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="marriageTime">结婚时间预期</label><select id="marriageTime"><option>1–2 年内</option><option>3–5 年内</option><option>先相处再决定</option><option>暂无计划</option></select></div>
+        <div class="field"><label for="settlement">未来定居</label><select id="settlement"><option>希望留在当前城市</option><option>可接受换城市</option><option>希望回家乡</option><option>暂不确定</option></select></div>
+      </div>
+      <div class="field"><label for="relationshipStyle">相处与冲突处理</label><select id="relationshipStyle"><option>愿意沟通，当天解决</option><option>需要冷静后再沟通</option><option>更看重独立空间</option><option>暂不确定</option></select></div>
+      <div class="field"><label for="hobbies">兴趣与日常节奏<span class="optional">可选</span></label><input id="hobbies" placeholder="例如：运动、旅行、做饭、宠物、工作作息"></div>
+    </div>
+  </details>
+  <details class="form-section" open>
+    <summary><span>你期待的理想型</span><span class="section-hint">分清底线、偏好和弹性</span></summary>
+    <div class="preferences">
+      <p class="section-hint pref-guidance">可以标记“必须、重要、灵活”。下面是演示设定，你可以按自己的想法修改。</p>
+      <div class="pref-row"><span>年龄</span><input id="prefAge" value="28–35 岁" aria-label="理想伴侣年龄"><select aria-label="年龄偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>身高</span><input id="prefHeight" 175 cm 以上，可商量 aria-label="理想伴侣身高"><select aria-label="身高偏好权重"><option>必须</option><option>重要</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>学历 / 职业</span><input id="prefEducation" 本科及以上 · 工作相对稳定 aria-label="理想伴侣学历职业"><select aria-label="学历职业偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>定居城市</span><input id="prefCity" 上海工作生活，愿意长期定居 aria-label="理想伴侣定居城市"><select aria-label="城市偏好权重"><option>必须</option><option>重要</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>收入与住房</span><input id="prefIncome" 年收入约 25 万以上 · 住房规划清楚 aria-label="理想伴侣收入住房"><select aria-label="收入住房偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>家庭观念</span><input id="prefFamily" value="父母养老有保障 · 家庭边界清晰" aria-label="理想伴侣家庭观念"><select aria-label="家庭观念偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>沟通与情绪</span><input id="prefCommunication" value="稳定、坦诚、愿意沟通" aria-label="理想伴侣性格偏好"><select aria-label="性格偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+      <div class="pref-row"><span>生活与婚育</span><input id="prefLifestyle" value="作息相近 · 对未来有共识" aria-label="理想伴侣生活方式"><select aria-label="生活方式偏好权重"><option>重要</option><option>必须</option><option>灵活</option></select></div>
+    </div>
+  </details>
+  <button class="btn" type="submit">生成我的择偶坐标</button>
+  <div class="privacy">此页面仅在本机浏览器内更新预览，不会上传或保存资料。真实服务上线前，应逐项征得用户同意。</div>
+  <div class="toast" id="toast">你的关系图已更新。人物和分数为模拟资料。</div>
+</form>
+<section class="panel result">
+  <div class="reshead">
+    <div><h2><span id="reportCity">上海</span> · 你的择偶坐标</h2><div class="res-sub"><span id="reportName">顾念</span> · 示例用户 C · <span id="reportAge">29</span> 岁</div></div>
+    <span class="pill">示例数据</span>
+  </div>
+  <div class="notice"><strong>演示资料</strong> 人物与数字均为模拟示例。点击 A、B、D，可查看各自的五份档案。</div>
+<div class="data-ribbon" aria-label="公开统计口径参考"><div><b>¥5.11 万</b><small>2025 年城镇居民人均可支配收入中位数 / 人 / 年</small></div><div><b>¥7.16 万</b><small>2025 年城镇私营单位就业人员平均工资 / 年</small></div><div><b>¥12.94 万</b><small>2025 年城镇非私营单位就业人员平均工资 / 年</small></div></div>
+<p class="data-source">这三个数字统计口径不同，均不能直接当作“适婚个人收入分布”：前者是居民人均收入，后两者是单位就业人员税前平均工资。此处只作背景参照，人物档案为设计示例。来源：<a href="https://www.stats.gov.cn/sj/zxfbhjd/202601/t20260119_1962321.html" target="_blank" rel="noreferrer">国家统计局居民收入</a>、<a href="https://www.stats.gov.cn/sj/zxfb/202605/t20260515_1963707.html" target="_blank" rel="noreferrer">国家统计局城镇单位工资</a>。</p>
+  <section class="relationship-section">
+    <div class="section-title"><div><h3>你的理想型关系图</h3><p>沿着 Z 字路径看：你喜欢谁、那个人喜欢谁，以及谁会喜欢你这样的你。</p></div><span class="pill">点开 A / B / D</span></div>
+    <div class="z-map" aria-label="A、B、C、D择偶关系图">
+      <svg class="z-links" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true">
+        <defs><marker id="zArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10 z"></path></marker></defs>
+        <path class="z-link" d="M650 190 C535 128 455 105 350 92" marker-end="url(#zArrow)"></path>
+        <path class="z-link" d="M350 355 C465 305 550 238 650 215" marker-end="url(#zArrow)"></path>
+        <path class="z-link" d="M650 470 C530 446 445 406 350 385" marker-end="url(#zArrow)"></path>
+        
+      </svg>
+      <button class="graph-node node-a" type="button" data-pool="A">
+        <span class="node-code">A</span><span class="node-copy"><b>B 的理想型</b><small>31 岁 · 169 cm · 产品负责人 · 42 万/年</small></span><span class="node-open">↗</span>
+      </button>
+      <button class="graph-node node-b" type="button" data-pool="B">
+        <span class="node-code">B</span><span class="node-copy"><b>C 的理想型</b><small id="graphBShort">33 岁 · 178 cm · 软件公司产品经理 · 32 万/年</small></span><span class="node-open">↗</span>
+      </button>
+      <article class="graph-node node-c">
+        <span class="node-code node-code-user"><span id="graphCInitial">C</span><img id="graphCPhoto" alt="C 的个人照片" hidden></span><span class="node-copy"><b><span id="graphCName">顾念</span> · 你本人</b><small id="graphCShort">29 岁 · 女性 · 上海 · UX 设计师</small></span><span class="node-self">你的资料</span>
+      </article>
+      <button class="graph-node node-d" type="button" data-pool="D">
+        <span class="node-code">D</span><span class="node-copy"><b>把 C 当理想型的人</b><small>31 岁 · 174 cm · 本科 · 20 万/年</small></span><span class="node-open">↗</span>
+      </button>
+    </div>
+    <div class="graph-legend"><span><i class="legend-dot"></i>理想型（A / B）</span><span><i class="legend-dot user-dot"></i>你本人（C）</span><span><i class="legend-dot group-dot"></i>想认识 C 的人（D）</span></div>
+    <div class="pool-tabs" role="tablist" aria-label="查看关系图中的人物资料">
+      <button type="button" class="pool-tab" data-pool="A" role="tab">A · B 的理想型</button>
+      <button type="button" class="pool-tab active" data-pool="B" role="tab" aria-selected="true">B · 你的理想型</button>
+      <button type="button" class="pool-tab" data-pool="D" role="tab">D · 想认识你的人</button>
+    </div>
+  </section>
+  <section class="compare-section">
+    <div class="section-title"><div><h3>理想与现实，差在哪？</h3><p>逐项对照 C 和 A、B 和 D 的资料，手机上也能直接阅读。</p></div><span class="pill">条件对照</span></div>
+    <div class="compare-tabs" role="tablist" aria-label="选择要对照的关系">
+      <button class="compare-tab active" type="button" data-comparison="CA" role="tab" aria-selected="true"><b>C ↔ A</b><small>你本人 · B 的理想型</small></button>
+      <button class="compare-tab" type="button" data-comparison="BD" role="tab" aria-selected="false"><b>B ↔ D</b><small>C 的理想型 · 把 C 当理想型的人</small></button>
+    </div>
+    <article class="comparison-view" id="comparisonCA">
+      <div class="compare-summary"><span class="compare-person"><i>C</i><b>你本人</b></span><span class="compare-connector">对照</span><span class="compare-person"><i>A</i><b>B 的理想型</b></span></div>
+      <p class="compare-intro">逐项看你和 A 的资料差别。本例中 A 的学历、工作、收入和住房条件都高于 C；这是为展示期待差距而设定的虚构案例，不代表所有人的理想型都比本人条件高。</p><div class="gap-callout" id="caGapCallout"><span><b>收入对照</b><span id="caIncomeRatio">本例 A 年收入约为 C 的 2.3 倍</span></span><span><b>差距集中在</b>学历、职业发展、住房条件</span></div>
+      <div class="dimension-list">
+      <div class="dimension-row"><div class="dimension-heading"><b>年龄</b><span>具体年龄</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caAgeC">29 岁</strong></div><div class="value-box"><small>A · 周予宁</small><strong>31 岁</strong></div></div><p class="dimension-note">用具体人物展示差别；实际偏好由每个人自己决定。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>身高</b><span>身高偏好</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caHeightC">165 cm</strong></div><div class="value-box"><small>A · 周予宁</small><strong>169 cm</strong></div></div><p class="dimension-note">身高只是个人资料的一项，不代表人的价值。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>城市</b><span>常住与定居</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caCityC">上海</strong></div><div class="value-box"><small>A · 周予宁</small><strong>上海定居</strong></div></div><p class="dimension-note">城市相同，认识机会和未来安排更容易讨论。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>学历与职业</b><span>学习与工作</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caWorkC">硕士 · UX 设计师</strong></div><div class="value-box"><small>A · 周予宁</small><strong>复旦硕士 · 消费互联网产品负责人</strong></div></div><p class="dimension-note">教育经历和职业路径不同，日常节奏与未来规划也值得了解。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>个人年收入</b><span>收入差异</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caIncomeC">32 万/年</strong></div><div class="value-box"><small>A · 周予宁</small><strong>约 42 万/年</strong></div></div><p class="dimension-note">收入可帮助说明生活安排；统计口径和收入稳定性仍需核实。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>住房与家庭</b><span>住房和家庭情况</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caFamilyC">有房无贷款 · 家庭支持</strong></div><div class="value-box"><small>A · 周予宁</small><strong>上海有房有贷 · 余贷约 180 万；父母有社保</strong></div></div><p class="dimension-note">住房、贷款、父母养老和照护责任分开了解。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>相处与计划</b><span>相处与未来</span></div><div class="dimension-values"><div class="value-box"><small>C · 你</small><strong id="caStyleC">愿意沟通 · 希望有孩子</strong></div><div class="value-box"><small>A · 周予宁</small><strong>沟通直接 · 1–2 年内结婚，生育可商量</strong></div></div><p class="dimension-note">这些内容适合在实际相处中慢慢确认。</p></div>
+      </div>
+    </article>
+    <article class="comparison-view" id="comparisonBD" hidden>
+      <div class="compare-summary"><span class="compare-person"><i>B</i><b>C 的理想型</b></span><span class="compare-connector">对照</span><span class="compare-person"><i>D</i><b>把 C 当理想型的人</b></span></div>
+      <p class="compare-intro">本例中 B 的收入、学历与住房条件高于 D；D 也有稳定工作和清晰的生活安排。条件差距不等于关系结果，两位均为虚构示例。</p><div class="gap-callout"><span><b>收入对照</b>B 比 D 高约 12 万 / 年</span><span><b>差距集中在</b>学历、住房贷款与职业路径</span></div>
+      <div class="dimension-list">
+        <div class="dimension-row"><div class="dimension-heading"><b>年龄</b><span>具体人物</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>33 岁</strong></div><div class="value-box"><small>D · 陈昊</small><strong>31 岁</strong></div></div><p class="dimension-note">用具体虚构人物呈现示例，不把样例当作市场分布。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>身高</b><span>身高差异</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>178 cm</strong></div><div class="value-box"><small>D · 陈昊</small><strong>174 cm</strong></div></div><p class="dimension-note">这组样例中 B 比 D 高 4 cm；身高只是资料的一项。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>城市</b><span>常住与定居</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>上海定居</strong></div><div class="value-box"><small>D · 陈昊</small><strong>上海常住</strong></div></div><p class="dimension-note">两人城市相同，收入和住房差距较大。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>学历与工作</b><span>学历与职业</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>同济硕士 · 软件公司产品经理</strong></div><div class="value-box"><small>D · 陈昊</small><strong>本科 · 国企制造业质量工程师</strong></div></div><p class="dimension-note">学历和工作情况可以说明职业经历，不替代对性格与相处的了解。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>个人年收入</b><span>收入差异</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>约 32 万/年</strong></div><div class="value-box"><small>D · 陈昊</small><strong>约 20 万/年</strong></div></div><p class="dimension-note">这组示例的收入差距较大；数字只描述经济情况，不给人排名。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>住房与家庭</b><span>住房和家庭情况</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>上海有房有贷 · 余贷约 250 万</strong></div><div class="value-box"><small>D · 陈昊</small><strong>上海租房 · 存首付约 40 万</strong></div></div><p class="dimension-note">住房、贷款、父母保障、兄弟姐妹和照护安排分别说明。</p></div>
+        <div class="dimension-row"><div class="dimension-heading"><b>相处与婚育</b><span>长期共识</span></div><div class="dimension-values"><div class="value-box"><small>B · 周启明</small><strong>愿意沟通 · 1–2 年内结婚 · 希望有孩子</strong></div><div class="value-box"><small>D · 陈昊</small><strong>耐心倾听 · 先相处再定婚期</strong></div></div><p class="dimension-note">两人目标相近，仍需实际相处确认沟通方式与家庭安排。</p></div>
+      </div>
+    </article>
+  </section>  <section class="matches" id="poolSection">
+    <div class="section-title match-heading"><div><h3 id="poolTitle">B · 最贴近你期待的五份示例资料</h3><p id="poolDescription">以下人物均为模拟示例；点开可看完整个人介绍。</p></div><span class="pill" id="poolBadge">模拟人物</span></div>
+    <div class="score-explain" id="poolScoreExplain">“条件接近度”是虚构档案的固定演示值，不是按用户输入计算出的真实匹配概率，也不代表相互喜欢或关系结果。</div>
+    <div class="candidate-grid" id="candidateGrid"></div>
+    <section class="profile-home" id="profileHome" hidden aria-live="polite"></section>
+  </section>
+  <div class="report-note"><strong>演示边界：</strong>A、B、D 的十五份档案、照片插画和条件接近度均为虚构，不是数据库匹配，也不是相互喜欢的概率。A 相比 C 的差距被刻意设置得更明显；上线后只能根据取得授权的真实样本，按城市、年龄、性别和资料来源展示分布，不能把主动发帖者当作全城代表。</div>
+  <div class="foot">这里展示的是条件差异，不是对人的排名。真实资料应在用户同意后再用于分析；理想型也可能在不同方面各有所长。</div>
+</section>
+</section>
+</main>
+<script>
+(function(){
+  const form=document.getElementById("profileForm");
+  const tracked=Array.from(form.querySelectorAll("[data-profile-field]"));
+  const pools={
+    A:[
+      {name:"周予宁",gender:"女性",age:31,height:"169 cm",city:"上海",education:"复旦硕士",job:"消费互联网产品负责人",income:"约 42 万/年",housing:"上海有房，余贷约 180 万",family:"有姐姐且经济独立；父母有社保；家庭能提供有限支持",relationship:"不吸烟；表达直接，愿意商量分歧",plan:"希望 1–2 年内结婚，生育可商量",hobbies:"普拉提、看展、做饭",fit:95,reason:"示例中学历、工作发展、收入与住房安排均明显高于 C。",gap:"工作节奏较快，家庭支持与购房贷款仍需逐项了解。",lookingFor:"偏好有稳定职业规划、情绪成熟、愿意沟通的伴侣。",intro:"在消费互联网做产品管理，工作忙但会提前安排生活，重视平等沟通。"},
+      {name:"林安然",gender:"女性",age:32,height:"167 cm",city:"上海",education:"华东师大硕士",job:"三甲医院药师",income:"约 36 万/年",housing:"与家人共同持有住房，仍有贷款",family:"有哥哥且各自独立；父母有基础养老保障",relationship:"不吸烟；做决定谨慎，遇到矛盾愿意复盘",plan:"先稳定交往，再讨论婚期",hobbies:"游泳、阅读、短途旅行",fit:90,reason:"学历、职业稳定性和家庭保障与 B 的偏好较接近。",gap:"轮班安排和共同持有住房的具体情况需要确认。",lookingFor:"希望伴侣诚恳可靠，能共同分担家务与家庭责任。",intro:"工作需要轮班，平时喜欢游泳和安静阅读，重视稳定的日常。"},
+      {name:"沈知遥",gender:"女性",age:30,height:"168 cm",city:"上海",education:"上海大学本科",job:"品牌营销经理",income:"约 33 万/年",housing:"租房，有持续储蓄计划",family:"独生女；父母有社保，暂无明显照护需求",relationship:"不吸烟；外向，愿意当面沟通",plan:"希望 2–3 年内结婚，生育态度开放",hobbies:"徒步、摄影、音乐节",fit:86,reason:"工作稳定、城市规划清晰，收入与职业状态达到示例偏好。",gap:"住房计划与消费习惯需要进一步沟通。",lookingFor:"偏好有责任感、能尊重彼此职业安排的伴侣。",intro:"从事品牌营销，喜欢户外和摄影，想在上海长期发展。"},
+      {name:"赵书言",gender:"女性",age:33,height:"166 cm",city:"上海",education:"上海师范大学硕士",job:"公办学校教师",income:"约 29 万/年",housing:"上海有房有贷，余贷约 210 万",family:"有弟弟但经济独立；父母有养老金",relationship:"不吸烟少量饮酒；慢热，沟通稳定",plan:"愿意结婚，生育计划希望共同决定",hobbies:"羽毛球、园艺、读书",fit:81,reason:"职业稳定、住房安排明确，生活节奏可能与 B 合拍。",gap:"年龄偏好与兴趣相似度不是完全一致。",lookingFor:"希望找到踏实温和、愿意共同规划家庭的伴侣。",intro:"在学校任教，工作规律，周末喜欢运动与照料植物。"},
+      {name:"丁禾",gender:"女性",age:29,height:"170 cm",city:"上海",education:"东华大学本科",job:"人力资源业务伙伴",income:"约 26 万/年",housing:"租房，个人存款约 35 万",family:"有妹妹且经济独立；父母养老安排基本稳定",relationship:"不吸烟；重视边界，也愿意主动表达",plan:"先认真交往，婚期可商量",hobbies:"瑜伽、烘焙、城市漫步",fit:77,reason:"年龄、城市和独立生活方式与 B 的偏好接近。",gap:"收入与住房条件比示例 A 弱，职业发展仍在上升期。",lookingFor:"希望伴侣有责任心、尊重工作，也愿意经营生活。",intro:"在人力资源岗位工作，喜欢烘焙和城市散步，生活独立。"}
+    ],
+    B:[
+      {name:"周启明",gender:"男性",age:33,height:"178 cm",city:"上海",education:"同济大学硕士",job:"软件公司产品经理",income:"约 32 万/年",housing:"上海有房有贷，余贷约 250 万",family:"独生子女；父母有社保，暂时没有照护需求",relationship:"不吸烟；愿意沟通，冲突时会先冷静再讨论",plan:"希望 1–2 年内结婚，希望有孩子",hobbies:"跑步、做饭、看电影",fit:94,reason:"年龄、城市、身高、学历和稳定职业与 C 填写的重点较接近。",gap:"工作忙时需要提前安排相处时间；住房仍有贷款。",lookingFor:"偏好 28–32 岁、上海长期生活、经济独立、沟通坦诚的女性。",intro:"在软件公司负责产品规划，生活以工作日常为主，喜欢跑步和做饭。"},
+      {name:"许航",gender:"男性",age:32,height:"180 cm",city:"上海",education:"上海理工大学本科",job:"智能制造项目工程师",income:"约 29 万/年",housing:"上海有房有贷，余贷约 190 万",family:"有姐姐且各自独立；父母有养老金",relationship:"不吸烟；性格温和，愿意讨论现实安排",plan:"希望两年左右结婚，生育可商量",hobbies:"骑行、篮球、露营",fit:89,reason:"城市、身高、工作稳定性与 C 的设定相符，住房计划清楚。",gap:"学历和收入低于 B 示例，工作偶尔需要出差。",lookingFor:"喜欢情绪稳定、能独立生活、愿意分享日常的伴侣。",intro:"在智能制造行业做项目工程，周末常去骑行或打球。"},
+      {name:"唐昱",gender:"男性",age:30,height:"176 cm",city:"上海",education:"上海大学硕士",job:"医疗器械研发工程师",income:"约 27 万/年",housing:"目前租房，首付储蓄约 45 万",family:"有弟弟且彼此独立；父母有基本社保",relationship:"不吸烟不饮酒；慢热但愿意认真沟通",plan:"先相处磨合，婚期可讨论",hobbies:"游泳、桌游、做饭",fit:85,reason:"学历、城市与生活习惯有较多重合，经济独立。",gap:"住房仍在储蓄阶段，收入与身高略低于 C 的理想设定。",lookingFor:"偏好有稳定工作、尊重个人空间且愿意沟通的女性。",intro:"从事医疗器械研发，喜欢游泳和做饭，打算继续留在上海。"},
+      {name:"何嘉树",gender:"男性",age:34,height:"181 cm",city:"上海",education:"上海应用技术大学本科",job:"物流企业运营主管",income:"约 23 万/年",housing:"租房，存款约 55 万，考虑购房",family:"有弟弟；父母有社保，未来可能需要照护",relationship:"不吸烟；务实，发生分歧时需要时间整理",plan:"希望近几年结婚，生育意愿明确",hobbies:"足球、烹饪、周边游",fit:80,reason:"身高、年龄和城市匹配，工作收入稳定。",gap:"学历、住房计划和家庭照护安排与 C 的偏好有差距。",lookingFor:"想找性格平和、愿意一起安排生活的伴侣。",intro:"在物流行业负责运营，生活节奏规律，重视家庭和运动。"},
+      {name:"邵远",gender:"男性",age:31,height:"177 cm",city:"上海",education:"华东政法大学本科",job:"企业法务专员",income:"约 21 万/年",housing:"与家人同住，准备独立购房",family:"独生子女；父母有养老金，愿意为婚房提供部分支持",relationship:"不吸烟；谨慎、尊重边界，愿意倾听",plan:"希望稳定交往后结婚，婚期可协商",hobbies:"羽毛球、播客、博物馆",fit:76,reason:"身高、城市和沟通风格较合适，家庭支持边界明确。",gap:"收入和个人住房独立性比 C 的预期低。",lookingFor:"欣赏认真工作、生活独立、有同理心的女性。",intro:"做企业法务，工作稳定，空闲时打羽毛球和逛博物馆。"}
+    ],
+    D:[
+      {name:"陈昊",gender:"男性",age:31,height:"174 cm",city:"上海",education:"本科",job:"国企制造业质量工程师",income:"约 20 万/年",housing:"上海租房，首付储蓄约 40 万",family:"有姐姐且经济独立；父母有社保",relationship:"不吸烟；耐心倾听，表达比较直接",plan:"认真交往后再定婚期，生育可商量",hobbies:"羽毛球、咖啡、做饭",fit:92,reason:"他看重上海长期生活、工作独立和沟通意愿，C 符合其方向。",gap:"收入与住房条件低于 C 的理想型 B。",lookingFor:"偏好 27–31 岁、上海工作、能独立生活且愿意沟通的女性。",intro:"在制造业做质量工程，工作稳定，周末喜欢运动和做饭。"},
+      {name:"刘凯",gender:"男性",age:32,height:"176 cm",city:"上海",education:"本科",job:"公用事业单位技术员",income:"约 22 万/年",housing:"与家人同住，有独立购房计划",family:"独生子女；父母退休，有一定家庭支持",relationship:"不吸烟；慢热、重承诺，愿意沟通",plan:"希望 2 年内结婚，生育可协商",hobbies:"游泳、观影、徒步",fit:88,reason:"稳定工作、上海生活和家庭安排与 C 的生活目标有重合。",gap:"目前住房独立性不足，生活节奏偏规律。",lookingFor:"欣赏有主见、经济独立、愿意共同规划未来的女性。",intro:"在公用事业单位做技术工作，生活规律，喜欢徒步和游泳。"},
+      {name:"蒋晨",gender:"男性",age:30,height:"172 cm",city:"上海",education:"大专",job:"连锁餐饮门店经理",income:"约 24 万/年",housing:"租房，有约 25 万储蓄",family:"有弟弟；父母社保不完整，未来可能承担部分照护",relationship:"不吸烟；热情外向，争执时容易急于解释",plan:"想结婚，生育态度开放",hobbies:"篮球、探店、短途旅行",fit:84,reason:"城市、收入和婚恋意愿与 C 的部分要求相近。",gap:"学历、身高与父母照护安排可能需要更多讨论。",lookingFor:"喜欢坦诚直接、愿意一起体验生活的伴侣。",intro:"负责餐饮门店运营，工作时间不固定，但愿意为关系调整安排。"},
+      {name:"方铭",gender:"男性",age:33,height:"175 cm",city:"上海",education:"本科",job:"物流调度主管",income:"约 19 万/年",housing:"租房，暂无购房计划",family:"有兄弟姐妹且各自独立；父母有基础社保",relationship:"不吸烟；安静务实，需要熟悉后更主动",plan:"希望稳定交往，婚期暂不设限",hobbies:"看球、骑行、烹饪",fit:80,reason:"工作与生活稳定，重视互相支持和家庭边界。",gap:"住房目标与 C 的理想型要求不完全一致。",lookingFor:"希望认识能平等沟通、看重日常陪伴的女性。",intro:"在物流企业工作，平时喜欢骑行和做家常菜。"},
+      {name:"孙旭",gender:"男性",age:29,height:"173 cm",city:"上海",education:"本科",job:"公立医院行政",income:"约 25 万/年",housing:"上海有房有贷，余贷约 230 万",family:"有妹妹且已独立；父母有社保，暂无照护需求",relationship:"不吸烟；性格温和，遇到问题习惯先听",plan:"希望 1–3 年内结婚，生育可共同决定",hobbies:"网球、阅读、旅行",fit:77,reason:"年龄、工作稳定性与家庭保障符合 C 的一部分择偶方向。",gap:"收入和身高与示例 B 有距离，工作发展空间不同。",lookingFor:"欣赏有独立想法、愿意认真相处的女性。",intro:"在医院行政岗位工作，生活稳定，喜欢网球和阅读。"}
+    ]
+  };
+  const poolMeta={
+    A:{title:"A · B 的理想型：五份虚构档案",desc:"示例画像包含收入、住房、家庭安排与职业经历。",score:"与 A 条件的演示接近度"},
+    B:{title:"B · 你的理想型：五份虚构档案",desc:"首位周启明对应关系图中的 B；分值为固定演示值。",score:"与你条件的演示接近度"},
+    D:{title:"D · 想认识 C 的五份虚构档案",desc:"首位陈昊对应关系图中的 D；其余资料同样为产品原型。",score:"与 C 条件的演示接近度"}
+  };
+  function value(id){const node=document.getElementById(id);return node?String(node.value||"").trim():"";}
+  function updateCompletion(){
+    const filled=tracked.filter(function(el){return String(el.value||"").trim()!=="";}).length;
+    const percent=tracked.length?Math.round(filled/tracked.length*100):0;
+    document.getElementById("completionText").textContent="资料填写进度 "+percent+"%";
+    document.getElementById("completionBar").style.width=percent+"%";
+  }
+  function updateReport(){
+    const age=value("age")||"未填写", city=value("city")||"未填写", height=value("height")||"未填写";
+    const income=value("income")||"未填写", job=value("job")||"职业未填写", education=value("education")||"未填写";
+    const name=value("displayName")||"你本人", gender=value("gender")||"暂不填写";
+    const orientation=value("orientation")||"不限", housing=value("housing")||"未填写";
+    const family=value("siblings")+"；父母养老："+value("parentsIncome")+"；家庭支持："+value("familySupport");
+    const marital=value("marital")||"未填写", children=value("children")||"未填写";
+    const smoking=value("smoking")||"未填写", relationship=value("relationshipStyle")||"未填写";
+    const hobbies=value("hobbies")||"未填写", marriage=value("marriageTime")||"未填写";
+    const settlement=value("settlement")||"未填写", prefAge=value("prefAge")||"未填写";
+    const prefHeight=value("prefHeight")||"未填写", prefEdu=value("prefEducation")||"未填写";
+    const prefIncome=value("prefIncome")||"未填写", prefCity=value("prefCity")||"未填写";
+    const prefFamily=value("prefFamily")||"未填写", prefComm=value("prefCommunication")||"未填写";
+    const prefLife=value("prefLifestyle")||"未填写";
+    document.getElementById("reportCity").textContent=city;
+    document.getElementById("reportAge").textContent=age;
+    document.getElementById("reportName").textContent=name;
+
+    document.getElementById("graphCName").textContent=name;
+
+    document.getElementById("graphCShort").textContent=age+" 岁 · "+height+" cm · "+city+" · "+(income==="未填写"?income:income+" 万/年");
+    document.getElementById("graphBShort").textContent="33 岁 · 178 cm · 软件公司产品经理 · 32 万/年";
+
+    document.getElementById("caAgeC").textContent=age+" 岁";
+    document.getElementById("caHeightC").textContent=height==="未填写"?height:height+" cm";
+    document.getElementById("caCityC").textContent=city;
+    document.getElementById("caWorkC").textContent=education+" · "+job;
+    document.getElementById("caIncomeC").textContent=income==="未填写"?income:income+" 万/年";
+    document.getElementById("caFamilyC").textContent=housing+" · "+family;
+    document.getElementById("caStyleC").textContent=relationship+" · "+children+" · "+marriage;
+    const cIncome=Number(value("income"))||18;
+    document.getElementById("caIncomeRatio").textContent="本例 A 年收入约为 C 的 "+(42/cIncome).toFixed(1)+" 倍";
+
+    updateCompletion();
+  }
+  function portraitMarkup(person,index){
+    const palettes=[{bg:"#d8dfd5",coat:"#657467",skin:"#e9c6aa",hair:"#403b38"},{bg:"#e7ded0",coat:"#82715d",skin:"#f0d2b7",hair:"#4b3931"},{bg:"#dfe4e2",coat:"#5e7776",skin:"#e6bea2",hair:"#393532"},{bg:"#e8dfdc",coat:"#876e72",skin:"#efcbb1",hair:"#4a3b35"},{bg:"#e7e4d8",coat:"#77765f",skin:"#e4bd9e",hair:"#353230"}];
+    const seed=Array.from(person.name).reduce(function(sum,ch){return sum+ch.charCodeAt(0)},index)%palettes.length;
+    const p=palettes[seed],female=person.gender==="女性";
+    const hairShape=female?'<path d="M27 63c-3-25 10-41 33-41 25 0 37 17 33 43l-7 34-13-7-4-38-16-8-17 12-3 39-13 7z" fill="'+p.hair+'"/>':'<path d="M30 49c1-22 12-31 31-31 21 0 32 14 29 35l-12-9-5-11-15 7-15 1-13 9z" fill="'+p.hair+'"/>';
+    const topHair=female?'<path d="M31 50c1-21 13-33 30-33 22 0 34 16 29 39-6-7-11-16-12-24-10 11-26 18-47 18z" fill="'+p.hair+'"/>':'<path d="M30 48c2-21 14-31 31-31 18 0 30 12 30 31-12-3-22-9-28-18-7 9-17 15-33 18z" fill="'+p.hair+'"/>';
+    return '<svg class="portrait-svg" viewBox="0 0 120 140" role="img" aria-label="'+person.name+' 的虚构插画头像"><rect width="120" height="140" fill="'+p.bg+'"/><circle cx="96" cy="25" r="12" fill="#f7f4ec" opacity=".75"/><path d="M9 140c5-27 22-39 51-39s46 12 51 39" fill="'+p.coat+'"/><path d="M47 91h26v18H47z" fill="'+p.skin+'"/><path d="M35 58c0-22 10-34 25-34 17 0 27 12 27 34 0 21-12 35-27 35S35 79 35 58z" fill="'+p.skin+'"/>'+hairShape+'<path d="M44 58q6-5 12 0M66 58q6-5 12 0" fill="none" stroke="#4a413b" stroke-width="2" stroke-linecap="round"/><circle cx="51" cy="62" r="1.7" fill="#36312e"/><circle cx="72" cy="62" r="1.7" fill="#36312e"/><path d="M55 76q7 5 14 0" fill="none" stroke="#9c6258" stroke-width="2" stroke-linecap="round"/>'+topHair+'</svg><span class="portrait-label">虚构画像 · 插画示意</span>';
+  }  function renderPool(key){
+    if(!poolMeta[key])return;
+    document.querySelectorAll("[data-pool]").forEach(function(button){
+      const active=button.dataset.pool===key;
+      button.classList.toggle("active",active);
+      if(button.getAttribute("role")==="tab")button.setAttribute("aria-selected",active?"true":"false");
+    });
+    const meta=poolMeta[key];
+    document.getElementById("poolTitle").textContent=meta.title;
+    const currentPreference="根据你填写的偏好整理（人物资料与分值仍为虚构演示）："+(value("prefAge")||"未填写")+" · "+(value("prefHeight")||"未填写")+" · "+(value("prefEducation")||"未填写")+" · "+(value("prefIncome")||"未填写")+" · "+(value("prefCity")||"未填写")+"。下方人物为固定模拟示例。";
+    document.getElementById("poolDescription").textContent=key==="B"?currentPreference:meta.desc;
+    document.getElementById("poolBadge").textContent="模拟人物";
+    document.getElementById("poolScoreExplain").textContent="“"+meta.score+"”只用于演示如何解释资料差异；当前分值为固定虚构值，未由真实用户资料计算，不代表互相喜欢的概率。";
+    const grid=document.getElementById("candidateGrid");
+    grid.innerHTML=pools[key].map(function(person,index){
+      return '<article class="candidate-card"><div class="candidate-portrait-placeholder">'+portraitMarkup(person,index)+'</div><div class="candidate-head"><div class="candidate-person"><div><span class="kicker">示例人物 '+String(index+1).padStart(2,"0")+'</span><h4>'+person.name+' <span>'+person.age+' 岁 · '+person.gender+'</span></h4></div></div><div class="fit"><strong>'+person.fit+'%</strong><small>'+meta.score+'</small></div></div><div class="candidate-details"><p><b>基本情况</b> '+person.height+' · '+person.education+' · '+person.city+' · '+person.job+'</p><p><b>收入与住房</b> '+person.income+' · '+person.housing+'</p><p><b>家庭情况</b> '+person.family+'</p><p><b>相处与计划</b> '+person.relationship+'；'+person.plan+'；兴趣：'+person.hobbies+'</p></div><p class="match-reason"><b>符合之处</b> '+person.reason+'</p><p class="match-gap"><b>还需了解</b> '+person.gap+'</p><button type="button" class="candidate-open" data-profile-index="'+index+'">查看个人介绍　→</button></article>';
+    }).join("");
+    document.getElementById("profileHome").hidden=true;
+    document.getElementById("profileHome").innerHTML="";
+  }
+  function renderProfile(key,index){
+    const person=pools[key][index];
+    if(!person)return;
+    const meta=poolMeta[key];
+    const home=document.getElementById("profileHome");
+    home.innerHTML='<div class="profile-home-head"><div class="candidate-portrait-placeholder">'+portraitMarkup(person,index)+'</div><div><div class="profile-home-title"><div><h3>'+person.name+' · '+person.age+' 岁</h3><p>'+person.gender+' · '+person.city+' · '+person.education+'</p></div><span class="fit"><strong>'+person.fit+'%</strong><small>'+meta.score+'</small></span></div><div class="profile-tags"><span>'+person.job+'</span><span>'+person.income+'</span><span>'+person.housing+'</span></div><p class="profile-intro">'+person.intro+'</p><p class="profile-intro"><b>TA 期待的伴侣：</b>'+person.lookingFor+'</p></div></div><div class="profile-facts"><div class="profile-fact"><b>家庭情况</b><span>'+person.family+'</span></div><div class="profile-fact"><b>沟通与相处</b><span>'+person.relationship+'</span></div><div class="profile-fact"><b>婚育计划</b><span>'+person.plan+'</span></div><div class="profile-fact"><b>日常兴趣</b><span>'+person.hobbies+'</span></div><div class="profile-fact"><b>与期待的相似之处</b><span>'+person.reason+'</span></div><div class="profile-fact"><b>还需要了解</b><span>'+person.gap+'</span></div></div><div class="profile-home-actions"><small>虚构人物介绍 · 仅用于产品原型展示</small><button type="button" id="closeProfile">返回五份资料</button></div>';
+    home.hidden=false;
+    home.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+  document.querySelectorAll("[data-comparison]").forEach(function(button){
+    button.addEventListener("click",function(){
+      const key=button.dataset.comparison;
+      document.querySelectorAll("[data-comparison]").forEach(function(tab){
+        const active=tab.dataset.comparison===key;
+        tab.classList.toggle("active",active);
+        tab.setAttribute("aria-selected",active?"true":"false");
+      });
+      document.getElementById("comparisonCA").hidden=key!=="CA";
+      document.getElementById("comparisonBD").hidden=key!=="BD";
+    });
+  });
+  document.querySelectorAll("[data-pool]").forEach(function(button){
+    button.addEventListener("click",function(){
+      renderPool(button.dataset.pool);
+      document.getElementById("poolSection").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  document.getElementById("candidateGrid").addEventListener("click",function(event){
+    const button=event.target.closest("[data-profile-index]");
+    if(button)renderProfile(document.querySelector(".pool-tab.active").dataset.pool,Number(button.dataset.profileIndex));
+  });
+  document.getElementById("profileHome").addEventListener("click",function(event){
+    if(event.target.id==="closeProfile")this.hidden=true;
+  });
+  document.getElementById("profilePhoto").addEventListener("change",function(event){
+    const file=event.target.files&&event.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(){
+
+
+
+
+      const graphPhoto=document.getElementById("graphCPhoto");
+      graphPhoto.src=reader.result;
+      graphPhoto.hidden=false;
+      document.getElementById("graphCInitial").hidden=true;
+    };
+    reader.readAsDataURL(file);
+  });
+  form.addEventListener("input",function(){updateCompletion();});
+  form.addEventListener("change",function(){updateCompletion();});
+  form.addEventListener("submit",function(event){
+    event.preventDefault();
+    updateReport();
+    renderPool(document.querySelector(".pool-tab.active").dataset.pool);
+    const toast=document.getElementById("toast");
+    toast.classList.add("show");
+    document.querySelector(".result").scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  updateCompletion();
+  updateReport();
+  renderPool("B");
+})();
+</script>
+</body>
+</html>
+
+

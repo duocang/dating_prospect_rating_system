@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FAF6F1" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141116" media="(prefers-color-scheme: dark)">
+  <title>VIER 择偶坐标</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"><i></i><i></i></div>
+  <header class="top">
+    <a href="#/" class="brand" aria-label="VIER 首页"><b>VIER</b><span>择偶坐标</span></a>
+    <a href="#/privacy" class="top-link"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>我的资料</a>
+  </header>
+  <p id="sim-banner" class="sim" hidden>演示模式 · 结果里的人都是模拟的，不是真人</p>
+  <main id="view" tabindex="-1"></main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/vendor/qrcode.js"></script>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

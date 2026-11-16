@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/candidates/index",
+    "pages/person/index",
+    "pages/compare/index",
+    "pages/profile/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "VIER 择偶坐标",
+    "navigationBarBackgroundColor": "#f7f4ee",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f4ee",
+    "backgroundTextStyle": "light"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

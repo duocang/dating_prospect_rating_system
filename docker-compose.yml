@@ -1,0 +1,28 @@
+# 一条命令上线：docker compose up -d
+# app：VIER 服务；caddy：自动申请、续期 HTTPS 证书，并把访问转给 app。
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      VIER_DATA_KEY: ${VIER_DATA_KEY:?请在 .env 里填 VIER_DATA_KEY}
+    volumes:
+      - vier-data:/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${DOMAIN:?请在 .env 里填 DOMAIN} --to app:8787
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app
+
+volumes:
+  vier-data:
+  caddy-data:
+  caddy-config:

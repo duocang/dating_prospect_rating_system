@@ -1,0 +1,18 @@
+<view class="page candidates-page">
+  <view class="topbar"><view class="brand-mark">V</view><text class="brand">VIER</text><text class="edition">样本档案</text></view>
+  <view class="eyebrow">{{node}} · 示例资料</view>
+  <view class="page-title">{{label}}</view>
+  <view class="muted intro">按当前示例条件排序的演示档案。每张卡片可点开查看完整介绍。</view>
+  <view class="sample-note"><text>演示拟合值</text><text>不代表真实匹配概率</text></view>
+  <view class="candidate-list">
+    <view class="candidate panel" wx:for="{{items}}" wx:key="id" data-index="{{index}}" bindtap="openPerson">
+      <view class="candidate-head">
+        <view class="portrait mini-portrait portrait-{{index}}"><view class="p-hair"></view><view class="p-face"><view class="eyes"></view><view class="smile"></view></view><view class="p-body"></view></view>
+        <view class="candidate-main"><text class="candidate-name">{{item.name}} · {{item.age}}</text><text class="candidate-facts">{{item.gender}} · {{item.city}} · {{item.height}}</text><text class="candidate-facts">{{item.degree}} · {{item.job}}</text><text class="candidate-facts">{{item.income}}</text></view>
+        <view class="fit-wrap"><text class="fit-number">{{item.fit}}</text><text class="fit-percent">%</text><text class="fit-label">演示拟合</text></view>
+      </view>
+      <view class="candidate-foot"><text>查看个人介绍</text><text class="arrow">→</text></view>
+    </view>
+  </view>
+  <view class="tiny-note footer-note">当前没有可供查询的真实样本库。上线后只展示已获明确授权的真实资料；若样本不足，不以虚构人物补齐。</view>
+</view>

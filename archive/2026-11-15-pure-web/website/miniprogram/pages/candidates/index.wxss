@@ -1,0 +1,20 @@
+.intro { font-size:24rpx; }
+.sample-note { display:flex; justify-content:space-between; color:#86755f; font-size:20rpx; margin:26rpx 2rpx 14rpx; }
+.candidate-list { display:flex; flex-direction:column; gap:14rpx; }
+.candidate { padding:18rpx; }
+.candidate-head { display:flex; align-items:center; gap:16rpx; }
+.mini-portrait { width:98rpx; height:124rpx; border-radius:48rpx 48rpx 13rpx 13rpx; }
+.portrait-1 { background:linear-gradient(155deg,#d5d8d1,#b9c4b9); }
+.portrait-2 { background:linear-gradient(155deg,#e8dfd2,#c8b49f); }
+.portrait-3 { background:linear-gradient(155deg,#d3dfd7,#a9b8ae); }
+.portrait-4 { background:linear-gradient(155deg,#e5d5c6,#bda18d); }
+.candidate-main { flex:1; min-width:0; display:flex; flex-direction:column; }
+.candidate-name { font-size:25rpx; font-weight:600; color:#2e332f; }
+.candidate-facts { color:#797d76; font-size:19rpx; line-height:1.5; }
+.fit-wrap { min-width:72rpx; display:flex; align-items:baseline; justify-content:center; flex-wrap:wrap; color:#51685a; }
+.fit-number { font-family:Georgia,serif; font-size:32rpx; font-weight:600; }
+.fit-percent { font-size:19rpx; }
+.fit-label { width:100%; text-align:center; color:#8a8c84; font-size:16rpx; }
+.candidate-foot { display:flex; justify-content:space-between; margin-top:14rpx; padding-top:12rpx; border-top:1rpx solid #eee9e1; color:#627366; font-size:21rpx; }
+.arrow { font-size:27rpx; }
+.footer-note { display:block; margin-top:22rpx; }
