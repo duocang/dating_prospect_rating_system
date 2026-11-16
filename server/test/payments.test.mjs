@@ -20,6 +20,18 @@ test('未配置商户参数时不提供真实渠道；模拟模式提供两个�
   assert.deepEqual(loadProviders({ payments: { mode: 'mock' } }).map((p) => p.id), ['wechat', 'alipay']);
 });
 
+test('关闭支付时没有任何渠道；生产环境拒绝模拟支付', () => {
+  assert.deepEqual(loadProviders({ payments: { mode: 'off', providers: ['wechat', 'alipay'] } }), []);
+  const prev = process.env.NODE_ENV;
+  process.env.NODE_ENV = 'production';
+  try {
+    assert.throws(() => loadProviders({ payments: { mode: 'mock' } }), /模拟支付/);
+    assert.deepEqual(loadProviders({ payments: { mode: 'off' } }), []);
+  } finally {
+    if (prev === undefined) delete process.env.NODE_ENV; else process.env.NODE_ENV = prev;
+  }
+});
+
 test('支付宝通知：验签通过才解析，篡改金额会失败', () => {
   const k = pem();
   writeFileSync(join(dir, 'ali.pub'), k.pub);

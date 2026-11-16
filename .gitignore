@@ -1,5 +1,7 @@
 # 运行时数据：含加密的用户资料与开发密钥，永远不进 git
 data/
+# 部署用的域名和加密密钥
+.env
 *.tmp
 .DS_Store
 node_modules/

@@ -42,7 +42,7 @@
 - `plans`：`free` 每组 3 位，`vip` 每组 5 位（理想型人选、TA 心中的人选、在找你的人、双向相合分别可设）。
 - `scorer`：评分器 id 和参数覆盖。
 - `privacy`：同意版本、k 值、不活跃保留天数。
-- `payments`：支付模式（`mock` 或 `live`）、启用的渠道、订单有效期、通知地址；`plans.*.priceFen` 是价格（分）。
+- `payments`：支付模式（`mock` 模拟、`live` 真实商户、`off` 关闭付费且不显示 VIP 入口）、启用的渠道、订单有效期、通知地址；`plans.*.priceFen` 是价格（分）。`NODE_ENV=production` 时不允许 `mock`。
 
 环境变量：`PORT`、`VIER_DATA_DIR`、`VIER_CONFIG`、`VIER_DATA_KEY`（生产必填，32 字节 base64），`NODE_ENV=production`。
 

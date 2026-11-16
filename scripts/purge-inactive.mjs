@@ -6,7 +6,7 @@ import { FileStore } from '../server/src/store.js';
 import { loadKey } from '../server/src/crypto.js';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const config = JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8'));
+const config = JSON.parse(readFileSync(process.env.VIER_CONFIG || join(root, 'config/app.json'), 'utf8')); // 与服务端读同一份配置
 const dataDir = process.env.VIER_DATA_DIR || join(root, 'data');
 const { key } = loadKey(join(dataDir, '.dev-key'));
 const n = new FileStore(dataDir, key).purgeInactive(config.privacy.inactiveRetentionDays);

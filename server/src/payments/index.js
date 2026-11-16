@@ -16,7 +16,12 @@ import { alipayProvider } from './alipay.js';
 
 export function loadProviders(config) {
   const all = [wechatProvider(), alipayProvider()];
-  if (config.payments?.mode === 'mock') {
+  const mode = config.payments?.mode;
+  // off：完全关闭付费，页面上不出现 VIP 入口
+  if (mode === 'off') return [];
+  if (mode === 'mock') {
+    // 模拟支付谁都能点“付款成功”，正式环境必须关掉或换成真实商户
+    if (process.env.NODE_ENV === 'production') throw new Error('生产环境不能用模拟支付：请把 payments.mode 改成 off 或 live');
     // 模拟模式：微信和支付宝两个入口都由模拟渠道代替，可以完整走通扫码到升级的流程
     return [mockProvider('wechat', '微信支付（模拟）'), mockProvider('alipay', '支付宝（模拟）')];
   }
