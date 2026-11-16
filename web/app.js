@@ -342,8 +342,14 @@ function milestone(title, text, note, actions) {
   </section>`;
 }
 
+// 返回时取消“改完回到确认页”的标记，免得之后点“下一题”又被拉回确认页
 function bindBack(before) {
-  view.querySelectorAll('[data-back]').forEach((b) => (b.onclick = () => { before?.(); go(b.dataset.back, 'back'); }));
+  view.querySelectorAll('[data-back]').forEach((b) => (b.onclick = () => {
+    before?.();
+    if (S.backToReview) S.fromEdit = true; // 从“改一条”退回确认页，确认页的返回键保持原来的去处
+    S.backToReview = false; S.backToMeReview = false;
+    go(b.dataset.back, 'back');
+  }));
 }
 
 // ---------- 首页 ----------
@@ -683,7 +689,7 @@ function iNav(key) {
     seg, i,
     back: S.backToReview ? '#/ideal/review' : i > 0 ? `#/ideal/${list[i - 1]}` : seg === 2 ? '#/me/done' : '#/ideal/break',
     next() {
-      if (S.backToReview) { S.backToReview = false; return go('#/ideal/review'); }
+      if (S.backToReview) { S.backToReview = false; S.fromEdit = true; return go('#/ideal/review'); }
       if (i < list.length - 1) return go(`#/ideal/${list[i + 1]}`);
       go(seg === 2 ? '#/ideal/break' : '#/ideal/review');
     },
@@ -788,7 +794,10 @@ function renderIdealReview() {
   const d = iDraft();
   const on = [...I1, ...I2].filter((k) => toReq(k, d[k]));
   const mustN = on.filter((k) => d[k].imp === 'must').length;
-  paint(`${simpleHead('#/ideal/break', '确认你的要求', `共 ${on.length} 条`)}
+  // 返回键回到来的那一页（结果页、我的资料、上一题……）；从同意页来的不回去，免得两页来回跳
+  if (!S.fromEdit) S.reviewFrom = /^#\/(ideal\/(?!review)|results|privacy|me\/)/.test(S.prev || '') ? S.prev : '#/ideal/break';
+  S.fromEdit = false;
+  paint(`${simpleHead(S.reviewFrom, '确认你的要求', `共 ${on.length} 条`)}
     <h1 class="q">这是你的要求</h1>
     <p class="qhint">点任意一条可以修改。都已经自动保存了。</p>
     ${on.length ? `<div class="sum-list">${on.map((k, i) => `<button class="sum-item" data-k="${k}" style="--i:${i}">
@@ -797,10 +806,21 @@ function renderIdealReview() {
     : `<div class="empty">${ic('search')}<b>还没有任何要求</b>至少选一条，我们才知道帮你找什么样的人。</div>`}
     ${mustN >= 4 ? `<div class="tip" style="animation-delay:0s">${ic('info')}<span>你有 <b>${mustN} 条“必须有”</b>。太多了可能一个人都找不到，可以把一些改成“很在意”。</span></div>` : ''}
     <div class="stack"><button class="btn block" id="add">${ic('plus')}再加几条要求</button></div>
-    <div class="qfoot">${on.length ? `<button class="btn primary block" id="save">就这些，看谁适合我 ${ic('arrow')}</button>` : `<button class="btn primary block" data-back="#/ideal/age">去选要求</button>`}</div>`);
+    <div class="qfoot">${on.length ? `<button class="btn primary block" id="save">就这些，看谁适合我 ${ic('arrow')}</button>` : `<button class="btn primary block" id="pick">${ic('plus')}去选要求</button>`}</div>`);
   bindBack();
   view.querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => { S.backToReview = true; go(`#/ideal/${b.dataset.k}`); }));
-  document.getElementById('add').onclick = () => go(`#/ideal/${[...I1, ...I2].find((k) => !on.includes(k)) || 'age'}`);
+  // 加条件：弹出还没加的条件列表，选一条、改完直接回到这里，不再从头走一遍
+  const addSheet = () => {
+    const rest = (list) => list.filter((k) => !on.includes(k));
+    const group = (title, list) => (list.length ? `<h3 class="sheet-sub">${title}</h3><div class="sum-list">${list.map((k) => `<button class="sum-item" data-add="${k}"><div class="t"><b>${esc(lab(S.F[k].label))}</b><span>${esc(tx(IDEAL_Q[k][0]))}</span></div>${ic('plus')}</button>`).join('')}</div>` : '');
+    const m = sheet(`<h2>想加哪一条？</h2><p class="lead">选一条，设好以后会回到这里。</p>
+      ${group('主要条件', rest(I1))}${group(`${T()}的经济和家庭`, rest(I2))}
+      ${rest(I1).length + rest(I2).length ? '' : '<p class="lead">所有条件都已经加上了。</p>'}`);
+    m.el.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => { m.close(); S.backToReview = true; go(`#/ideal/${b.dataset.add}`); }));
+  };
+  document.getElementById('add').onclick = addSheet;
+  const pick = document.getElementById('pick');
+  if (pick) pick.onclick = addSheet;
   const save = document.getElementById('save');
   if (save) save.onclick = async () => {
     save.classList.add('loading');
@@ -1213,6 +1233,7 @@ function renderPrivacy() {
 
 // ---------- 路由 ----------
 async function route() {
+  S.prev = S.cur; S.cur = location.hash; // 记住从哪一页来，确认页的返回键要用
   const h = location.hash.replace(/^#/, '') || '/';
   const [, a = '', b = ''] = h.split('/');
   try {

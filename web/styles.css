@@ -482,3 +482,5 @@ a.pcard:hover .pcard-more .ic { transform: translateX(3px); }
 .screen:has(> .qfoot) { display: flex; flex-direction: column; min-height: calc(100dvh - 130px); }
 .screen > .qfoot { margin-top: auto; }
 .legend-inline > span { white-space: nowrap; margin-right: 6px; }
+.sheet .sum-list { text-align: left; margin-top: 8px; }
+.sheet-sub { text-align: left; font-size: 16px; color: var(--ink-2); margin: 18px 0 0; }
