@@ -144,11 +144,11 @@ const ME_Q = {
   childrenPlan: ['以后想要孩子吗？'],
   personality: ['你和别人相处，更像哪一种？'],
   lifestyle: ['你平时的生活，更像哪一种？'],
-  incomeAnnual: ['你一年大概挣多少钱？', '工资加奖金，扣税以前的数，不算父母给的。不确定就选“不清楚”。'],
-  personalNetAssets: ['你自己有多少家底？', '房子、车、存款加起来，再减掉欠的钱。不确定就选“不清楚”。'],
+  incomeAnnual: ['你一年大概挣多少钱？', '不用很精确，选个大概就行。工资加奖金，扣税以前的数，不算父母给的。'],
+  personalNetAssets: ['你自己有多少家底？', '不用很精确，选个大概就行。房子、车、存款加起来，再减掉欠的钱。'],
   housing: ['你现在住在哪里？'],
   familySupport: ['家里能给你多大帮助？'],
-  familyNetAssets: ['父母家大概有多少家底？', '房子、存款加起来，再减掉欠的钱。不确定就选“不清楚”。'],
+  familyNetAssets: ['父母家大概有多少家底？', '不用很精确，选个大概就行；真不知道就选“不清楚”。'],
   parentsSecurity: ['父母有养老保险和医保吗？', '不确定就选“不清楚”。'],
   siblings: ['你有兄弟姐妹吗？'],
   care: ['你需要照顾父母吗？'],
@@ -175,11 +175,18 @@ const IDEAL_Q = {
   care: ['你能接受{T}照顾父母到什么程度？', '可以选好几个。'],
   parentsMarriage: ['你能接受{T}父母的婚姻情况是？', '可以选好几个。'],
 };
+// 意思不一眼明白的选项，下面加一句小字
+const OPT_SUB = {
+  直接沟通: '有话直说', 慢热温和: '熟了才放得开', 活跃外向: '爱说爱笑，喜欢热闹', 独立安静: '喜欢自己待着',
+  规律作息: '每天差不多同一时间睡觉起床', 弹性作息: '睡觉起床时间不固定', 偏好安静: '喜欢安静、人少的地方',
+  喜欢社交: '常和朋友聚会', 户外运动: '常去运动、爬山、跑步', 居家休闲: '休息时喜欢待在家',
+  计划长期上海: '打算一直在上海', 城市可协商: '去哪里可以商量', 未来可能离沪: '以后可能离开上海',
+};
 const NUM = { age: { min: 18, max: 80, unit: '岁' }, heightCm: { min: 140, max: 210, unit: '厘米' } };
 const INCOME_P = [['5 万以下', 30000, 0, 50000], ['5 到 10 万', 75000, 50000, 100000], ['10 到 15 万', 125000, 100000, 150000], ['15 到 20 万', 175000, 150000, 200000], ['20 到 30 万', 250000, 200000, 300000], ['30 到 50 万', 400000, 300000, 500000], ['50 万以上', 700000, 500000, Infinity]];
 const MIN_WAN = { incomeAnnual: [5, 10, 15, 20, 30, 50], personalNetAssets: [10, 50, 100, 300, 600], familyNetAssets: [50, 150, 300, 600] };
 const IMP = [
-  ['off', '不看这条', '这一条不影响结果。'],
+  ['off', '不在意', '这一条不看，不影响结果。'],
   ['1', '加分', '有就加分，没有也行。'],
   ['2', '在意', '会认真比较这一条。'],
   ['3', '很在意', '非常看重，占的分量大。'],
@@ -378,7 +385,7 @@ async function renderHome() {
     const filled = S.me ? Object.keys(S.me.profile || {}).length + (S.me.gender ? 1 : 0) + (S.me.requirements?.length || 0) : 0;
     const actions = {
       new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/gender' : '#/intro'}">开始填写 ${ic('arrow')}</a>
-            <button class="btn block" id="demo">${ic('play')}先看个例子</button>`,
+            ${S.config.poolMode === 'simulated' ? `<button class="btn block" id="demo">${ic('play')}先看个例子</button>` : ''}`, // 例子只在演示模式下有意义
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
@@ -500,7 +507,7 @@ function profileText(key, v) {
 function renderMeQ(key) {
   const d = pDraft(), f = S.F[key];
   if (!ME_Q[key]) return go('#/me/gender');
-  if (key !== 'gender' && !d.gender) return go('#/me/gender');
+  if (key !== 'gender' && !d.gender) { toast('先选一下你是男生还是女生'); return go('#/me/gender'); }
   const nav = meNav(key);
   const [q, hint] = ME_Q[key];
   const cur = key === 'gender' ? d.gender : d.profile[key];
@@ -520,7 +527,7 @@ function renderMeQ(key) {
       items = INCOME_P.map(([l, v]) => ({ v: String(v), label: l }));
       if (typeof cur === 'number') sel = String(INCOME_P.find(([, , lo, hi]) => cur >= lo && cur < hi)?.[1] ?? '');
     } else {
-      items = (f.bands ? Object.keys(f.bands) : f.levels || f.options).map((o) => ({ v: o, label: nice(o) }));
+      items = (f.bands ? Object.keys(f.bands) : f.levels || f.options).map((o) => ({ v: o, label: nice(o), sub: OPT_SUB[o] }));
     }
     // 敏感题：既可以“不清楚”，也可以“不想说”
     if (f.tier === 'L2') items.push({ v: '不清楚', label: '不清楚', soft: true }, { v: '不愿透露', label: '不想说', soft: true });
@@ -537,18 +544,21 @@ function renderMeQ(key) {
       ${key !== 'gender' ? `<button class="btn ${stepper ? 'ghost' : 'block'}" id="skip">跳过这题</button>` : ''}
     </div>`);
   growBar();
-  bindBack();
+  // 选完到自动跳题之间有一小段等待：期间返回、跳过或改选，都先取消这次跳题
+  let busy = false, timer = null;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  bindBack(cancel);
 
-  let busy = false;
   const here = location.hash;
   const advance = (label) => {
+    cancel();
     if (busy) return; busy = true;
     nav.next();
     // 自动跳题后给一个“改一下”的机会
     if (label) toast(`已选：${label}`, { label: '改一下', fn: () => go(here, 'back') });
   };
   const skip = document.getElementById('skip');
-  if (skip) skip.onclick = () => { delete d.profile[key]; skipped.set(key, true); saveProfile(); advance(); };
+  if (skip) skip.onclick = () => { cancel(); delete d.profile[key]; skipped.set(key, true); saveProfile(); advance(); };
 
   if (stepper) {
     const n = NUM[key], el = view.querySelector('[data-stepper]');
@@ -568,7 +578,8 @@ function renderMeQ(key) {
     else d.profile[key] = v;
     skipped.set(key, false);
     saveProfile();
-    setTimeout(() => advance(b.dataset.label), reduceMotion() ? 80 : 600);
+    cancel(); // 等待期间改选：以最后一次为准，重新计时
+    timer = setTimeout(() => advance(b.dataset.label), reduceMotion() ? 80 : 600);
   }));
 }
 
@@ -576,7 +587,7 @@ function renderMeBreak() {
   paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，全部选填。填了结果更准，不填也能看结果。',
     '这些内容加密保存，只用来计算。别人只能看到“符合 / 不符合”，看不到你的具体数字。',
     `<button class="btn primary block" id="more">继续填（9 题，大约 1 分钟）</button>
-     <button class="btn block" id="skip">跳过，去说说想找的人</button>
+     <button class="btn block" id="skip">这 9 题都跳过，去说说想找的人</button>
      <button class="btn ghost" data-back="#/me/lifestyle">${ic('back')} 返回上一题</button>`));
   bindBack();
   document.getElementById('more').onclick = () => go('#/me/incomeAnnual');
@@ -691,7 +702,8 @@ function iNav(key) {
     next() {
       if (S.backToReview) { S.backToReview = false; S.fromEdit = true; return go('#/ideal/review'); }
       if (i < list.length - 1) return go(`#/ideal/${list[i + 1]}`);
-      go(seg === 2 ? '#/ideal/break' : '#/ideal/review');
+      if (seg === 2) return go('#/ideal/break');
+      finishIdeal();
     },
   };
 }
@@ -739,7 +751,7 @@ function renderIdealQ(key) {
     view.querySelectorAll('[data-imp]').forEach((b) => { b.classList.toggle('on', b.dataset.imp === v); b.setAttribute('aria-checked', b.dataset.imp === v); });
     if (flash) { const box = document.getElementById('imp'); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); }
   };
-  // 选了具体条件，却还是“不看这条”时，自动改成“在意”，并闪一下提醒
+  // 选了具体条件，却还是“不在意”时，自动改成“在意”，并闪一下提醒
   const touched = () => { e.dirty = true; if (e.imp === 'off') setImp('2', true); };
   view.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => setImp(b.dataset.imp, false)));
 
@@ -770,7 +782,7 @@ function renderIdealQ(key) {
 
   document.getElementById('ok').onclick = () => {
     if (e.imp !== 'off' && !entryValid(key, e)) {
-      toast(f.type === 'category' ? '请至少选一个；如果都可以，就选“不看这条”' : '请先选一个；如果无所谓，就选“不看这条”');
+      toast(f.type === 'category' ? '请至少选一个；如果都可以，就选“不在意”' : '请先选一个；如果无所谓，就选“不在意”');
       const t = document.getElementById('target'); t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
       return;
     }
@@ -779,14 +791,27 @@ function renderIdealQ(key) {
   };
 }
 
+// 要求填完：保存，直接去看谁适合你（第一次会先经过同意页）
+async function finishIdeal(btn) {
+  btn?.classList.add('loading');
+  await saveReqs();
+  if (S.saved === 'err') { btn?.classList.remove('loading'); return; }
+  if (!S.me.requirements?.length) { btn?.classList.remove('loading'); toast('还没有选任何要求，先选一条吧'); return go('#/ideal/review'); }
+  S.iDraft = null;
+  go(S.me.consent?.scoring ? '#/results' : '#/consent');
+}
+
 function renderIdealBreak() {
   paint(milestone('主要的要求说完了', `还想对${T()}的<b>经济和家庭情况</b>提要求吗？这部分可以不填。`, '',
-    `<button class="btn primary block" id="review">不用了，看看我的要求 ${ic('arrow')}</button>
+    `<button class="btn primary block" id="done">不用了，看看谁适合我 ${ic('arrow')}</button>
      <button class="btn block" id="more">要加几条（8 题，大约 1 分钟）</button>
+     <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>
      <button class="btn ghost" data-back="#/ideal/lifestyle">${ic('back')} 返回上一题</button>`));
   bindBack();
   document.getElementById('more').onclick = () => go('#/ideal/personalNetAssets');
   document.getElementById('review').onclick = () => go('#/ideal/review');
+  const done = document.getElementById('done');
+  done.onclick = () => finishIdeal(done);
 }
 
 function renderIdealReview() {
@@ -822,13 +847,7 @@ function renderIdealReview() {
   const pick = document.getElementById('pick');
   if (pick) pick.onclick = addSheet;
   const save = document.getElementById('save');
-  if (save) save.onclick = async () => {
-    save.classList.add('loading');
-    await saveReqs();
-    if (S.saved === 'err') { save.classList.remove('loading'); return; }
-    S.iDraft = null;
-    go(S.me.consent?.scoring ? '#/results' : '#/consent');
-  };
+  if (save) save.onclick = () => finishIdeal(save);
 }
 
 // ---------- 同意：一句人话 + 两个“可以 / 不要”的选择 ----------
@@ -946,6 +965,7 @@ const TABS = {
 
 function tabList(r, tab) {
   const t = T();
+  if (r.summary.counterpartCount === 0) return emptyCard('还没有人', `人选库里还没有${THEM()}，不是你的要求太高。过几天再来看看。`);
   if (tab === 'ideal') {
     return r.idealMatches.map((m, i) => pcard(m,
       fitLine('你', t, m.fit.items) + fitLine(t, '你', m.myFitToThem.items),
@@ -981,19 +1001,22 @@ async function renderResults() {
   const r = await loadResults();
   const s = r.summary, plan = S.config.plans[r.plan];
   const showTip = !store.get('vier.tip.dots');
+  const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
+  const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
 
   paint(`<section class="res-head">
-      <p class="eyebrow rise">${ic('sparkle')} 从 ${s.counterpartCount} 位${THEM()}里帮你挑</p>
+      <p class="eyebrow rise">${ic('sparkle')} ${few ? `现在还没有${THEM()}加入` : `从 ${s.counterpartCount} 位${THEM()}里帮你挑`}</p>
       <h1 class="display rise" style="--i:1">看看谁适合你</h1>
       ${venn({ nums: { left: s.matchesEligible, right: s.iFitCount, mid: s.mutualCount } })}
       <p class="small muted rise" style="--i:2">点圆圈，或点下面的按钮，切换查看</p>
     </section>
-    ${showTip ? `<div class="tip" id="tip">${ic('help')}<span><b>怎么看？</b>每个小圆点是一条要求：<span class="legend-inline"><span><i class="t-good"></i>符合</span><span><i class="t-warn"></i>差一点</span><span><i class="t-bad"></i>不符合</span><span><i class="t-unk"></i>没填</span></span><br>只比较条件，不代表一个人好不好。</span><button class="x" aria-label="知道了">${ic('x')}</button></div>` : ''}
+    ${few ? `<div class="note-card">${ic('users')}<span>我们刚开始，人还不多。你的资料已经保存好了，过几天再来看看。<br>如果你愿意让别人也能找到你，可以在“我的资料”里打开“让别人也能找到我”。</span></div>` : ''}
+    ${showTip && !few ? `<div class="tip" id="tip">${ic('help')}<span><b>怎么看？</b>每个小圆点是一条要求：<span class="legend-inline"><span><i class="t-good"></i>符合</span><span><i class="t-warn"></i>差一点</span><span><i class="t-bad"></i>不符合</span><span><i class="t-unk"></i>没填</span></span><br>只比较条件，不代表一个人好不好。</span><button class="x" aria-label="知道了">${ic('x')}</button></div>` : ''}
     <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="${S.tab === k ? 'on' : ''}">${REL[k]()}</button>`).join('')}</div>
     <div id="tabpanel"></div>
     ${r.plan === 'vip'
     ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
-    : `<div class="vip">${ic('crown')}<div class="t"><b>想多看几位？</b><span>升级 VIP，每组从 ${S.config.plans.free.matches} 位变成 ${S.config.plans.vip.matches} 位</span></div><button class="btn gold sm" id="upgrade">¥${(S.config.plans.vip.priceFen / 100).toFixed(2)} 升级</button></div>`}
+    : payOn ? `<div class="vip">${ic('crown')}<div class="t"><b>想多看几位？</b><span>升级 VIP，每组从 ${S.config.plans.free.matches} 位变成 ${S.config.plans.vip.matches} 位</span></div><button class="btn gold sm" id="upgrade">¥${(S.config.plans.vip.priceFen / 100).toFixed(2)} 升级</button></div>` : ''}
     <div class="stack">
       <a class="btn block" href="#/ideal/review">${ic('edit')}改改我的要求</a>
       <a class="btn ghost" href="#/me/review">改改我自己的资料</a>
