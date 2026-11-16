@@ -39,11 +39,18 @@ async function ensureSession() {
 }
 
 // 提示条；可以带一个动作按钮（例如“改一下”）
+// 提示条浮在底部按钮的上方，不挡住“下一题 / 跳过这题”；换页后再量一次
+function placeToast() {
+  const t = document.getElementById('toast'), foot = view.querySelector('.qfoot');
+  const top = foot ? Math.min(foot.getBoundingClientRect().top, innerHeight) : innerHeight;
+  t.style.bottom = `${Math.max(24, innerHeight - top + 12)}px`;
+}
 let toastTimer;
 function toast(msg, action) {
   const t = document.getElementById('toast');
   t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button">${esc(action.label)}</button>` : ''}`;
   t.classList.toggle('act', !!action);
+  placeToast();
   t.classList.add('show');
   if (action) t.querySelector('button').onclick = () => { t.classList.remove('show'); action.fn(); };
   clearTimeout(toastTimer);
@@ -1332,6 +1339,7 @@ async function route() {
   } finally {
     if (dir !== 'none') window.scrollTo(0, 0);
     dir = 'fwd';
+    requestAnimationFrame(placeToast);
   }
 }
 window.addEventListener('hashchange', route);
