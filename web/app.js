@@ -1,7 +1,7 @@
 // VIER 前端：一屏一问的引导式流程。hash 路由；所有打分在服务端完成。
 // 设计原则：每一步都自动保存、随时能退回来；全站只用一套说法；用“他 / 她”代替“TA”。
 const view = document.getElementById('view');
-const S = { config: null, F: null, me: null, results: null, pDraft: null, iDraft: null, backToReview: false, backToMeReview: false, tab: 'ideal', saved: '' };
+const S = { view: 'cards', config: null, F: null, me: null, results: null, pDraft: null, iDraft: null, backToReview: false, backToMeReview: false, tab: 'ideal', saved: '' };
 let dir = 'fwd';
 
 // ---------- 基础工具 ----------
@@ -11,6 +11,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* 隐私模式下忽略 */ } },
   del: (k) => { try { localStorage.removeItem(k); } catch { /* */ } },
 };
+S.view = store.get('vier.view') === 'table' ? 'table' : 'cards'; // 结果页“一个个看 / 对照着看”的偏好
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const go = (h, d = 'fwd') => { dir = d; if (location.hash === h) route(); else location.hash = h; };
@@ -115,7 +116,7 @@ const LABELS = {
 };
 const lab = (s) => LABELS[s] || s;
 // 显示用：范围写成“到”，未知值说人话
-const nice = (s) => (s === null || s === undefined ? '' : String(s).replace(/\s*–\s*/g, ' 到 ').replace('不愿透露', '不想说').replace('未填写', '没填'));
+const nice = (s) => (s === null || s === undefined ? '' : String(s).replace(/\s*–\s*/g, ' 到 ').replace(/\s+\/\s+/g, '、').replace('不愿透露', '不想说').replace('未填写', '没填'));
 const IMP_FROM_SERVER = { 灵活: '加分', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
@@ -945,6 +946,36 @@ function fitLine(owner, subject, items) {
     <span class="dots-row" aria-hidden="true">${items.map((it) => `<i class="${toneOf(it)}"></i>`).join('')}</span></div>`;
 }
 
+// 我自己（用户本人）的人称：女生是“她”，男生是“他”
+const ME = () => (S.me?.gender === 'female' ? '她' : S.me?.gender === 'male' ? '他' : '你');
+
+// 虚拟理想型：按一组要求拼出来的“样子”，明确标出不是真人
+function idealCard(reqs, { title, sub, edit = false }) {
+  return `<section class="ideal-card">
+    <div class="ideal-head"><span class="ideal-avatar" aria-hidden="true">${ic('user')}</span>
+      <div><b>${title}</b><span>${sub}</span></div><span class="badge virtual">虚拟</span></div>
+    <ul class="ideal-list">${reqs.map((q) => `<li><span class="k">${esc(lab(q.label))}</span><span class="v">${esc(nice(q.text))}</span>
+      <span class="badge ${q.must ? 'must' : ''}">${IMP_FROM_SERVER[q.importance] || esc(q.importance)}</span></li>`).join('')}</ul>
+    ${edit ? `<a class="ideal-edit" href="#/ideal/review">${ic('edit')}改改我的要求</a>` : ''}
+  </section>`;
+}
+// 把某人的逐条结果按理想型的顺序排好，圆点和对照表才能一一对上
+const byIdeal = (reqs, items) => {
+  const m = Object.fromEntries((items || []).map((it) => [it.label, it]));
+  return reqs.map((q) => m[q.label]).filter(Boolean);
+};
+function compareTable(reqs, people) {
+  return `<div class="cmp-wrap"><table class="cmp">
+    <thead><tr><th scope="col">你心中的${T()}</th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}">${avatar(p)}<span>第 ${i + 1} 位</span></a></th>`).join('')}</tr></thead>
+    <tbody>${reqs.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}</b><span>${esc(nice(q.text))}</span>${q.must ? '<em>必须有</em>' : ''}</th>
+      ${people.map((p) => {
+        const it = (p.fit.items || []).find((x) => x.label === q.label);
+        const [tone, icon, word] = it ? (STATUS[it.status] || ['t-unk', 'help', '没填']) : ['t-unk', 'help', '没填'];
+        return `<td class="${tone}"><span class="st">${ic(icon)}</span><span class="w">${word}</span></td>`;
+      }).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
 function pcard(c, inner, { href = '', i = 0, head = '', more = '' } = {}) {
   const tag = href ? 'a' : 'div';
   const sub = [c.gender, c.facts['年龄'], c.facts['常住城市']].filter(Boolean).map(esc).join(' · ');
@@ -958,7 +989,7 @@ function pcard(c, inner, { href = '', i = 0, head = '', more = '' } = {}) {
 }
 
 const TABS = {
-  ideal: { flow: () => ['你', T()], text: () => `最符合你要求的人。点开看看${T()}在找什么样的人。` },
+  ideal: { flow: () => ['你', T()], text: () => `先看你心中的${T()}，再看最接近的真人。` },
   seekers: { flow: () => [T(), '你'], text: () => `你正好符合${T()}的要求。只是条件对得上，不代表${T()}已经对你有意思。` },
   mutual: { flow: () => ['你', T(), true], text: () => `${T()}符合你的要求，你也符合${T()}的要求。` },
 };
@@ -967,26 +998,34 @@ function tabList(r, tab) {
   const t = T();
   if (r.summary.counterpartCount === 0) return emptyCard('还没有人', `人选库里还没有${THEM()}，不是你的要求太高。过几天再来看看。`);
   if (tab === 'ideal') {
-    return r.idealMatches.map((m, i) => pcard(m,
-      fitLine('你', t, m.fit.items) + fitLine(t, '你', m.myFitToThem.items),
-      { href: `#/match/${i}`, i, head: `<span class="rank">第 ${i + 1} 位</span>`, more: `看看${t}在找什么样的人` })).join('')
-      || emptyCard('没有人达到你所有的“必须有”', '可以把一两条“必须有”改成“很在意”，再看看。', '#/ideal/review', '去改要求');
+    const reqs = r.myIdeal || [], people = r.idealMatches, table = S.view === 'table' && people.length;
+    const head = idealCard(reqs, { title: `你心中的${t}`, sub: '按你的要求拼出来的样子，不是真人', edit: true });
+    if (!people.length) return head + emptyCard('没有人达到你所有的“必须有”', '可以把一两条“必须有”改成“很在意”，再看看。', '#/ideal/review', '去改要求');
+    const switcher = `<div class="near-head"><h3>最接近的 ${people.length} 位真人</h3>
+      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${!!table}">对照着看</button></div></div>`;
+    const body = table ? compareTable(reqs, people)
+      : `<div class="cards">${people.map((m, i) => pcard(m,
+        fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items),
+        { href: `#/match/${i}`, i, head: `<span class="rank">第 ${i + 1} 位</span>`, more: `看看${t}在找什么样的人` })).join('')}</div>`;
+    return head + switcher + body;
   }
   if (tab === 'mutual') {
     // 同一个人在另外两组里有逐条结果，就借来用；找不到时只说结论
     const byAlias = (list) => Object.fromEntries(list.map((x) => [x.alias, x]));
     const im = byAlias(r.idealMatches), sk = byAlias(r.seekers);
-    return r.mutual.map((m, i) => {
+    return cardsOr(r.mutual.map((m, i) => {
       const a = im[m.alias]?.fit.items, b = (im[m.alias] || sk[m.alias])?.myFitToThem.items;
       const inner = a || b ? fitLine('你', t, a) + fitLine(t, '你', b) : '<p class="fitline">两边的条件都对得上。</p>';
       return pcard(m, inner, { i });
-    }).join('') || emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`);
+    }).join(''), emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
   }
-  return r.seekers.map((m, i) => pcard(m,
+  return cardsOr(r.seekers.map((m, i) => pcard(m,
     fitLine(t, '你', m.myFitToThem.items)
-    + `<p class="small muted" style="margin:8px 0 0">${m.theirFitEligible ? `${t}也达到了你所有的“必须有”。` : `${t}没达到你的某条“必须有”。`}</p>`, { i })).join('')
-    || emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
+    + `<p class="small muted" style="margin:8px 0 0">${m.theirFitEligible ? `${t}也达到了你所有的“必须有”。` : `${t}没达到你的某条“必须有”。`}</p>`, { i })).join(''),
+    emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
+
+const cardsOr = (html, empty) => (html ? `<div class="cards">${html}</div>` : empty);
 
 function emptyCard(title, text, href, btn) {
   return `<div class="empty">${ic('search')}<b>${title}</b>${text}${href ? `<div class="stack" style="margin-top:14px"><a class="btn sm" href="${href}">${btn}</a></div>` : ''}</div>`;
@@ -1028,7 +1067,8 @@ async function renderResults() {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
     const t = TABS[tab], fl = t.flow();
-    panel.innerHTML = `<div class="tab-explain"><span class="flow"><span>${fl[0]}</span>${ic(fl[2] ? 'swap' : 'arrow')}<span>${fl[1]}</span></span><span>${t.text()}</span></div><div class="cards">${tabList(r, tab)}</div>`;
+    panel.innerHTML = `<div class="tab-explain"><span class="flow"><span>${fl[0]}</span>${ic(fl[2] ? 'swap' : 'arrow')}<span>${fl[1]}</span></span><span>${t.text()}</span></div>${tabList(r, tab)}`;
+    panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
     if (scroll) view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   };
   view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, b.tagName.toLowerCase() === 'g')));
@@ -1078,8 +1118,7 @@ async function renderMatch(idx) {
     </div>
 
     <h2 class="sec-title">${ic('search')}${t}在找什么样的人</h2>
-    ${m.theirIdeal.length ? `<div class="sum-list">${m.theirIdeal.map((q, i) => `<div class="sum-item static" style="--i:${i}"><div class="t"><b>${esc(lab(q.label))}</b><span>${esc(nice(q.text))}</span></div><span class="badge ${q.must ? 'must' : ''}">${IMP_FROM_SERVER[q.importance] || esc(q.importance)}</span></div>`).join('')}</div>`
-    : `<p class="muted">${t}没有写要求。</p>`}
+    ${m.theirIdeal.length ? idealCard(m.theirIdeal, { title: `${t}心中的${ME()}`, sub: `按${t}的要求拼出来的样子，不是真人` }) : `<p class="muted">${t}没有写要求。</p>`}
 
     <h2 class="sec-title">${ic('user')}${t}的要求，你符合哪些</h2>
     ${checks(m.myFitToThem.items, `${t}要`, '你是')}

@@ -484,3 +484,45 @@ a.pcard:hover .pcard-more .ic { transform: translateX(3px); }
 .legend-inline > span { white-space: nowrap; margin-right: 6px; }
 .sheet .sum-list { text-align: left; margin-top: 8px; }
 .sheet-sub { text-align: left; font-size: 16px; color: var(--ink-2); margin: 18px 0 0; }
+
+/* 虚拟理想型：虚线边框 + 剪影头像，一眼看出不是真人 */
+.ideal-card { margin: 4px 0 0; padding: 18px; border-radius: var(--r); background: color-mix(in srgb, var(--brand-soft) 55%, var(--surface)); border: 2px dashed color-mix(in srgb, var(--brand) 45%, transparent); }
+.ideal-head { display: flex; align-items: center; gap: 12px; }
+.ideal-head > div { flex: 1; min-width: 0; }
+.ideal-head b { display: block; font-size: 20px; font-family: var(--serif); }
+.ideal-head > div span { font-size: 15px; color: var(--ink-2); }
+.ideal-avatar { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; border: 2px dashed var(--brand); color: var(--brand); background: var(--surface); }
+.ideal-avatar .ic { width: 26px; height: 26px; }
+.badge.virtual { background: var(--surface); color: var(--brand); box-shadow: inset 0 0 0 1.5px var(--brand); }
+.ideal-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.ideal-list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 16px; }
+.ideal-list li + li { border-top: 1px dashed color-mix(in srgb, var(--brand) 25%, transparent); }
+.ideal-list .k { flex: none; width: 6.5em; color: var(--ink-2); }
+.ideal-list .v { flex: 1; min-width: 0; font-weight: 600; }
+.ideal-edit { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 6px; font-size: 15px; font-weight: 600; color: var(--brand); }
+.ideal-edit .ic { width: 16px; height: 16px; }
+
+/* 理想型下面的真人：标题 + “一个个看 / 对照着看” */
+.near-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 22px 0 12px; }
+.near-head h3 { font-size: 19px; margin: 0; }
+.seg-switch { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 4px; border-radius: 14px; background: var(--surface-2); }
+.seg-switch button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; font-size: 15px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
+.seg-switch button.on { background: var(--surface); color: var(--brand); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+
+/* 对照表：行是条件，列是真人 */
+.cmp-wrap { overflow-x: auto; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); }
+.cmp { width: 100%; border-collapse: collapse; font-size: 15px; }
+.cmp th, .cmp td { padding: 10px 6px; text-align: center; border-bottom: 1px solid var(--line); }
+.cmp tr:last-child th, .cmp tr:last-child td { border-bottom: 0; }
+.cmp thead th { font-weight: 600; color: var(--ink-2); vertical-align: bottom; }
+.cmp thead th:first-child { text-align: left; padding-left: 14px; color: var(--brand); }
+.cmp thead a { display: grid; justify-items: center; gap: 4px; }
+.cmp thead .avatar { width: 34px; height: 34px; font-size: 15px; }
+.cmp tbody th { text-align: left; padding-left: 14px; font-weight: 400; min-width: 8.5em; }
+.cmp tbody th b { display: block; font-size: 15px; }
+.cmp tbody th span { display: block; color: var(--ink-2); font-size: 14px; }
+.cmp tbody th em { font-style: normal; font-size: 12px; font-weight: 700; color: var(--brand); }
+.cmp td .st { width: 30px; height: 30px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--tone-soft); color: var(--tone); }
+.cmp td .st .ic { width: 16px; height: 16px; stroke-width: 3; }
+.cmp td .w { display: block; margin-top: 3px; font-size: 12px; color: var(--tone); font-weight: 600; white-space: nowrap; }
+.cmp thead a span { white-space: nowrap; font-size: 13px; }
