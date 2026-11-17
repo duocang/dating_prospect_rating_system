@@ -681,7 +681,7 @@ details.pcard.fold .pcard-name span { font-size: 12px; color: var(--unk); letter
 .rm-node.k-group[data-id="ideal"].focus .dot { box-shadow: 0 0 0 2px var(--g-ideal); }
 .rm-node.k-group[data-id="seekers"].focus .dot { box-shadow: 0 0 0 2px var(--g-seekers); }
 .rm-node.k-group[data-id="mutual"].focus .dot { box-shadow: 0 0 0 2px var(--g-mutual); }
-.rm-view { touch-action: none; cursor: grab; user-select: none; }
+.rm-view { touch-action: auto; cursor: grab; user-select: none; }
 .rm-stage.dragging { transition: none; }
 .rm-view:active { cursor: grabbing; }
 /* 逐条对照：没对上的醒目，对上的收成一行 */

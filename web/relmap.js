@@ -2,7 +2,7 @@
 // 首页用示例人物（EXAMPLE），结果页用真实结果拼出来的树。
 // 节点：{ id, kind: me|group|person|theirs, label, short?, fit?, note?, href?, tab?, kids? }
 export const EXAMPLE = {
-  id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
+  id: 'me', kind: 'me', label: '你', note: '这是示例 · 填完就换成你的',
   kids: [
     { id: 'ideal', kind: 'group', label: '他适合你', short: '3', note: '符合你要求的人',
       kids: [
@@ -65,7 +65,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
     return [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   };
   let drag = null, moved = false;
-  viewEl.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy }; moved = false; });
+  viewEl.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; drag = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy }; moved = false; });
   addEventListener('pointermove', (e) => {
     if (!drag || !el.isConnected) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
