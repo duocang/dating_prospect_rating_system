@@ -228,7 +228,9 @@ test('隐私：号码加密落盘，不进审计；删除联系方式撤回等�
 test('演示模式：模拟人选不能牵线', async () => {
   const cfg = JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8'));
   const dir2 = mkdtempSync(join(tmpdir(), 'vier-broker-sim-'));
-  const { server: s2 } = createApp({ root, dataDir: dir2, configPath: join(root, 'config/app.json') });
+  const cfg2 = join(dir2, 'app.json');
+  writeFileSync(cfg2, JSON.stringify({ ...cfg, poolMode: 'simulated' }));
+  const { server: s2 } = createApp({ root, dataDir: dir2, configPath: cfg2 });
   await new Promise((r) => s2.listen(0, r));
   const b2 = `http://127.0.0.1:${s2.address().port}`;
   const c2 = async (method, path, token, body) => {
@@ -236,7 +238,6 @@ test('演示模式：模拟人选不能牵线', async () => {
     return { status: res.status, body: await res.json() };
   };
   try {
-    assert.equal(cfg.poolMode, 'simulated');
     const { body: { token } } = await c2('POST', '/api/session');
     await c2('PUT', '/api/me/profile', token, { gender: 'female', profile: { age: 29, heightCm: 165, city: '上海' } });
     await c2('PUT', '/api/me/requirements', token, { requirements: reqs });

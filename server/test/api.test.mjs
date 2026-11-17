@@ -1,6 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,10 @@ const dataDir = mkdtempSync(join(tmpdir(), 'vier-test-'));
 let base, server;
 
 before(async () => {
-  ({ server } = createApp({ root, dataDir, configPath: join(root, 'config/app.json') }));
+  // 这组用例验证结果的结构，需要一个有人的池子，所以用模拟池
+  const configPath = join(dataDir, 'app.json');
+  writeFileSync(configPath, JSON.stringify({ ...JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8')), poolMode: 'simulated' }));
+  ({ server } = createApp({ root, dataDir, configPath }));
   await new Promise((r) => server.listen(0, r));
   base = `http://127.0.0.1:${server.address().port}`;
 });

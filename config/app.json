@@ -1,5 +1,5 @@
 {
-  "poolMode": "simulated",
+  "poolMode": "real",
   "plans": {
     "free": {
       "label": "免费版",

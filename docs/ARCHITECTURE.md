@@ -39,7 +39,7 @@
 
 ## 配置（config/app.json）
 
-- `poolMode`：`simulated` 用模拟人选池；`real` 只用同意进入人选池的真人。
+- `poolMode`：默认 `real`，只用同意进入人选池的真人；`simulated` 用模拟人选池，只用于测试和演示。
 - `plans`：`free` 每组 3 位，`vip` 每组 5 位（理想型人选、TA 心中的人选、在找你的人、双向相合分别可设）。
 - `scorer`：评分器 id 和参数覆盖。
 - `privacy`：同意版本、k 值、不活跃保留天数。
