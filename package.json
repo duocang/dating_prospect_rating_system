@@ -6,7 +6,7 @@
   "engines": { "node": ">=18" },
   "scripts": {
     "start": "node server/server.mjs",
-    "test": "node --test packages/scoring/test/scoring.test.mjs packages/matching/test/relations.test.mjs server/test/api.test.mjs server/test/payments.test.mjs",
+    "test": "node --test packages/scoring/test/scoring.test.mjs packages/matching/test/relations.test.mjs server/test/api.test.mjs server/test/payments.test.mjs server/test/broker.test.mjs",
     "build:sim-pool": "node scripts/build-sim-pool.mjs",
     "purge:inactive": "node scripts/purge-inactive.mjs"
   }

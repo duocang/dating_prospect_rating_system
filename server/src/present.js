@@ -82,15 +82,17 @@ export function presentCard(key, viewerId, person) {
   };
 }
 
-export function presentRelations(key, viewer, rel) {
+// brokerFor(person) 可选：给“你可以联系的人”加上牵线状态（docs/CONTACT-BROKER.md），只有状态，没有对方 id
+export function presentRelations(key, viewer, rel, { brokerFor = null } = {}) {
   const card = (p) => presentCard(key, viewer.id, p);
+  const contactable = (p) => ({ ...card(p), ...(brokerFor ? { broker: brokerFor(p) } : {}) });
   return {
     scorer: rel.scorer,
     limits: rel.limits,
     myIdeal: rel.myIdeal.map(formatRequirement),
     summary: rel.summary,
     idealMatches: rel.idealMatches.map((m) => ({
-      ...card(m.person),
+      ...contactable(m.person),
       fit: presentScore(m.fit, m.person.profile, { subjectIsViewer: false }),
       rankRange: m.rankRange,
       tied: m.tiedWithPrevious,
@@ -101,14 +103,14 @@ export function presentRelations(key, viewer, rel) {
       theirPicks: m.theirPicks.map((p) => ({ ...card(p.person), score: p.fit.total, rankRange: p.rankRange })),
     })),
     seekers: rel.seekers.map((s) => ({
-      ...card(s.person),
+      ...contactable(s.person),
       theirIdeal: s.person.requirements.map(formatRequirement),
       myFitToThem: presentScore(s.myFitToThem, viewer.profile, { subjectIsViewer: true }),
       theirFitToMyIdeal: s.theirFitToMyIdeal.total,
       theirFitEligible: s.theirFitToMyIdeal.eligible,
     })),
     mutual: rel.mutual.map((m) => ({
-      ...card(m.person),
+      ...contactable(m.person),
       mutualScore: m.mutualScore,
       fitToMyIdeal: m.fitToMyIdeal.total,
       myFitToThem: m.myFitToThem.total,

@@ -35,5 +35,10 @@
     ],
     "orderExpireMinutes": 15,
     "notifyBaseUrl": ""
+  },
+  "broker": {
+    "expireDays": 7,
+    "cancelCooldownHours": 1,
+    "notAgreedCooldownDays": 7
   }
 }

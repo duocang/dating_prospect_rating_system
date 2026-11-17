@@ -35,6 +35,7 @@
 | GET | `/api/me/export` | 导出全部自己的资料 |
 | DELETE | `/api/me` | 永久删除 |
 | GET | `/api/stats?field=` | k-匿名分布，仅基础字段 |
+| GET/PUT/POST/DELETE | `/api/me/broker…` | 牵线：联系方式、愿意被牵线、发起 / 同意 / 拒绝 / 取消 / 屏蔽（见 CONTACT-BROKER.md） |
 
 ## 配置（config/app.json）
 

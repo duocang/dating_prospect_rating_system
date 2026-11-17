@@ -397,7 +397,7 @@ async function renderHome() {
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
-      done: `<a class="btn primary block" href="#/results">${ic('list')}看谁适合我</a>
+      done: `${brokerNotice()}<a class="btn primary block" href="#/results">${ic('list')}看谁适合我</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
     paint(`<section class="hero">
@@ -989,6 +989,7 @@ function pcard(c, inner, { href = '', i = 0, head = '', more = '' } = {}) {
   return `<${tag} class="pcard" ${href ? `href="${href}"` : ''} style="--i:${i}">
     <div class="pcard-head">${avatar(c)}<div class="pcard-name"><b>${esc(c.alias)}</b><span>${sub}</span></div>
       ${head}${c.simulated ? '<span class="badge sim">模拟</span>' : ''}</div>
+    ${brokerTag(c) ? `<div class="broker-tags">${brokerTag(c)}</div>` : ''}
     <div class="facts">${Object.entries(c.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 4).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
     ${inner}
     ${href ? `<div class="pcard-more">${more || '看详细'} ${ic('next')}</div>` : ''}
@@ -1023,12 +1024,12 @@ function tabList(r, tab) {
     return cardsOr(r.mutual.map((m, i) => {
       const a = im[m.alias]?.fit.items, b = (im[m.alias] || sk[m.alias])?.myFitToThem.items;
       const inner = a || b ? fitLine('你', t, a) + fitLine(t, '你', b) : '<p class="fitline">两边的条件都对得上。</p>';
-      return pcard(m, inner, { i });
+      return pcard(m, inner + brokerBox(m), { i });
     }).join(''), emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
   }
   return cardsOr(r.seekers.map((m, i) => pcard(m,
     fitLine(t, '你', m.myFitToThem.items)
-    + `<p class="small muted" style="margin:8px 0 0">${m.theirFitEligible ? `${t}也达到了你所有的“必须有”。` : `${t}没达到你的某条“必须有”。`}</p>`, { i })).join(''),
+    + `<p class="small muted" style="margin:8px 0 0">${m.theirFitEligible ? `${t}也达到了你所有的“必须有”。` : `${t}没达到你的某条“必须有”。`}</p>` + brokerBox(m), { i })).join(''),
     emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
 
@@ -1056,6 +1057,7 @@ async function renderResults() {
       ${venn({ nums: { left: s.matchesEligible, right: s.iFitCount, mid: s.mutualCount } })}
       <p class="small muted rise" style="--i:2">点圆圈，或点下面的按钮，切换查看</p>
     </section>
+    ${brokerNotice()}
     ${few ? `<div class="note-card">${ic('users')}<span>我们刚开始，人还不多。你的资料已经保存好了，过几天再来看看。<br>如果你愿意让别人也能找到你，可以在“我的资料”里打开“让别人也能找到我”。</span></div>` : ''}
     ${showTip && !few ? `<div class="tip" id="tip">${ic('help')}<span><b>怎么看？</b>每个小圆点是一条要求：<span class="legend-inline"><span><i class="t-good"></i>符合</span><span><i class="t-warn"></i>差一点</span><span><i class="t-bad"></i>不符合</span><span><i class="t-unk"></i>没填</span></span><br>只比较条件，不代表一个人好不好。</span><button class="x" aria-label="知道了">${ic('x')}</button></div>` : ''}
     <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="${S.tab === k ? 'on' : ''}">${REL[k]()}</button>`).join('')}</div>
@@ -1076,6 +1078,7 @@ async function renderResults() {
     const t = TABS[tab], fl = t.flow();
     panel.innerHTML = `<div class="tab-explain"><span class="flow"><span>${fl[0]}</span>${ic(fl[2] ? 'swap' : 'arrow')}<span>${fl[1]}</span></span><span>${t.text()}</span></div>${tabList(r, tab)}`;
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
+    bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);
     if (scroll) view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   };
   view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, b.tagName.toLowerCase() === 'g')));
@@ -1123,6 +1126,7 @@ async function renderMatch(idx) {
       ${fitLine('你', t, m.fit.items)}
       ${fitLine(t, '你', m.myFitToThem.items)}
     </div>
+    ${brokerBox(m, { full: true })}
 
     <h2 class="sec-title">${ic('search')}${t}在找什么样的人</h2>
     ${m.theirIdeal.length ? idealCard(m.theirIdeal, { title: `${t}心中的${ME()}`, sub: `按${t}的要求拼出来的样子，不是真人` }) : `<p class="muted">${t}没有写要求。</p>`}
@@ -1141,6 +1145,7 @@ async function renderMatch(idx) {
     </details>
     <div class="stack"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`, { wide: true });
   bindBack();
+  bindAsk(view, [m]);
   document.getElementById('more').addEventListener('toggle', (e) => {
     if (e.target.open) requestAnimationFrame(() => requestAnimationFrame(() => view.querySelectorAll('.ring .fg').forEach((c) => (c.style.strokeDashoffset = 289 * (1 - Number(c.dataset.v) / 100)))));
   });
@@ -1232,6 +1237,197 @@ function openPayment(planId) {
   if (providers.length) start(providers[0].id);
 }
 
+// ---------- 牵线（docs/CONTACT-BROKER.md）----------
+// 甲看中乙 → 乙看到甲的极简信息并自己决定 → 乙同意后，甲的联系方式发给乙一次。
+const CONTACT_TYPES = { phone: '手机号', wechat: '微信号' };
+const BROKER_TAG = {
+  closed: ['', '该用户暂未开放牵线'],
+  pending: ['gold', '已发出牵线请求'],
+  accepted: ['l3', '已牵线'],
+  cooldown: ['', '暂时不能再次发起'],
+};
+const brokerTag = (c) => {
+  const t = BROKER_TAG[c.broker?.state];
+  return t ? `<span class="badge ${t[0]} broker-tag">${t[1]}</span>` : '';
+};
+
+// 人选卡片下方的牵线入口；详情页用 full 版，带说明
+function brokerBox(c, { full = false } = {}) {
+  const t = T(), st = c.broker?.state;
+  if (!st) return '';
+  const line = {
+    demo: `演示模式下的人是模拟的，不能牵线。`,
+    closed: `该用户暂未开放牵线。`,
+    ineligible: `你们有“必须有”的条件没对上，不能牵线。`,
+    pending: `已发出牵线请求，等${t}回应。${t}同意前你可以在“牵线”里取消。`,
+    accepted: `${t}已同意，你的联系方式已发给${t}。留意来电或好友申请。`,
+    cooldown: `刚结束一次请求，暂时不能再次发起。`,
+    open: full ? `${t}同意后，我们把你的联系方式发给${t}一次。${t}的联系方式不会给你。` : '',
+  }[st];
+  const btn = st === 'open'
+    ? `<button class="btn primary sm" data-ask="${esc(c.alias)}">${ic('heart')}想联系${t}</button>`
+    : st === 'pending' || st === 'accepted' ? `<a class="btn sm" href="#/broker">去“牵线”看看</a>` : '';
+  if (!full && !btn) return '';
+  return `<div class="broker-box ${full ? 'full' : ''}">${full ? `<b>${ic('heart')}牵线</b>` : ''}${line ? `<p>${line}</p>` : ''}${btn}</div>`;
+}
+
+function bindAsk(root, list) {
+  root.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const c = list.find((x) => x.alias === b.dataset.ask);
+    if (c) openAsk(c);
+  }));
+}
+
+function contactFields(cur) {
+  const type = cur?.type || 'phone';
+  return `<div class="chips" role="radiogroup" aria-label="联系方式">${Object.entries(CONTACT_TYPES).map(([v, l]) => `<button type="button" class="chip ${type === v ? 'on' : ''}" data-ctype="${v}" role="radio" aria-checked="${type === v}">${ic('check')}${l}</button>`).join('')}</div>
+    <input class="text-input" id="cvalue" autocomplete="off" maxlength="20" inputmode="${type === 'phone' ? 'tel' : 'text'}" placeholder="${type === 'phone' ? '11 位手机号' : '微信号'}" value="${esc(cur?.value || '')}" aria-label="联系方式">`;
+}
+function bindContactFields(root) {
+  let type = root.querySelector('.chip.on[data-ctype]')?.dataset.ctype || 'phone';
+  const input = root.querySelector('#cvalue');
+  root.querySelectorAll('[data-ctype]').forEach((b) => (b.onclick = () => {
+    type = b.dataset.ctype;
+    root.querySelectorAll('[data-ctype]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+    input.inputMode = type === 'phone' ? 'tel' : 'text';
+    input.placeholder = type === 'phone' ? '11 位手机号' : '微信号';
+    input.focus();
+  }));
+  return () => ({ type, value: input.value.trim() });
+}
+
+// 甲：想联系 → 留联系方式（第一次）→ 看清楚会发什么 → 勾选同意 → 发送
+async function openAsk(c) {
+  const t = T();
+  let ov;
+  try { ov = await api('GET', '/api/me/broker'); } catch (e) { return toast(e.message); }
+  const has = !!ov.contact;
+  const m = sheet(`<h2>想认识${t}？</h2>
+    <ul class="perks broker-rules">
+      <li>${ic('check')}我们只告诉${t}：你的性别、年龄段、城市、职业大类，以及你们互相符合几条要求。不发昵称、收入、照片和精确年龄。</li>
+      <li>${ic('check')}${t}点了同意，我们才把你的联系方式发给${t}一次，由${t}联系你。${t}的联系方式不会给你。</li>
+      <li>${ic('check')}${t}同意前你随时可以取消；同意后不能撤回，但你可以屏蔽${t}。</li>
+      <li>${ic('check')}${t}没同意时，你只会看到“对方暂未同意”。</li>
+    </ul>
+    <h3 class="small" style="margin:16px 0 8px">发给${t}的联系方式</h3>
+    ${has ? `<p class="mine">${CONTACT_TYPES[ov.contact.type]}：<b>${esc(ov.contact.value)}</b> <a href="#/broker" class="small">改一下</a></p>
+      <p class="small muted" style="margin:4px 0 0">对方可能通过号码查到你的微信或其他信息，请只留愿意被联系的号码。</p>`
+    : `${contactFields()}<p class="small muted" style="margin:6px 0 0">只在${t}同意后发给${t}一次。对方可能通过号码查到你的微信或其他信息，请只留愿意被联系的号码。</p>`}
+    <label class="agree"><input type="checkbox" id="agree"> <span>我同意：${t}同意后，把我的联系方式发给${t}</span></label>
+    <p class="err" id="ask-err" hidden></p>
+    <div class="stack"><button class="btn primary block" id="send" disabled>${ic('heart')}发送请求</button><button class="btn block" id="later">先不了</button></div>`);
+  const get = has ? null : bindContactFields(m.el);
+  const send = m.el.querySelector('#send'), err = m.el.querySelector('#ask-err');
+  m.el.querySelector('#agree').onchange = (e) => { send.disabled = !e.target.checked; };
+  m.el.querySelector('#later').onclick = m.close;
+  send.onclick = async () => {
+    send.classList.add('loading'); send.disabled = true; err.hidden = true;
+    try {
+      if (!has) await api('PUT', '/api/me/broker/contact', get());
+      await api('POST', '/api/me/broker/requests', { alias: c.alias, consent: true });
+      m.close();
+      toast(`已发出，等${t}回应`);
+      S.results = null;
+      dir = 'none'; route();
+    } catch (e) {
+      err.textContent = e.message; err.hidden = false;
+      send.classList.remove('loading'); send.disabled = false;
+    }
+  };
+}
+
+const brokerCountText = () => {
+  const b = S.me?.broker || {};
+  return [b.incomingPending ? `${b.incomingPending} 个请求等你回复` : '', b.contactsToRead ? `${b.contactsToRead} 个号码等你记下` : ''].filter(Boolean).join('，');
+};
+const brokerNotice = () => (brokerCountText() ? `<a class="note-card broker-notice" href="#/broker">${ic('heart')}<span><b>有人想认识你</b><br>${brokerCountText()}。</span>${ic('next')}</a>` : '');
+
+const OUT_TEXT = {
+  pending: ['gold', '等待对方回应'],
+  accepted: ['l3', '对方已同意，你的联系方式已发给对方'],
+  not_agreed: ['', '对方暂未同意'],
+  cancelled: ['', '已取消'],
+};
+
+function minimalText(mi) {
+  const t = T();
+  const who = [mi.gender, mi.ageBand, mi.city, mi.occupation].filter(Boolean).map(esc).join(' · ');
+  return `<p class="who">${who || '对方没有填写基本信息'}</p>
+    <p class="small muted" style="margin:4px 0 0">${t}符合你 ${mi.theyFitYou.met}/${mi.theyFitYou.of} 条要求；你符合${t} ${mi.youFitThem.met}/${mi.youFitThem.of} 条要求</p>`;
+}
+
+function incomingCard(r, i) {
+  const t = T();
+  if (r.status === 'pending') {
+    return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head">${avatar(r)}<div class="pcard-name"><b>${esc(r.alias)}</b><span>想认识你</span></div></div>
+      ${minimalText(r.minimal)}
+      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" data-acc="${r.id}">${ic('check')}同意</button><button class="btn sm" data-dec="${r.id}">暂不同意</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>
+      <p class="small muted" style="margin:8px 0 0">同意后，${t}的联系方式发给你，由你决定是否联系。暂不同意时，${t}只会看到“对方暂未同意”。</p></div>`;
+  }
+  return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head">${avatar(r)}<div class="pcard-name"><b>${esc(r.alias)}</b><span>你已同意</span></div></div>
+    ${minimalText(r.minimal)}
+    ${r.contact ? `<div class="released"><span>${CONTACT_TYPES[r.contact.type]}</span><b>${esc(r.contact.value)}</b></div>
+      <p class="small muted" style="margin:6px 0 0">请先记下来。点“我已记下”后，这个号码会从我们的服务器上删除，页面上也不再显示。</p>
+      <div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-seen="${r.id}">${ic('check')}我已记下</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`
+    : `<p class="small muted" style="margin:8px 0 0">号码已经隐藏。</p><div class="row" style="margin-top:8px"><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`}</div>`;
+}
+
+function outgoingRow(r) {
+  const [tone, word] = r.blocked ? ['', '已屏蔽'] : OUT_TEXT[r.status] || ['', r.status];
+  const act = r.status === 'pending' ? `<button class="btn ghost sm" data-cancel="${r.id}">取消</button>`
+    : r.status === 'accepted' && !r.blocked ? `<button class="btn ghost sm" data-blk="${r.id}">屏蔽</button>` : '';
+  return `<div class="out-row">${avatar(r)}<div class="t"><b>${esc(r.alias)}</b><span class="badge ${tone}">${word}</span></div>${act}</div>`;
+}
+
+async function renderBroker() {
+  const ov = await api('GET', '/api/me/broker');
+  const t = T(), demo = ov.poolMode !== 'real';
+  const back = /^#\/(match|results)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
+  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
+    <h1 class="q">牵线</h1>
+    <p class="qhint">${ic('lock')}联系方式单独加密保存，不会出现在任何人的结果里，也不参与打分。</p>
+    ${demo ? `<div class="note-card">${ic('info')}<span>现在是演示模式，结果里的人都是模拟的，不能真的牵线。下面的设置可以先填好。</span></div>` : ''}
+
+    ${ov.incoming.length ? `<h2 class="sec-title">${ic('heart')}收到的请求</h2><div class="cards">${ov.incoming.map(incomingCard).join('')}</div>` : ''}
+
+    <h2 class="sec-title">${ic('users')}被别人联系</h2>
+    <form id="wf">${toggleCard('willing', '愿意被牵线', `打开后，看中你的人可以发来请求。每一次都要你点“同意”，才会把对方的联系方式给你。`, ov.willing)}</form>
+    ${ov.inPool ? '' : `<p class="small muted" style="margin:8px 4px 0">要先在“我的资料”里打开“让别人也能找到我”，别人才看得到你，这里才能打开。</p>`}
+
+    <h2 class="sec-title">${ic('user')}我的联系方式</h2>
+    <p class="small muted" style="margin:0 0 10px">你想联系别人时才需要。对方同意后发给对方一次。</p>
+    <div id="cbox">${contactFields(ov.contact)}
+      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" id="csave">${ic('check')}保存</button>${ov.contact ? `<button class="btn ghost sm" id="cdel">${ic('trash')}删除</button>` : ''}</div></div>
+
+    ${ov.outgoing.length ? `<h2 class="sec-title">${ic('arrow')}我发出的</h2><div class="list-card out-list">${ov.outgoing.map(outgoingRow).join('')}</div>
+      <p class="small muted" style="margin:8px 4px 0">对方没同意、7 天没回应，都显示“对方暂未同意”。取消后 1 小时、对方暂未同意后 ${ov.cooldown.notAgreedCooldownDays} 天内不能再向同一个人发起。</p>` : ''}`, { wide: true });
+  bindBack();
+  const redraw = async (msg) => { if (msg) toast(msg); S.me = await api('GET', '/api/me'); S.results = null; dir = 'none'; return renderBroker(); };
+  const act = (fn, msg) => async (e) => { const b = e.currentTarget; b.classList.add('loading'); b.disabled = true; try { await fn(b); await redraw(msg); } catch (err) { toast(err.message); b.classList.remove('loading'); b.disabled = false; } };
+  const confirmSheet = (title, text, yes, fn, msg, danger) => {
+    const m = sheet(`<h2>${title}</h2><p class="lead">${text}</p><div class="stack"><button class="btn ${danger ? 'danger' : 'primary'} block" id="yes">${yes}</button><button class="btn block" id="no">再想想</button></div>`);
+    m.el.querySelector('#no').onclick = m.close;
+    m.el.querySelector('#yes').onclick = act(async () => { await fn(); m.close(); }, msg);
+  };
+
+  document.getElementById('wf').addEventListener('change', async (e) => {
+    try { await api('PUT', '/api/me/broker/willing', { willing: e.target.checked }); toast(e.target.checked ? '已打开，有人发来请求时会出现在这里' : '已关闭'); }
+    catch (err) { e.target.checked = !e.target.checked; toast(err.message); }
+  });
+  const get = bindContactFields(document.getElementById('cbox'));
+  document.getElementById('csave').onclick = act(() => api('PUT', '/api/me/broker/contact', get()), '已保存');
+  const del = document.getElementById('cdel');
+  if (del) del.onclick = () => confirmSheet('删除联系方式？', '你还在等待回应的请求会一起撤回。已经发给对方的号码不能撤回。', `${ic('trash')}确定删除`, () => api('DELETE', '/api/me/broker/contact'), '已删除', true);
+
+  const q = (sel, fn) => view.querySelectorAll(sel).forEach((b) => (b.onclick = fn(b)));
+  q('[data-acc]', (b) => () => confirmSheet('确定同意吗？', `同意后，${t}的联系方式会发给你，由你决定是否联系。这一步不能撤回。`, `${ic('check')}确定同意`, () => api('POST', `/api/me/broker/requests/${b.dataset.acc}/accept`, { confirm: true }), '已同意，号码在下面'));
+  q('[data-dec]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.dec}/decline`), `已回复，${t}只会看到“对方暂未同意”`));
+  q('[data-seen]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.seen}/seen`), '号码已从服务器删除'));
+  q('[data-cancel]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.cancel}/cancel`), '已取消'));
+  q('[data-blk]', (b) => () => confirmSheet(`屏蔽${t}？`, `屏蔽后，${t}不能再向你发起牵线，${t}不会收到通知。已经发出的联系方式不能撤回。`, '确定屏蔽', () => api('POST', `/api/me/broker/requests/${b.dataset.blk}/block`), '已屏蔽', true));
+}
+
 // ---------- 我的资料 ----------
 function toggleCard(name, title, text, checked, { required = false, i = 0 } = {}) {
   return `<label class="toggle-card" style="--i:${i}">
@@ -1250,6 +1446,7 @@ function renderPrivacy() {
     <div class="list-card">
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">我填的资料<span>年龄、学历、家庭等，点进去可以改</span></span>${ic('next')}</a>
       <a href="${S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age'}"><span class="ico">${ic('heart')}</span><span class="t">我的要求<span>${S.me.requirements?.length || 0} 条</span></span>${ic('next')}</a>
+      <a href="#/broker"><span class="ico">${ic('users')}</span><span class="t">牵线<span>${brokerCountText() || '联系方式、愿意被牵线、收到和发出的请求'}</span></span>${ic('next')}</a>
     </div>
     <h2 class="sec-title">${ic('shield')}你的资料怎么用</h2>
     <form id="f">
@@ -1331,6 +1528,7 @@ async function route() {
     if (a === 'results') return await renderResults();
     if (a === 'match') return await renderMatch(Number(b));
     if (a === 'privacy') return renderPrivacy();
+    if (a === 'broker') return await renderBroker();
     return await renderHome();
   } catch (e) {
     paint(`<section class="milestone"><h1 class="display">出了点小问题</h1><p class="lead">${esc(e.message)}</p>
