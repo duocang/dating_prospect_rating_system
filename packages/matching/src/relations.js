@@ -90,6 +90,22 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
   const seekers = topEligible(scorer, seekerEntries, limits.seekers);
   const fewReqCount = counterparts.filter((p) => reqCount(p) < opt.minRequirementsForSeekers).length;
 
+  // 你的位置：在要求写得够多的人里，多少人的要求你全都满足；没对上的条件里哪几条最常见。
+  // 只陈述事实（多少人、哪一条），不给人打“市场价值”分。
+  const missTally = new Map();
+  let allMet = 0;
+  for (const e of seekerEntries) {
+    const items = e.result.items || [];
+    const missed = items.filter((it) => it.status === 'unmet' || it.status === 'partial');
+    if (!missed.length && e.result.gate.status === 'pass' && items.every((it) => it.status === 'met')) allMet++;
+    for (const it of missed) missTally.set(it.label, (missTally.get(it.label) || 0) + 1);
+  }
+  const position = {
+    of: seekerEntries.length,
+    allMet,
+    topMisses: [...missTally].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([label, count]) => ({ label, count })),
+  };
+
   // 4. 双向相合：两个方向都通过门槛和覆盖率；按两个方向分数下界的几何平均排序
   const toMyIdealById = new Map(toMyIdeal.map((e) => [e.id, e.result]));
   const mutualAll = counterparts
@@ -120,6 +136,9 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
       iFitCount: seekers.eligibleCount,
       seekersExcludedFewRequirements: fewReqCount,
       mutualCount: mutualAll.length,
+      // 和第一名同分的有几位：分数相同时“第 1、2、3”其实是并列，界面要说清楚
+      topTie: ideal.list.length ? toMyIdeal.filter((e) => e.result.eligible && e.result.total.low === ideal.list[0].result.total.low).length : 0,
+      position,
       avgMyFitToMatches: idealMatches.length ? { low: avg(idealMatches.map((m) => m.myFitToThem.total.low)), high: avg(idealMatches.map((m) => m.myFitToThem.total.high)) } : null,
     },
   };

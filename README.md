@@ -9,14 +9,14 @@
 ```bash
 npm start          # 或 node server/server.mjs，然后打开 http://localhost:8787
 npm run dev        # 开发用：server/、packages/、config/ 改动后自动重启；网页文件改了刷新浏览器即可
-npm test           # 评分、关系引擎、接口、隐私与支付共 24 项测试
+npm test           # 评分、关系引擎、接口、牵线、支付、安全共 46 项测试
 ```
 
-默认是演示模式：结果里是 500 个模拟档案，顶部一直提示“演示模式”，支付也是模拟的。
+本机默认是测试环境（`testMode: true`）：不发短信，验证码直接显示在页面上；人选池是同意进入人选池的真人加上你所在城市的虚拟人选。
 
 ## 部署上线
 
-上线用的是正式配置（`config/app.production.json`）：结果里只有同意“让别人也能找到我”的真人，“演示模式”提示和 VIP 入口自动消失。提示不能单独去掉，否则用户会把模拟档案当成真人。刚上线时人选库是空的，结果页会提示“过几天再来看看”。
+上线用的是正式配置（`config/app.production.json`）：虚拟人选在卡片上标“虚拟”、不能牵线；支付关闭时 VIP 入口不出现。备案号填在 `site.icp`，页脚自动显示。
 
 **准备**：一台装好 Docker 的服务器，一个已解析到这台服务器的域名（大陆服务器需 ICP 备案）。
 
@@ -26,7 +26,7 @@ cp .env.example .env
 docker compose up -d
 ```
 
-第二步之后编辑 `.env`，填两项：`DOMAIN` 是你的域名，`VIER_DATA_KEY` 用 `openssl rand -base64 32` 生成。
+第二步之后编辑 `.env`：`DOMAIN` 是你的域名，`VIER_DATA_KEY` 用 `openssl rand -base64 32` 生成，`ADMIN_TOKEN` 是后台口令。
 
 打开 `https://你的域名` 就能用。HTTPS 证书由 Caddy 自动申请和续期；不活跃满一年的账户由服务每天自动清理。
 
@@ -44,7 +44,7 @@ docker compose cp app:/data ./backup-$(date +%F)
 
 **打开 VIP**：按 [扫码支付接入](docs/PAYMENTS.md) 配好商户，把 `config/app.production.json` 里的 `payments.mode` 从 `off` 改成 `live`，再运行更新命令。
 
-**现在的限制**：没有登录（换手机或清缓存就找不回资料）；没有限流；文件存储只适合试点规模；收集收入和家庭信息前，建议请人看一下隐私条款（见 [隐私与数据保护](docs/PRIVACY.md)）。
+**现在的限制**：短信服务还没接（正式环境发验证码会返回 503，见 [登录](docs/AUTH.md)）；限流计数在内存里，只适合单进程；文件存储只适合试点规模；用户协议和隐私政策是大白话初稿，上线前请懂法的人看一遍。
 
 ## 目录
 

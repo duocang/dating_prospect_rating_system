@@ -39,7 +39,7 @@ test('完整流程：注册、填写、同意、结果、导出、删除', async
 
   // 未同意时不计算
   assert.equal((await call('GET', '/api/me/results', token)).status, 403);
-  await call('PUT', '/api/me/consent', token, { scoring: true, pool: false, research: false });
+  await call('PUT', '/api/me/consent', token, { adult: true, scoring: true, pool: false, research: false });
 
   const free = await call('GET', '/api/me/results', token);
   assert.equal(free.status, 200);

@@ -829,3 +829,23 @@ details > summary { transition: background .15s; }
 details[open] > :not(summary) { animation: fadeDown .25s var(--ease) both; }
 @keyframes fadeDown { from { opacity: 0; transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ---- 2026-11-18：首页一句话、可直接输入的数字、并列说明、你的位置、满 18 岁勾选、协议页、页脚 ---- */
+.hero-sub { margin: -6px 0 6px; text-align: center; font-size: 16px; color: var(--ink-2); }
+.stepper .val b[data-val] { cursor: text; border-bottom: 2px dashed var(--line, #ddd); padding: 0 4px; }
+.stepper .val-input { width: 120px; font-size: 48px; font-weight: 700; text-align: center; border: 2px solid var(--brand); border-radius: 12px; background: var(--surface); color: var(--ink); padding: 4px 0; font-variant-numeric: tabular-nums; }
+.near-head h3 small { display: block; font-size: 13px; font-weight: 400; color: var(--ink-2); margin-top: 2px; }
+.near-note { margin: -4px 0 10px; }
+.pos-card b { color: var(--ink); }
+.check-row { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 20px 0 4px; padding: 14px 16px; border: 1.5px solid var(--line, #e6e1dc); border-radius: var(--r); background: var(--surface); color: var(--ink); font: inherit; font-size: 15px; text-align: left; cursor: pointer; line-height: 1.5; }
+.check-row .mark { flex: none; width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--ink-2); display: grid; place-items: center; color: transparent; margin-top: 1px; }
+.check-row .mark .ic { width: 14px; height: 14px; stroke-width: 3; }
+.check-row.on { border-color: var(--brand); }
+.check-row.on .mark { background: var(--brand); border-color: var(--brand); color: #fff; }
+.check-row a { color: var(--brand); text-decoration: underline; text-underline-offset: 3px; margin: 0 2px; }
+.check-row.shake { animation: shake .4s; }
+@keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.legal h2 { font-size: 17px; margin: 22px 0 6px; }
+.legal p { margin: 0; color: var(--ink-2); line-height: 1.7; font-size: 15px; }
+.site-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding: 28px 16px calc(28px + env(safe-area-inset-bottom)); font-size: 13px; }
+.site-foot a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }

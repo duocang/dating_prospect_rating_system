@@ -16,6 +16,8 @@ export class FileStore {
   constructor(dir, key) {
     this.dir = dir;
     this.key = key;
+    this.version = 0; // 每次写入或删除加一，供上层缓存判断是否过期
+    this.tokenTtlDays = 90; // 令牌多少天不用就失效；createApp 会按配置改
     for (const d of ['users', 'vault']) mkdirSync(join(dir, d), { recursive: true });
   }
 
@@ -26,6 +28,7 @@ export class FileStore {
     const tmp = path + '.tmp';
     writeFileSync(tmp, JSON.stringify(obj), { mode: 0o600 });
     renameSync(tmp, path);
+    this.version++;
   }
 
   audit(action, id, extra = {}) {
@@ -82,6 +85,10 @@ export class FileStore {
     if (!existsSync(p)) return null;
     const raw = JSON.parse(readFileSync(p, 'utf8'));
     if (!safeEqualHex(raw.tokenHash, sha256(token))) return null;
+    // 太久没用的令牌失效（滑动过期）：每天第一次使用时顺便刷新最近活跃时间
+    const idle = Date.now() - Date.parse(raw.lastActiveAt);
+    if (this.tokenTtlDays && idle > this.tokenTtlDays * 86400e3) return null;
+    if (idle > 86400e3) this.#mutate(id, () => {});
     return id;
   }
 
@@ -146,6 +153,7 @@ export class FileStore {
   deleteUser(id) {
     this.#unbindPhone(id);
     for (const p of [this.#userPath(id), this.#vaultPath(id)]) if (existsSync(p)) rmSync(p);
+    this.version++;
     this.audit('user.deleted', id);
   }
 
@@ -164,5 +172,16 @@ export class FileStore {
     return n;
   }
 }
+
+// 开了会话却一题没填、也没登录的空账户，几天后删掉，免得被人刷出大量空文件
+FileStore.prototype.purgeEmpty = function purgeEmpty(days) {
+  const cutoff = Date.now() - days * 86400000;
+  let n = 0;
+  for (const id of this.listUserIds()) {
+    const u = this.getUser(id);
+    if (u && !u.gender && Date.parse(u.lastActiveAt) < cutoff && !this.getIdentity(id)?.phone) { this.deleteUser(id); n++; }
+  }
+  return n;
+};
 
 export const latestConsent = (user) => user?.consents?.[user.consents.length - 1] || null;

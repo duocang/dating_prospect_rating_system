@@ -40,7 +40,7 @@ async function person(gender, profile, { pool = true, requirements = reqs, login
   const { body: { token } } = await call('POST', '/api/session');
   await call('PUT', '/api/me/profile', token, { gender, profile: { city: '上海', occupation: '软件与技术', incomeAnnual: 300000, ...profile }, identity: { nickname: '不该出现' } });
   await call('PUT', '/api/me/requirements', token, { requirements });
-  await call('PUT', '/api/me/consent', token, { scoring: true, pool, research: false });
+  await call('PUT', '/api/me/consent', token, { adult: true, scoring: true, pool, research: false });
   if (login) await loginAs(token);
   return token;
 }
@@ -202,7 +202,7 @@ test('乙关闭牵线或退出人选池：等待中的请求作废，甲看到�
   await call('PUT', '/api/me/broker/contact', jia, { type: 'phone', value: '13500004444' });
   await call('POST', '/api/me/broker/requests', jia, { alias: aliasIn(await results(jia)), consent: true });
 
-  await call('PUT', '/api/me/consent', yi, { scoring: true, pool: false, research: false });
+  await call('PUT', '/api/me/consent', yi, { adult: true, scoring: true, pool: false, research: false });
   assert.equal((await call('GET', '/api/me/broker', jia)).body.outgoing[0].status, 'not_agreed');
   const yv = (await call('GET', '/api/me/broker', yi)).body;
   assert.equal(yv.willing, false);
@@ -261,7 +261,7 @@ test('正式环境：虚拟人选标虚拟，不能牵线', async () => {
     const { body: { token } } = await c2('POST', '/api/session');
     await c2('PUT', '/api/me/profile', token, { gender: 'female', profile: { age: 29, heightCm: 165, city: '上海' } });
     await c2('PUT', '/api/me/requirements', token, { requirements: reqs });
-    await c2('PUT', '/api/me/consent', token, { scoring: true, pool: false, research: false });
+    await c2('PUT', '/api/me/consent', token, { adult: true, scoring: true, pool: false, research: false });
     const r = (await c2('GET', '/api/me/results', token)).body;
     assert.equal(r.idealMatches[0].broker.state, 'demo');
     assert.notEqual((await c2('POST', '/api/me/broker/requests', token, { alias: r.idealMatches[0].alias, consent: true })).status, 201);

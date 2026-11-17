@@ -24,7 +24,9 @@
   "privacy": {
     "consentVersion": "consent-2026-11-15",
     "kAnonymity": 10,
-    "inactiveRetentionDays": 365
+    "inactiveRetentionDays": 365,
+    "tokenTtlDays": 90,
+    "emptyRetentionDays": 7
   },
   "payments": {
     "mode": "off",
@@ -41,5 +43,8 @@
     "notAgreedCooldownDays": 7
   },
   "virtualPerCity": 1000,
-  "testMode": false
+  "testMode": false,
+  "site": {
+    "icp": ""
+  }
 }

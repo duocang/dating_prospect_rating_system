@@ -1,5 +1,6 @@
 // HTTP 服务：零依赖，Node 18+。所有打分都在服务端完成，浏览器永远拿不到人选池原始数据。
 import { createServer } from 'node:http';
+import { randomInt } from 'node:crypto';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, extname, normalize, sep } from 'node:path';
 import { FileStore, latestConsent } from './store.js';
@@ -14,6 +15,7 @@ import { loadProviders } from './payments/index.js';
 import { OrderService } from './payments/orders.js';
 import { Broker, BrokerError, ageBand } from './broker.js';
 import { generateCityPool } from './sim-generate.js';
+import { RateLimiter } from './ratelimit.js';
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
@@ -21,6 +23,7 @@ export function createApp({ root, dataDir, configPath }) {
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
   const { key, source: keySource } = loadKey(join(dataDir, '.dev-key'));
   const store = new FileStore(dataDir, key);
+  store.tokenTtlDays = Number(config.privacy?.tokenTtlDays ?? 90);
   const orders = new OrderService({ dataDir, store, providers: loadProviders(config), config });
   // 测试环境：界面上不标“虚拟”，虚拟人选带假号码、默认愿意被牵线，后台可以替他们回应，用来走通牵线。
   // 正式环境（testMode=false）：虚拟人选标“虚拟”，不能被牵线，真实用户的号码不会发给不存在的人。
@@ -45,11 +48,17 @@ export function createApp({ root, dataDir, configPath }) {
   const schemaRoot = resolve(root, 'packages/schema');
 
   // 人选池：同意进入人选池的真人（不分城市）+ 你所在城市的虚拟人选（每张卡片标“虚拟”）
+  // 解密全部用户很慢：按存储的版本号缓存，有人保存或删除时自动失效；“暂停”状态每次现查
+  let poolCache = { version: -1, list: [] };
   function realPeople() {
-    return store.listUserIds().map((id) => store.getUser(id)).filter((u) => {
-      const c = latestConsent(u);
-      return c?.pool && c?.scoring && u.gender && u.requirements.length >= 1 && !broker.isSuspended(u.id);
-    });
+    if (poolCache.version !== store.version) {
+      const list = store.listUserIds().map((id) => store.getUser(id)).filter((u) => {
+        const c = latestConsent(u);
+        return u && c?.pool && c?.scoring && u.gender && u.requirements.length >= 1;
+      });
+      poolCache = { version: store.version, list };
+    }
+    return poolCache.list.filter((u) => !broker.isSuspended(u.id));
   }
   function buildPool(cityName) {
     return [...realPeople(), ...virtualFor(cityName)];
@@ -80,10 +89,23 @@ export function createApp({ root, dataDir, configPath }) {
     };
   }
 
+  // ---------- 限流（按 IP、手机号或账户计次，见 docs/SECURITY.md）----------
+  const limiter = new RateLimiter();
+  const LIM = { code: [10, 3600e3], codePhone: [5, 86400e3], verify: [30, 3600e3], session: [30, 3600e3], results: [60, 3600e3], saves: [300, 3600e3], adminFail: [10, 3600e3], ...(config.rateLimits || {}) };
+  // 部署在 Caddy 后面时（TRUST_PROXY=1），真实 IP 在 X-Forwarded-For 第一段；否则直接取连接地址，防止伪造
+  const trustProxy = process.env.TRUST_PROXY === '1';
+  const clientIp = (req) => (trustProxy && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
+  function limit(name, key, msg = '操作太频繁，请稍后再试') {
+    const [max, win] = LIM[name];
+    if (!limiter.hit(name + ':' + key, max, win)) throw new BrokerError(429, msg);
+  }
+
   // ---------- 手机号 + 验证码登录 ----------
   // 测试环境不发短信，验证码直接返回给页面并打印在终端；正式环境要接短信服务（docs/AUTH.md）
   const PHONE_RE = /^1[3-9]\d{9}$/;
   const codes = new Map(); // phoneKey -> { hash, exp, tries, sentAt }
+  // 过期的验证码定时清掉，免得内存只增不减
+  setInterval(() => { const now = Date.now(); for (const [k, c] of codes) if (c.exp < now && now - c.sentAt > 60000) codes.delete(k); limiter.sweep(); }, 10 * 60e3).unref();
   const isLoggedIn = (uid) => !!store.getIdentity(uid)?.phone;
   const maskPhone = (p) => (p ? p.slice(0, 3) + '****' + p.slice(-4) : null);
   async function handleAuth(req, res, path, method) {
@@ -94,20 +116,38 @@ export function createApp({ root, dataDir, configPath }) {
     if (path === '/api/auth/code' && method === 'POST') {
       const prev = codes.get(k);
       if (prev && Date.now() - prev.sentAt < 60000) throw new BrokerError(429, '验证码发得太频繁，请 1 分钟后再试');
+      limit('code', clientIp(req), '验证码请求太多，请 1 小时后再试');
+      limit('codePhone', k, '这个号码今天收的验证码太多了，明天再试');
       if (!testMode) throw new BrokerError(503, '短信服务还没有接入');
-      const code = String(Math.floor(100000 + Math.random() * 900000));
+      const code = String(randomInt(100000, 1000000));
       codes.set(k, { hash: sha256(k + code), exp: Date.now() + 5 * 60000, tries: 0, sentAt: Date.now() });
       console.log(`[测试环境] ${maskPhone(phone)} 的验证码：${code}`);
       return json(res, 200, { ok: true, devCode: code });
     }
     if (path === '/api/auth/verify' && method === 'POST') {
+      limit('verify', clientIp(req));
       const c = codes.get(k);
       if (!c || c.exp < Date.now()) throw new BrokerError(400, '验证码过期了，请重新获取');
       if (++c.tries > 5) { codes.delete(k); throw new BrokerError(429, '试错太多次，请重新获取验证码'); }
       if (!safeEqualHex(c.hash, sha256(k + String(body.code || '').trim()))) throw new BrokerError(400, '验证码不对');
-      codes.delete(k);
       const current = auth(req);
       const existing = store.findByPhone(phone);
+      // 本机刚填了资料、这个号码又已有账户：先问用户保留哪一份，不悄悄删掉刚填的
+      const hasData = (id) => !!store.getUser(id)?.gender;
+      const keep = body.keep === 'this' || body.keep === 'saved' ? body.keep : null;
+      if (existing && current && existing !== current && !store.getIdentity(current)?.phone && hasData(current) && hasData(existing) && !keep) {
+        return json(res, 409, { choose: true, error: '这个号码以前填过资料' });
+      }
+      codes.delete(k);
+      if (existing && current && existing !== current && keep === 'this' && !store.getIdentity(current)?.phone) {
+        const cur = store.getUser(current);
+        store.saveProfile(existing, { gender: cur.gender, seeks: cur.seeks, profile: cur.profile });
+        store.saveRequirements(existing, cur.requirements);
+        const cc = latestConsent(cur);
+        if (cc) store.saveConsents(existing, cc);
+        const nick = store.getIdentity(current)?.nickname;
+        if (nick) store.saveIdentity(existing, { ...store.getIdentity(existing), nickname: nick });
+      }
       let id, token = null;
       const currentPhone = current ? store.getIdentity(current)?.phone : null;
       if (existing) {
@@ -191,7 +231,9 @@ export function createApp({ root, dataDir, configPath }) {
     return !!expected && !!got && safeEqualHex(sha256(got), sha256(expected));
   }
   async function handleAdmin(req, res, path, method) {
-    if (!adminOk(req)) return json(res, 401, { error: '管理员口令不对' });
+    const ip = clientIp(req);
+    if (limiter.count('adminFail:' + ip, LIM.adminFail[1]) >= LIM.adminFail[0]) return json(res, 429, { error: '口令错太多次，1 小时后再试' });
+    if (!adminOk(req)) { limiter.hit('adminFail:' + ip, Infinity, LIM.adminFail[1]); store.audit('admin.auth_failed', null); return json(res, 401, { error: '管理员口令不对' }); }
     const body = ['POST', 'DELETE'].includes(method) ? await readBody(req) : {};
     if (path === '/api/admin/overview' && method === 'GET') {
       const users = store.listUserIds().map((id) => store.getUser(id)).filter(Boolean).map((u) => {
@@ -288,7 +330,8 @@ export function createApp({ root, dataDir, configPath }) {
       'x-content-type-options': 'nosniff',
       'referrer-policy': 'no-referrer',
       'cache-control': 'no-cache',
-      'content-security-policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com",
+      'x-frame-options': 'DENY',
+      'content-security-policy': "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
     });
     res.end(readFileSync(file));
   }
@@ -323,7 +366,7 @@ export function createApp({ root, dataDir, configPath }) {
 
     if (path === '/api/config' && method === 'GET') {
       return json(res, 200, {
-        fields: FIELDS, groups: GROUP_LABELS, plans: config.plans, testMode,
+        fields: FIELDS, groups: GROUP_LABELS, plans: config.plans, testMode, site: config.site || {},
         consentVersion: config.privacy.consentVersion, scorer: config.scorer.id,
         payments: { mode: config.payments.mode, providers: orders.listProviders() },
       });
@@ -332,7 +375,9 @@ export function createApp({ root, dataDir, configPath }) {
       const s = stats(url.searchParams.get('field'));
       return s ? json(res, 200, s) : json(res, 400, { error: '只能查询基础字段的匿名分布' });
     }
+    if (path === '/api/health' && method === 'GET') return json(res, 200, { ok: true });
     if (path === '/api/session' && method === 'POST') {
+      limit('session', clientIp(req));
       const { id, token } = store.createUser();
       return json(res, 201, { token: `${id}.${token}` });
     }
@@ -360,6 +405,7 @@ export function createApp({ root, dataDir, configPath }) {
     const uid = auth(req);
     if (!uid) return json(res, 401, { error: '请先开始测试' });
     const body = ['PUT', 'POST'].includes(method) ? await readBody(req) : null;
+    if (method === 'PUT') limit('saves', uid);
     if (path.startsWith('/api/me/broker')) return await handleBroker(req, res, uid, path, method, body);
 
     if (path === '/api/me' && method === 'GET') {
@@ -377,7 +423,10 @@ export function createApp({ root, dataDir, configPath }) {
       return json(res, 200, { ok: true, requirements: reqs.map(formatRequirement) });
     }
     if (path === '/api/me/consent' && method === 'PUT') {
-      const c = { version: config.privacy.consentVersion, at: new Date().toISOString(), scoring: !!body.scoring, pool: !!body.pool, research: !!body.research };
+      // 只服务成年人：同意时必须确认已满 18 岁（资料里的年龄也限定 18 岁起）
+      const adult = body.adult === true || latestConsent(store.getUser(uid))?.adult === true;
+      if (body.scoring && !adult) throw new ValidationError('请先确认你已满 18 岁');
+      const c = { version: config.privacy.consentVersion, at: new Date().toISOString(), adult, scoring: !!body.scoring, pool: !!body.pool, research: !!body.research };
       store.saveConsents(uid, c);
       // 退出人选池时，“愿意被牵线”自动关闭（没有匹配数据，牵线无意义）
       if (!c.pool && broker.isWilling(uid)) broker.setWilling(uid, false, { inPool: false });
@@ -405,6 +454,8 @@ export function createApp({ root, dataDir, configPath }) {
       const c = latestConsent(u);
       if (!c?.scoring) return json(res, 403, { error: '需要先同意“用你的资料计算结果”' });
       if (!u.gender || !u.requirements.length) return json(res, 400, { error: '请先填写资料和理想型' });
+      // 防扫描：反复改要求来遍历人选池（docs/PRIVACY.md）
+      limit('results', uid, '看得太频繁了，过一会儿再来');
       const limits = config.plans[u.plan] || config.plans.free;
       const rel = computeRelations({ me: u, pool: buildPool(u.profile?.city), limits, scorerId: config.scorer.id, params: config.scorer.params });
       store.audit('results.computed', uid, { plan: u.plan });

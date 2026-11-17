@@ -6,6 +6,9 @@ services:
     restart: unless-stopped
     environment:
       VIER_DATA_KEY: ${VIER_DATA_KEY:?请在 .env 里填 VIER_DATA_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      # 在 Caddy 后面：从 X-Forwarded-For 取真实 IP，按 IP 限流才有效
+      TRUST_PROXY: "1"
     volumes:
       - vier-data:/data
 

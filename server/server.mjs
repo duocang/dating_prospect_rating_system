@@ -19,6 +19,8 @@ const purge = () => {
   try {
     const n = store.purgeInactive(config.privacy.inactiveRetentionDays);
     if (n) console.log(`已删除 ${n} 个超过 ${config.privacy.inactiveRetentionDays} 天未活跃的账户`);
+    const e = store.purgeEmpty(config.privacy.emptyRetentionDays ?? 7);
+    if (e) console.log(`已删除 ${e} 个一题没填的空账户`);
   } catch (e) { console.error('清理不活跃账户失败：', e.message); }
 };
 purge();
