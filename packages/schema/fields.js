@@ -8,6 +8,10 @@
 //
 // group（权重组）：同组字段共享一份组权重，防止收入、资产、住房、家庭支持把“经济条件”重复计算多次。
 
+// 常住城市：GDP 前 100 城，唯一来源 config/cities.json
+import { createRequire } from 'node:module';
+const CITY_NAMES = createRequire(import.meta.url)('../../config/cities.json').map((c) => c.name);
+
 export const UNKNOWN_VALUES = ['不清楚', '不愿透露', '暂不填写', ''];
 
 export const GENDERS = { female: '女性', male: '男性' };
@@ -37,8 +41,8 @@ export const FAMILY_ASSET_BANDS = {
 export const FIELDS = [
   { key: 'age', label: '年龄', type: 'number', unit: '岁', scale: 5, tier: 'L1', group: 'basic', ops: ['range', 'atLeast', 'atMost', 'about'] },
   { key: 'heightCm', label: '身高', type: 'number', unit: 'cm', scale: 20, tier: 'L1', group: 'appearance', ops: ['range', 'atLeast', 'atMost', 'about'] },
-  { key: 'city', label: '常住城市', type: 'category', tier: 'L1', group: 'location', options: ['上海', '北京', '杭州', '深圳', '广州', '其他'] },
-  { key: 'settlement', label: '未来定居', type: 'category', tier: 'L1', group: 'location', options: ['计划长期上海', '城市可协商', '未来可能离沪'] },
+  { key: 'city', label: '常住城市', type: 'category', tier: 'L1', group: 'location', options: [...CITY_NAMES, '其他'] },
+  { key: 'settlement', label: '未来定居', type: 'category', tier: 'L1', group: 'location', options: ['计划长期定居本城', '城市可协商', '未来可能离开本城'] },
   { key: 'education', label: '最高学历', type: 'ordinal', tier: 'L1', group: 'career', levels: EDUCATION_LEVELS, ops: ['atLeast', 'in'] },
   { key: 'occupation', label: '职业大类', type: 'category', tier: 'L1', group: 'career', options: ['软件与技术', '财务与商务', '医疗与健康', '教育与培训', '设计与传媒', '制造与工程', '行政与运营', '物流与交通', '零售与服务', '其他'] },
   { key: 'incomeAnnual', label: '年收入（税前劳动收入）', type: 'money', unit: '元', tier: 'L2', group: 'economy', ops: ['atLeast', 'range'], displayBands: [0, 50000, 100000, 150000, 200000, 300000, 500000] },

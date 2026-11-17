@@ -44,7 +44,9 @@ export const ageBand = (age) => {
 };
 
 export class Broker {
-  constructor({ dataDir, key, config = {}, audit = () => {} }) {
+  // virtual（仅测试环境）：{ is(id), contact(id) } —— 虚拟人选默认愿意被牵线，带固定的假号码
+  constructor({ dataDir, key, config = {}, audit = () => {}, virtual = null }) {
+    this.virtual = virtual;
     this.dir = dataDir;
     this.key = key;
     this.cfg = { ...BROKER_DEFAULTS, ...config };
@@ -64,7 +66,7 @@ export class Broker {
 
   #load() {
     const s = existsSync(this.statePath) ? decryptJson(this.key, JSON.parse(readFileSync(this.statePath, 'utf8')).box) : null;
-    const state = { requests: [], willing: {}, blocks: [], ...s };
+    const state = { requests: [], willing: {}, blocks: [], suspended: {}, ...s };
     // 过期：等待超过 expireDays 的请求作废，甲看到“对方暂未同意”
     const now = Date.now();
     let changed = false;
@@ -84,6 +86,7 @@ export class Broker {
 
   // ---------- 联系方式 ----------
   getContact(id) {
+    if (this.virtual?.is(id)) return this.virtual.contact(id);
     const p = this.#contactPath(id);
     return existsSync(p) ? decryptJson(this.key, JSON.parse(readFileSync(p, 'utf8')).box) : null;
   }
@@ -103,17 +106,24 @@ export class Broker {
     const n = this.#mutate((s) => {
       let k = 0;
       for (const r of s.requests) if (r.from === id && r.status === 'pending') { Object.assign(r, { status: 'cancelled', closedAt: now, by: 'contact_deleted' }); k++; }
+      // 没有联系方式就不能被牵线：开关一并关闭，别人发来的等待中请求作废
+      if (s.willing[id]) {
+        delete s.willing[id];
+        for (const r of s.requests) if (r.to === id && r.status === 'pending') Object.assign(r, { status: 'withdrawn', closedAt: now });
+      }
       return k;
     });
     this.audit('broker.contact_deleted', id, { withdrawn: n });
   }
 
   // ---------- 愿意被牵线 ----------
-  isWilling(id) { return !!this.#load().willing[id]; }
+  isWilling(id) { return this.#willing(this.#load(), id); }
+  #willing(s, id) { return !s.suspended?.[id] && (!!s.willing[id] || !!this.virtual?.is(id)); }
 
   // 关闭时，别人发给你、还在等待的请求作废（甲看到“对方暂未同意”）
   setWilling(id, willing, { inPool }) {
     if (willing && !inPool) throw new BrokerError(400, '先打开“让别人也能找到我”，才能打开牵线');
+    if (willing && !this.getContact(id)) throw new BrokerError(400, '先留下联系方式，才能打开牵线');
     const now = new Date().toISOString();
     const n = this.#mutate((s) => {
       if (willing) { s.willing[id] = true; return 0; }
@@ -132,7 +142,7 @@ export class Broker {
     const mine = state.requests.filter((r) => r.from === viewerId && r.to === personId);
     const live = mine.find((r) => r.status === 'pending' || r.status === 'accepted');
     if (live) return { state: live.status, requestId: live.id };
-    if (!state.willing[personId] || this.#blocked(state, personId, viewerId) || this.#blocked(state, viewerId, personId)) return { state: 'closed' };
+    if (!this.#willing(state, personId) || this.#blocked(state, personId, viewerId) || this.#blocked(state, viewerId, personId)) return { state: 'closed' };
     if (!gateOk) return { state: 'ineligible' };
     const until = this.#cooldownUntil(mine);
     if (until) return { state: 'cooldown', until };
@@ -155,8 +165,9 @@ export class Broker {
   // 前置条件（对方在你的人选池里、双方必须有都通过、对方开放）由调用方先查好，这里再按状态把关
   createRequest({ from, to, minimal }) {
     if (!this.getContact(from)) throw new BrokerError(400, '先留下你的联系方式');
+    if (this.isSuspended(from)) throw new BrokerError(403, '你的账号暂时不能牵线');
     const id = this.#mutate((s) => {
-      if (!s.willing[to] || this.#blocked(s, to, from) || this.#blocked(s, from, to)) throw new BrokerError(403, '该用户暂未开放牵线');
+      if (!this.#willing(s, to) || this.#blocked(s, to, from) || this.#blocked(s, from, to)) throw new BrokerError(403, '该用户暂未开放牵线');
       const mine = s.requests.filter((r) => r.from === from && r.to === to);
       if (mine.some((r) => r.status === 'pending')) throw new BrokerError(409, '已经发过了，等对方回应');
       if (mine.some((r) => r.status === 'accepted')) throw new BrokerError(409, '对方已经同意过，联系方式已发给对方');
@@ -236,19 +247,19 @@ export class Broker {
 
   // ---------- 给本人看的视图 ----------
   // aliasOf(otherId) 由调用方提供：同一个人在你眼里的代号，与结果页一致
-  overview(uid, aliasOf) {
+  overview(uid, aliasOf, nameOf = () => null) {
     const s = this.#load();
     const blockedByMe = (other) => this.#blocked(s, uid, other);
     const outgoing = s.requests.filter((r) => r.from === uid).map((r) => ({
       id: r.id,
-      alias: aliasOf(r.to),
+      alias: aliasOf(r.to), name: nameOf(r.to),
       status: r.status === 'pending' || r.status === 'accepted' || r.status === 'cancelled' ? r.status : 'not_agreed',
       createdAt: r.createdAt,
       blocked: blockedByMe(r.to),
     }));
     const incoming = s.requests.filter((r) => r.to === uid && (r.status === 'pending' || r.status === 'accepted') && !blockedByMe(r.from)).map((r) => ({
       id: r.id,
-      alias: aliasOf(r.from),
+      alias: aliasOf(r.from), name: nameOf(r.from),
       status: r.status,
       minimal: r.minimal,
       createdAt: r.createdAt,
@@ -263,6 +274,30 @@ export class Broker {
       outgoing: outgoing.sort(newest),
       cooldown: this.cfg,
     };
+  }
+
+  // ---------- 后台 ----------
+  allRequests() { return this.#load().requests; }
+  isSuspended(id) { return !!this.#load().suspended?.[id]; }
+  // 暂停：不出现在任何人的结果里、不能发起、不能被牵线；等待中的请求作废
+  setSuspended(id, on) {
+    const now = new Date().toISOString();
+    this.#mutate((s) => {
+      s.suspended ||= {};
+      if (!on) { delete s.suspended[id]; return; }
+      s.suspended[id] = now;
+      for (const r of s.requests) if ((r.from === id || r.to === id) && r.status === 'pending') Object.assign(r, { status: r.from === id ? 'cancelled' : 'withdrawn', closedAt: now, by: 'admin' });
+    });
+  }
+  stats(id) {
+    const s = this.#load();
+    return { sent: s.requests.filter((r) => r.from === id).length, received: s.requests.filter((r) => r.to === id).length, blockedBy: s.blocks.filter((b) => b.target === id).length };
+  }
+
+  // 后台（仅测试环境）：所有涉及虚拟人选的请求
+  virtualRequests() {
+    const s = this.#load();
+    return s.requests.filter((r) => this.virtual?.is(r.to) || this.virtual?.is(r.from));
   }
 
   // 给首页和结果页的提示数字
@@ -293,6 +328,7 @@ export class Broker {
       s.requests = s.requests.filter((r) => r.from !== uid && r.to !== uid);
       s.blocks = s.blocks.filter((b) => b.by !== uid && b.target !== uid);
       delete s.willing[uid];
+      if (s.suspended) delete s.suspended[uid];
     });
   }
 }

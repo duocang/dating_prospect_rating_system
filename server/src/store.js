@@ -7,6 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, readdirSync, rmSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIELD_MAP } from '../../packages/schema/fields.js';
+import { createHmac } from 'node:crypto';
 import { encryptJson, decryptJson, newId, newToken, sha256, safeEqualHex, auditSubject } from './crypto.js';
 
 const ID_RE = /^u_[0-9a-f]{24}$/;
@@ -43,6 +44,36 @@ export class FileStore {
     this.#write(this.#vaultPath(id), { box: encryptJson(this.key, {}) });
     this.audit('user.created', id);
     return { id, token };
+  }
+
+  // ---------- 手机号登录 ----------
+  // 索引只存带密钥的哈希 → 用户 id，不存明文号码；号码本身放在加密的身份库里
+  phoneKey(phone) { return createHmac('sha256', this.key).update('phone:' + phone).digest('hex'); }
+  #phoneIndexPath() { return join(this.dir, 'phone-index.json'); }
+  #phoneIndex() { const p = this.#phoneIndexPath(); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {}; }
+  findByPhone(phone) {
+    const id = this.#phoneIndex()[this.phoneKey(phone)];
+    return id && existsSync(this.#userPath(id)) ? id : null;
+  }
+  bindPhone(id, phone) {
+    const idx = this.#phoneIndex();
+    idx[this.phoneKey(phone)] = id;
+    this.#write(this.#phoneIndexPath(), idx);
+    this.saveIdentity(id, { ...this.getIdentity(id), phone });
+    this.audit('phone.bound', id);
+  }
+  // 登录后发新令牌；旧设备上的令牌失效
+  issueToken(id) {
+    const token = newToken();
+    this.#mutate(id, (raw) => { raw.tokenHash = sha256(token); });
+    this.audit('user.login', id);
+    return token;
+  }
+  #unbindPhone(id) {
+    const idx = this.#phoneIndex();
+    let changed = false;
+    for (const [k, v] of Object.entries(idx)) if (v === id) { delete idx[k]; changed = true; }
+    if (changed) this.#write(this.#phoneIndexPath(), idx);
   }
 
   authenticate(id, token) {
@@ -101,6 +132,7 @@ export class FileStore {
   }
 
   saveIdentity(id, identity) {
+    if (!identity.phone && existsSync(this.#vaultPath(id))) { const cur = this.getIdentity(id); if (cur?.phone) identity = { ...identity, phone: cur.phone }; }
     this.#write(this.#vaultPath(id), { box: encryptJson(this.key, identity) });
     this.audit('identity.saved', id);
   }
@@ -112,6 +144,7 @@ export class FileStore {
 
   // 彻底删除：资料、要求、同意记录与身份库一起删除；审计只留哈希化主体
   deleteUser(id) {
+    this.#unbindPhone(id);
     for (const p of [this.#userPath(id), this.#vaultPath(id)]) if (existsSync(p)) rmSync(p);
     this.audit('user.deleted', id);
   }

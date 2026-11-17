@@ -1,5 +1,4 @@
 {
-  "poolMode": "real",
   "plans": {
     "free": {
       "label": "免费版",
@@ -40,5 +39,7 @@
     "expireDays": 7,
     "cancelCooldownHours": 1,
     "notAgreedCooldownDays": 7
-  }
+  },
+  "virtualPerCity": 1000,
+  "testMode": true
 }

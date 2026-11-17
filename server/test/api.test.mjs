@@ -11,9 +11,9 @@ const dataDir = mkdtempSync(join(tmpdir(), 'vier-test-'));
 let base, server;
 
 before(async () => {
-  // 这组用例验证结果的结构，需要一个有人的池子，所以用模拟池
+  // 这组用例验证结果的结构：池子里有上海的虚拟人选
   const configPath = join(dataDir, 'app.json');
-  writeFileSync(configPath, JSON.stringify({ ...JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8')), poolMode: 'simulated' }));
+  writeFileSync(configPath, JSON.stringify({ ...JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8')) }));
   ({ server } = createApp({ root, dataDir, configPath }));
   await new Promise((r) => server.listen(0, r));
   base = `http://127.0.0.1:${server.address().port}`;
