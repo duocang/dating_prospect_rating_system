@@ -874,27 +874,39 @@ function choice(name, cur, yes, no) {
 
 function renderConsent() {
   const c = S.me.consent || {};
-  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0' };
+  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0', willing: '0' };
   paint(`${simpleHead('#/ideal/review', '最后一步', '你的资料，你做主')}
-    <h1 class="q">最后，问你两件事</h1>
+    <h1 class="q">最后，问你几件事</h1>
     <div class="note-card" style="margin-top:6px">${ic('lock')}<span>要帮你找人，我们会用你填的资料来计算。只在我们的服务器里算，不给任何人看。以后随时可以在“我的资料”里删除。</span></div>
     <h2 class="sec-title">1. 让别人也能找到你吗？</h2>
     ${choice('pool', st.pool, '别人的结果里也可能出现你', '别人搜不到你')}
     ${SEE_CARD()}
     <h2 class="sec-title">2. 用于匿名统计吗？</h2>
     ${choice('research', st.research, '只算很多人加在一起的数', '不参与统计')}
+    <div id="wq" ${st.pool === '1' ? '' : 'hidden'}>
+      <h2 class="sec-title">3. 愿意被想认识你的人联系吗？</h2>
+      ${choice('willing', st.willing, '别人可以发来牵线请求，每次都由你点同意', '别人只能看到“该用户暂未开放牵线”')}
+    </div>
+    <h2 class="sec-title">${ic('user')}留个联系方式（选填）</h2>
+    <p class="small muted" style="margin:0 0 10px">你想联系别人时用：对方同意后，我们才把它发给对方一次。单独加密保存，不参与打分。以后可以在“牵线”里改或删。</p>
+    <div id="cbox">${contactFields()}</div>
     <div class="qfoot"><button class="btn primary block" id="go">同意，开始找人 ${ic('arrow')}</button></div>
     <p class="fine">点“同意”表示你同意我们用你的资料计算结果（同意内容 ${esc(String(S.config.consentVersion).replace(/^consent-/, ''))} 版）。</p>`);
   bindBack();
   view.querySelectorAll('.choice .opt').forEach((b) => (b.onclick = () => {
     st[b.dataset.name] = b.dataset.v;
+    if (b.dataset.name === 'pool') document.getElementById('wq').hidden = b.dataset.v !== '1';
     view.querySelectorAll(`[data-name="${b.dataset.name}"]`).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
   }));
+  const getContact = bindContactFields(document.getElementById('cbox'));
   const btn = document.getElementById('go');
   btn.onclick = async () => {
     btn.classList.add('loading');
     try {
+      const contact = getContact();
+      if (contact.value) await api('PUT', '/api/me/broker/contact', contact);
       await api('PUT', '/api/me/consent', { scoring: true, pool: st.pool === '1', research: st.research === '1' });
+      if (st.pool === '1') await api('PUT', '/api/me/broker/willing', { willing: st.willing === '1' });
       S.me = await api('GET', '/api/me');
       go('#/results');
     } catch (e) { btn.classList.remove('loading'); toast(e.message); }
@@ -1241,6 +1253,9 @@ function openPayment(planId) {
 // 甲看中乙 → 乙看到甲的极简信息并自己决定 → 乙同意后，甲的联系方式发给乙一次。
 const CONTACT_TYPES = { phone: '手机号', wechat: '微信号' };
 const BROKER_TAG = {
+  open: ['l3', '可以联系'],
+  demo: ['', '模拟人选，不能联系'],
+  ineligible: ['', '“必须有”没对上，不能联系'],
   closed: ['', '该用户暂未开放牵线'],
   pending: ['gold', '已发出牵线请求'],
   accepted: ['l3', '已牵线'],
