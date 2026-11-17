@@ -5,6 +5,7 @@
 //   - L3 身份资料从不进入结果
 import { FIELD_MAP, GENDERS, isUnknown } from '../../packages/schema/fields.js';
 import { aliasFor } from './crypto.js';
+import { nameFor, namer } from './names.js';
 
 const wan = (x) => `${Math.round((x / 10000) * 10) / 10} 万`;
 
@@ -68,7 +69,7 @@ export function presentScore(result, profile, { subjectIsViewer }) {
 
 const CARD_FIELDS = ['age', 'heightCm', 'city', 'education', 'occupation', 'settlement', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'incomeAnnual'];
 
-export function presentCard(key, viewerId, person) {
+export function presentCard(key, viewerId, person, { hideVirtual = false, name = null } = {}) {
   const facts = {};
   for (const k of CARD_FIELDS) {
     const v = formatValue(k, person.profile?.[k], { full: false });
@@ -76,21 +77,25 @@ export function presentCard(key, viewerId, person) {
   }
   return {
     alias: aliasFor(key, viewerId, person.id),
-    simulated: !!person.simulated,
+    name: name || nameFor(key, viewerId, person),
+    simulated: hideVirtual ? false : !!person.simulated,
     gender: GENDERS[person.gender] || '',
     facts,
   };
 }
 
-export function presentRelations(key, viewer, rel) {
-  const card = (p) => presentCard(key, viewer.id, p);
+// brokerFor(person) 可选：给“你可以联系的人”加上牵线状态（docs/CONTACT-BROKER.md），只有状态，没有对方 id
+export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtual = false } = {}) {
+  const nm = namer(key, viewer.id);
+  const card = (p) => presentCard(key, viewer.id, p, { hideVirtual, name: nm(p) });
+  const contactable = (p) => ({ ...card(p), ...(brokerFor ? { broker: brokerFor(p) } : {}) });
   return {
     scorer: rel.scorer,
     limits: rel.limits,
     myIdeal: rel.myIdeal.map(formatRequirement),
     summary: rel.summary,
     idealMatches: rel.idealMatches.map((m) => ({
-      ...card(m.person),
+      ...contactable(m.person),
       fit: presentScore(m.fit, m.person.profile, { subjectIsViewer: false }),
       rankRange: m.rankRange,
       tied: m.tiedWithPrevious,
@@ -101,17 +106,21 @@ export function presentRelations(key, viewer, rel) {
       theirPicks: m.theirPicks.map((p) => ({ ...card(p.person), score: p.fit.total, rankRange: p.rankRange })),
     })),
     seekers: rel.seekers.map((s) => ({
-      ...card(s.person),
+      ...contactable(s.person),
       theirIdeal: s.person.requirements.map(formatRequirement),
       myFitToThem: presentScore(s.myFitToThem, viewer.profile, { subjectIsViewer: true }),
       theirFitToMyIdeal: s.theirFitToMyIdeal.total,
       theirFitEligible: s.theirFitToMyIdeal.eligible,
+      fit: presentScore(s.theirFitToMyIdeal, s.person.profile, { subjectIsViewer: false }),
     })),
     mutual: rel.mutual.map((m) => ({
-      ...card(m.person),
+      ...contactable(m.person),
       mutualScore: m.mutualScore,
       fitToMyIdeal: m.fitToMyIdeal.total,
       myFitToThem: m.myFitToThem.total,
+      fit: presentScore(m.fitToMyIdeal, m.person.profile, { subjectIsViewer: false }),
+      mine: presentScore(m.myFitToThem, viewer.profile, { subjectIsViewer: true }),
+      theirIdeal: m.person.requirements.map(formatRequirement),
     })),
   };
 }

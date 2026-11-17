@@ -1,5 +1,4 @@
 {
-  "poolMode": "simulated",
   "plans": {
     "free": {
       "label": "免费版",
@@ -35,5 +34,12 @@
     ],
     "orderExpireMinutes": 15,
     "notifyBaseUrl": ""
-  }
+  },
+  "broker": {
+    "expireDays": 7,
+    "cancelCooldownHours": 1,
+    "notAgreedCooldownDays": 7
+  },
+  "virtualPerCity": 1000,
+  "testMode": true
 }

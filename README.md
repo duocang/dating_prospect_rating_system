@@ -8,6 +8,7 @@
 
 ```bash
 npm start          # 或 node server/server.mjs，然后打开 http://localhost:8787
+npm run dev        # 开发用：server/、packages/、config/ 改动后自动重启；网页文件改了刷新浏览器即可
 npm test           # 评分、关系引擎、接口、隐私与支付共 24 项测试
 ```
 

@@ -35,10 +35,11 @@
 | GET | `/api/me/export` | 导出全部自己的资料 |
 | DELETE | `/api/me` | 永久删除 |
 | GET | `/api/stats?field=` | k-匿名分布，仅基础字段 |
+| GET/PUT/POST/DELETE | `/api/me/broker…` | 牵线：联系方式、愿意被牵线、发起 / 同意 / 拒绝 / 取消 / 屏蔽（见 CONTACT-BROKER.md） |
 
 ## 配置（config/app.json）
 
-- `poolMode`：`simulated` 用模拟人选池；`real` 只用同意进入人选池的真人。
+- `virtualPerCity`：每座城市的虚拟人选数（男女各半，默认 1000，设 0 关闭）。人选池 = 同意进入人选池的真人 + 你常住城市的虚拟人选；城市名单和生成参数在 `config/cities.json`（GDP 前 100 城）。
 - `plans`：`free` 每组 3 位，`vip` 每组 5 位（理想型人选、TA 心中的人选、在找你的人、双向相合分别可设）。
 - `scorer`：评分器 id 和参数覆盖。
 - `privacy`：同意版本、k 值、不活跃保留天数。

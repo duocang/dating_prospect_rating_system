@@ -1,8 +1,9 @@
 // VIER 前端：一屏一问的引导式流程。hash 路由；所有打分在服务端完成。
 // 设计原则：每一步都自动保存、随时能退回来；全站只用一套说法；用“他 / 她”代替“TA”。
 const view = document.getElementById('view');
-const S = { config: null, F: null, me: null, results: null, pDraft: null, iDraft: null, backToReview: false, backToMeReview: false, tab: 'ideal', saved: '' };
+const S = { view: 'cards', config: null, F: null, me: null, results: null, pDraft: null, iDraft: null, backToReview: false, backToMeReview: false, tab: 'ideal', saved: '' };
 let dir = 'fwd';
+import { relMap, EXAMPLE } from './relmap.js';
 
 // ---------- 基础工具 ----------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -11,6 +12,7 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* 隐私模式下忽略 */ } },
   del: (k) => { try { localStorage.removeItem(k); } catch { /* */ } },
 };
+S.view = store.get('vier.view') === 'table' ? 'table' : 'cards'; // 结果页“一个个看 / 对照着看”的偏好
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const go = (h, d = 'fwd') => { dir = d; if (location.hash === h) route(); else location.hash = h; };
@@ -38,11 +40,18 @@ async function ensureSession() {
 }
 
 // 提示条；可以带一个动作按钮（例如“改一下”）
+// 提示条浮在底部按钮的上方，不挡住“下一题 / 跳过这题”；换页后再量一次
+function placeToast() {
+  const t = document.getElementById('toast'), foot = view.querySelector('.qfoot');
+  const top = foot ? Math.min(foot.getBoundingClientRect().top, innerHeight) : innerHeight;
+  t.style.bottom = `${Math.max(24, innerHeight - top + 12)}px`;
+}
 let toastTimer;
 function toast(msg, action) {
   const t = document.getElementById('toast');
   t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button">${esc(action.label)}</button>` : ''}`;
   t.classList.toggle('act', !!action);
+  placeToast();
   t.classList.add('show');
   if (action) t.querySelector('button').onclick = () => { t.classList.remove('show'); action.fn(); };
   clearTimeout(toastTimer);
@@ -115,8 +124,9 @@ const LABELS = {
 };
 const lab = (s) => LABELS[s] || s;
 // 显示用：范围写成“到”，未知值说人话
-const nice = (s) => (s === null || s === undefined ? '' : String(s).replace(/\s*–\s*/g, ' 到 ').replace('不愿透露', '不想说').replace('未填写', '没填'));
-const IMP_FROM_SERVER = { 灵活: '加分', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
+const nice = (s) => (s === null || s === undefined ? '' : String(s).replace(/\s*–\s*/g, ' 到 ').replace(/\s+\/\s+/g, '、').replace('不愿透露', '不想说').replace('未填写', '没填'));
+const IMP_RANK = { 灵活: 1, 重要: 2, 很重要: 3, 必须: 4 }; // 越在意排越前
+const IMP_FROM_SERVER = { 灵活: '有最好', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
 const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
@@ -134,8 +144,8 @@ const SEGS = [
 
 const ME_Q = {
   gender: ['你是？', '目前只为男生和女生之间做推荐。'],
-  age: ['你今年多大？', '按周岁算。按住加减号不放，数字会快速变化。'],
-  heightCm: ['你有多高？', '不穿鞋的身高。按住加减号不放，数字会快速变化。'],
+  age: ['你今年多大？', '按住 + − 可以快速调。'],
+  heightCm: ['你有多高？', '不穿鞋。按住 + − 可以快速调。'],
   city: ['你现在住在哪个城市？'],
   settlement: ['以后打算在哪里安家？'],
   education: ['你的学历是？', '读到哪一步就选哪一个。'],
@@ -144,11 +154,11 @@ const ME_Q = {
   childrenPlan: ['以后想要孩子吗？'],
   personality: ['你和别人相处，更像哪一种？'],
   lifestyle: ['你平时的生活，更像哪一种？'],
-  incomeAnnual: ['你一年大概挣多少钱？', '不用很精确，选个大概就行。工资加奖金，扣税以前的数，不算父母给的。'],
-  personalNetAssets: ['你自己有多少家底？', '不用很精确，选个大概就行。房子、车、存款加起来，再减掉欠的钱。'],
+  incomeAnnual: ['你一年大概挣多少钱？', '选个大概。工资加奖金，扣税前。'],
+  personalNetAssets: ['你自己有多少家底？', '选个大概。房子、车、存款，减掉欠的钱。'],
   housing: ['你现在住在哪里？'],
   familySupport: ['家里能给你多大帮助？'],
-  familyNetAssets: ['父母家大概有多少家底？', '不用很精确，选个大概就行；真不知道就选“不清楚”。'],
+  familyNetAssets: ['父母家大概有多少家底？', '选个大概，不知道就选“不清楚”。'],
   parentsSecurity: ['父母有养老保险和医保吗？', '不确定就选“不清楚”。'],
   siblings: ['你有兄弟姐妹吗？'],
   care: ['你需要照顾父母吗？'],
@@ -180,19 +190,31 @@ const OPT_SUB = {
   直接沟通: '有话直说', 慢热温和: '熟了才放得开', 活跃外向: '爱说爱笑，喜欢热闹', 独立安静: '喜欢自己待着',
   规律作息: '每天差不多同一时间睡觉起床', 弹性作息: '睡觉起床时间不固定', 偏好安静: '喜欢安静、人少的地方',
   喜欢社交: '常和朋友聚会', 户外运动: '常去运动、爬山、跑步', 居家休闲: '休息时喜欢待在家',
-  计划长期上海: '打算一直在上海', 城市可协商: '去哪里可以商量', 未来可能离沪: '以后可能离开上海',
+  计划长期定居本城: '打算一直在现在的城市', 城市可协商: '去哪里可以商量', 未来可能离开本城: '以后可能换城市',
 };
 const NUM = { age: { min: 18, max: 80, unit: '岁' }, heightCm: { min: 140, max: 210, unit: '厘米' } };
 const INCOME_P = [['5 万以下', 30000, 0, 50000], ['5 到 10 万', 75000, 50000, 100000], ['10 到 15 万', 125000, 100000, 150000], ['15 到 20 万', 175000, 150000, 200000], ['20 到 30 万', 250000, 200000, 300000], ['30 到 50 万', 400000, 300000, 500000], ['50 万以上', 700000, 500000, Infinity]];
 const MIN_WAN = { incomeAnnual: [5, 10, 15, 20, 30, 50], personalNetAssets: [10, 50, 100, 300, 600], familyNetAssets: [50, 150, 300, 600] };
 const IMP = [
   ['off', '不在意', '这一条不看，不影响结果。'],
-  ['1', '加分', '有就加分，没有也行。'],
+  ['1', '有最好', '有更好，没有也行。分量最轻。'],
   ['2', '在意', '会认真比较这一条。'],
   ['3', '很在意', '非常看重，占的分量大。'],
-  ['must', '必须有', '达不到就不看这个人。最好只给 1 到 2 条用。'],
+  ['must', '必须有', '达不到就不看。最多给 1–2 条。'],
 ];
 const IMP_LABEL = Object.fromEntries(IMP.map(([v, l]) => [v, l]));
+// 默认在意程度：用户点了某条要求的具体条件时，先按常见情况预填，随时能改。
+// 这是起点，大致按公开婚恋调查里各项的排序给出；同意参与统计的用户多了以后，
+// 改成按性别、年龄段、城市分组的平均值（docs/WEIGHTS.md）。键：找男生用 m，找女生用 f。
+const DEFAULT_IMP = {
+  age: { m: '3', f: '3' }, heightCm: { m: '2', f: '1' }, city: { m: '3', f: '3' }, settlement: { m: '2', f: '2' },
+  education: { m: '2', f: '2' }, occupation: { m: '1', f: '1' }, incomeAnnual: { m: '3', f: '1' },
+  marriagePlan: { m: '3', f: '3' }, childrenPlan: { m: '3', f: '3' }, personality: { m: '2', f: '2' }, lifestyle: { m: '1', f: '1' },
+  personalNetAssets: { m: '1', f: '1' }, housing: { m: '2', f: '1' }, familySupport: { m: '1', f: '1' }, familyNetAssets: { m: '1', f: '1' },
+  parentsSecurity: { m: '2', f: '2' }, siblings: { m: '1', f: '1' }, care: { m: '1', f: '1' }, parentsMarriage: { m: '1', f: '1' },
+};
+const defaultImp = (key) => DEFAULT_IMP[key]?.[S.me?.gender === 'female' ? 'm' : 'f'] || '2';
+const IMP_WEIGHT = { 1: 1, 2: 2, 3: 3 };
 
 // 跳过的题记在本机，“继续填写”时不再重复问
 const skipped = {
@@ -205,7 +227,7 @@ const DEMO = {
   female: {
     nickname: '示例·顾念',
     profile: {
-      age: 29, heightCm: 165, city: '上海', settlement: '计划长期上海', education: '硕士', occupation: '设计与传媒',
+      age: 29, heightCm: 165, city: '上海', settlement: '计划长期定居本城', education: '硕士', occupation: '设计与传媒',
       incomeAnnual: 180000, personalNetAssets: '50–100万元', housing: '自有住房（无贷款）', familySupport: '可应急小额支持',
       familyNetAssets: '150–300万元', parentsSecurity: '双方有基本养老与医保', siblings: '独生子女', care: '暂时无固定照护责任',
       parentsMarriage: '父母目前为婚姻关系', marriagePlan: '1–3年内考虑结婚', childrenPlan: '希望育儿', personality: '直接沟通', lifestyle: '规律作息',
@@ -215,7 +237,7 @@ const DEMO = {
       { field: 'heightCm', op: 'range', target: [175, 190], importance: 2 },
       { field: 'incomeAnnual', op: 'atLeast', target: 150000, importance: 3 },
       { field: 'education', op: 'atLeast', target: '本科', importance: 2 },
-      { field: 'settlement', op: 'in', target: ['计划长期上海', '城市可协商'], importance: 2 },
+      { field: 'settlement', op: 'in', target: ['计划长期定居本城', '城市可协商'], importance: 2 },
       { field: 'childrenPlan', op: 'in', target: ['希望育儿'], importance: 'must' },
       { field: 'personality', op: 'in', target: ['直接沟通', '慢热温和'], importance: 1 },
     ],
@@ -223,7 +245,7 @@ const DEMO = {
   male: {
     nickname: '示例·周启明',
     profile: {
-      age: 31, heightCm: 178, city: '上海', settlement: '计划长期上海', education: '本科', occupation: '软件与技术',
+      age: 31, heightCm: 178, city: '上海', settlement: '计划长期定居本城', education: '本科', occupation: '软件与技术',
       incomeAnnual: 250000, personalNetAssets: '10–50万元', housing: '整租', familySupport: '可部分支持首付',
       familyNetAssets: '50–150万元', parentsSecurity: '一方有养老金，双方有医保', siblings: '一位兄弟姐妹', care: '定期探望及协助',
       parentsMarriage: '父母目前为婚姻关系', marriagePlan: '1–3年内考虑结婚', childrenPlan: '希望育儿', personality: '慢热温和', lifestyle: '户外运动',
@@ -294,7 +316,7 @@ function growBar() {
 }
 
 function optList(items, sel, { multi = false, cls = '' } = {}) {
-  return `<div class="opts ${cls}" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
+  return `${items.length > 20 ? `<input class="text-input opt-filter" type="search" placeholder="输入城市名搜索" aria-label="搜索" style="margin:0 0 12px">` : ''}<div class="opts ${cls}" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
     const on = multi ? sel.includes(it.v) : sel === it.v;
     return `<button type="button" class="opt ${multi ? 'multi' : ''} ${it.soft ? 'soft' : ''} ${on ? 'on' : ''}" data-v="${esc(it.v)}" data-label="${esc(it.label)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}">
       <span class="mark">${ic('check')}</span><span class="opt-t">${esc(it.label)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></button>`;
@@ -302,7 +324,7 @@ function optList(items, sel, { multi = false, cls = '' } = {}) {
 }
 
 function chipList(items, sel, { multi = false } = {}) {
-  return `<div class="chips" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
+  return `${items.length > 20 ? `<input class="text-input opt-filter" type="search" placeholder="输入城市名搜索" aria-label="搜索" style="margin:0 0 12px">` : ''}<div class="chips" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
     const on = multi ? sel.includes(it.v) : sel === it.v;
     return `<button type="button" class="chip ${on ? 'on' : ''}" data-v="${esc(it.v)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}">${ic('check')}${esc(it.label)}</button>`;
   }).join('')}</div>`;
@@ -360,21 +382,6 @@ function bindBack(before) {
 }
 
 // ---------- 首页 ----------
-function venn({ nums = null } = {}) {
-  const [left, right, mid] = [REL.ideal(), REL.seekers(), REL.mutual()];
-  const n = (v, x, y) => (nums ? `<text class="num" x="${x}" y="${y}" text-anchor="middle">${v}</text>` : '');
-  return `<svg class="venn" viewBox="0 0 340 206" role="img" aria-label="关系图：${left}${nums ? ` ${nums.left} 位` : ''}，${right}${nums ? ` ${nums.right} 位` : ''}，中间重叠的是${mid}${nums ? ` ${nums.mid} 位` : ''}">
-    <g class="c1 hit" data-tab="ideal"><circle cx="122" cy="108" r="92" style="fill:color-mix(in srgb, var(--brand) 20%, transparent);stroke:var(--brand);stroke-width:1.5"/>
-      ${n(nums?.left, 80, 112)}<text x="80" y="${nums ? 136 : 114}" text-anchor="middle">${left}</text></g>
-    <g class="c2 hit" data-tab="seekers"><circle cx="218" cy="108" r="92" style="fill:color-mix(in srgb, var(--gold) 24%, transparent);stroke:var(--gold);stroke-width:1.5"/>
-      ${n(nums?.right, 260, 112)}<text x="260" y="${nums ? 136 : 114}" text-anchor="middle">${right}</text></g>
-    <g class="mid hit" data-tab="mutual">
-      ${nums ? `<text class="num" x="170" y="104" text-anchor="middle" style="fill:var(--brand)">${nums.mid}</text><text x="170" y="128" text-anchor="middle">${mid}</text>`
-    : `<path transform="translate(158 82)" d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z" style="fill:var(--brand)"/><text x="170" y="130" text-anchor="middle" style="fill:var(--brand)">${mid}</text>`}
-    </g>
-  </svg>`;
-}
-
 async function renderHome() {
   const state = () => {
     if (!S.me?.gender) return 'new';
@@ -385,28 +392,35 @@ async function renderHome() {
     const filled = S.me ? Object.keys(S.me.profile || {}).length + (S.me.gender ? 1 : 0) + (S.me.requirements?.length || 0) : 0;
     const actions = {
       new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/gender' : '#/intro'}">开始填写 ${ic('arrow')}</a>
-            ${S.config.poolMode === 'simulated' ? `<button class="btn block" id="demo">${ic('play')}先看个例子</button>` : ''}`, // 例子只在演示模式下有意义
+            <a class="btn ghost block" href="#/login">已经填过？用手机号登录</a>`,
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
-      done: `<a class="btn primary block" href="#/results">${ic('list')}看谁适合我</a>
+      done: `${brokerNotice()}<a class="btn primary block" href="#/results">${ic('list')}看谁适合我</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
     paint(`<section class="hero">
-      <p class="eyebrow rise">${ic('sparkle')} 大约 6 到 8 分钟 · 可以分几次填</p>
-      <h1 class="display rise" style="--i:1">看看<em>谁适合你</em></h1>
-      ${venn()}
-      <p class="lead rise" style="--i:2">说说你的情况，再说说你想找的人。我们帮你找出双方条件都合适的人。</p>
-      <div class="stack rise" style="--i:3">${actions}</div>
-      <ul class="benefits">
-        <li class="rise" style="--i:4"><span class="n">1</span><div><b>说说你自己</b><span>点选就行，不想说的可以跳过</span></div></li>
-        <li class="rise" style="--i:5"><span class="n">2</span><div><b>说说你想找的人</b><span>每条要求，告诉我们有多在意</span></div></li>
-        <li class="rise" style="--i:6"><span class="n">3</span><div><b>看看谁适合你</b><span>每个人符合你几条、你符合对方几条，一看就懂</span></div></li>
-      </ul>
-      <p class="fine">${ic('lock')} 每答一题都会自动保存，随时可以退出，下次接着填。<br>别人看不到你的收入和家庭细节。只比较条件，不代表一个人好不好。</p>
+      <h1 class="display rise">看看<em>谁适合你</em></h1>
+      <div class="relmap rise" id="relmap" style="--i:1"></div>
+      <div class="stack rise" style="--i:2">${actions}</div>
+      <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
     </section>`);
-    const demo = document.getElementById('demo');
-    if (demo) demo.onclick = openDemoSheet;
+    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seek: 'seekers', mutual: 'mutual' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
+    // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
+    if (st !== 'new') {
+      const acts = document.querySelector('.hero .stack');
+      acts.insertAdjacentHTML('beforeend', `<button class="btn block" id="restart">${S.me.phone ? `退出登录（${esc(S.me.phone)}）` : '换个人，从头开始'}</button>`);
+      document.getElementById('restart').onclick = () => {
+        const lose = !S.me.phone;
+        const m = sheet(`<h2>${lose ? '从头开始？' : '退出登录？'}</h2>
+          <p class="lead">${lose ? '你还没登录，资料会丢。想留着就先登录。' : '下次用手机号登录就能回来。'}</p>
+          <div class="stack">${lose ? `<a class="btn primary block" href="#/login">先登录保存</a>` : ''}
+          <button class="btn ${lose ? 'danger' : 'primary'} block" id="yes">${lose ? '不保留，从头开始' : '退出登录'}</button><button class="btn block" id="no">再想想</button></div>`);
+        m.el.querySelector('#no').onclick = m.close;
+        m.el.querySelector('a')?.addEventListener('click', m.close);
+        m.el.querySelector('#yes').onclick = () => { m.close(); store.del('vier.token'); Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null }); dir = 'none'; draw(); };
+      };
+    }
   };
   draw();
   // 已有会话时读取资料，把按钮换成“继续填写”或“看谁适合我”
@@ -415,31 +429,17 @@ async function renderHome() {
   }
 }
 
-function openDemoSheet() {
-  const m = sheet(`<h2>先看个例子</h2>
-    <p class="lead">我们用一份示例资料，直接给你看结果长什么样。之后可以随时改成你自己的。</p>
-    <div class="opts gender" style="margin-top:18px">
-      <button class="opt" data-g="female"><span class="face">${ic('user')}</span><span class="opt-t"><b>女生的例子</b><small>29 岁 · 设计师</small></span></button>
-      <button class="opt" data-g="male"><span class="face">${ic('user')}</span><span class="opt-t"><b>男生的例子</b><small>31 岁 · 程序员</small></span></button>
-    </div>`);
-  m.el.querySelectorAll('[data-g]').forEach((b) => (b.onclick = async () => {
-    b.classList.add('on');
-    m.el.querySelectorAll('[data-g]').forEach((x) => (x.disabled = true));
-    try { await runFullDemo(b.dataset.g); m.close(); } catch (e) { toast(e.message); m.close(); }
-  }));
-}
-
 // ---------- 新手引导 ----------
 function renderIntro() {
   const slides = [
-    ['user', '第一步：说说你自己', `年龄、身高、在哪工作……点一点就能选。全部一共 ${TOTAL_Q} 题，不想说的点“跳过”。`],
-    ['heart', '第二步：说说你想找的人', '每一条要求，告诉我们你有多在意。“必须有”就是达不到就不看。'],
-    ['users', '第三步：看看谁适合你', '每个人符合你几条要求、你符合对方几条，都写得清清楚楚。'],
+    ['user', '第一步：说说你自己', `点一点就行，不想答可以跳过。`],
+    ['heart', '第二步：说说你想找的人', '每条要求，说说你有多在意。'],
+    ['users', '第三步：看看谁适合你', '谁合适、合适几条，一看就懂。'],
   ];
   paint(`<section class="intro">
     <div class="slides" id="slides">${slides.map(([i, h, p]) => `<div class="slide"><div class="art">${ic(i)}</div><h2>${h}</h2><p>${p}</p></div>`).join('')}</div>
     <div class="dots" aria-hidden="true">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
-    <p class="fine">${ic('lock')} 每答一题都自动保存，中途退出也不会丢。</p>
+    <p class="fine">${ic('lock')} 自动保存，随时退出。</p>
     <div class="stack"><button class="btn primary block" id="nx">下一页 ${ic('arrow')}</button><button class="btn ghost" id="skip">跳过介绍</button></div>
   </section>`);
   const box = document.getElementById('slides'), dots = view.querySelectorAll('.dots i'), nx = document.getElementById('nx');
@@ -584,8 +584,8 @@ function renderMeQ(key) {
 }
 
 function renderMeBreak() {
-  paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，全部选填。填了结果更准，不填也能看结果。',
-    '这些内容加密保存，只用来计算。别人只能看到“符合 / 不符合”，看不到你的具体数字。',
+  paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，都可以不填。填了更准。',
+    '这些都选填。别人看不到具体数字，只知道符不符合。',
     `<button class="btn primary block" id="more">继续填（9 题，大约 1 分钟）</button>
      <button class="btn block" id="skip">这 9 题都跳过，去说说想找的人</button>
      <button class="btn ghost" data-back="#/me/lifestyle">${ic('back')} 返回上一题</button>`));
@@ -615,7 +615,7 @@ function renderMeReview() {
   const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看谁适合我'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
   paint(`${simpleHead('#/', '我填的资料', '随时可以改')}
     <h1 class="q">这是你填的资料</h1>
-    <p class="qhint">点任意一行可以修改，改完会回到这里。都已经自动保存了。</p>
+    <p class="qhint">点一行就能改。</p>
     <h2 class="sec-title">${ic('user')}你的情况</h2>
     <div class="sum-list">${P1.map(row).join('')}</div>
     <h2 class="sec-title">${ic('lock')}你的经济和家庭（选填）</h2>
@@ -708,9 +708,10 @@ function iNav(key) {
   };
 }
 
-function impBlock(e) {
+function impBlock(e, key) {
   return `<div class="imp" id="imp">
     <h3>这一条，你有多在意？</h3>
+    <p class="small muted" style="margin:-4px 0 10px">不确定就用默认的“${IMP_LABEL[defaultImp(key)]}”，你可以改。</p>
     <div class="imp-list" role="radiogroup" aria-label="在意程度">${IMP.map(([v, l, note]) => `<button type="button" class="imp-opt ${e.imp === v ? 'on' : ''}" data-imp="${v}" role="radio" aria-checked="${e.imp === v}">
       <span class="mark">${ic('check')}</span><span class="t"><b>${l}</b><span>${note}</span></span></button>`).join('')}</div>
   </div>`;
@@ -739,7 +740,7 @@ function renderIdealQ(key) {
     <h1 class="q">${tx(q)}</h1>
     <p class="qhint">${hint}</p>
     <div id="target">${body}</div>
-    ${impBlock(e)}
+    ${impBlock(e, key)}
     <div class="qfoot">
       <button class="btn primary" id="ok">${S.backToReview ? '改好了' : '下一题'} ${ic('arrow')}</button>
     </div>`);
@@ -751,8 +752,8 @@ function renderIdealQ(key) {
     view.querySelectorAll('[data-imp]').forEach((b) => { b.classList.toggle('on', b.dataset.imp === v); b.setAttribute('aria-checked', b.dataset.imp === v); });
     if (flash) { const box = document.getElementById('imp'); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); }
   };
-  // 选了具体条件，却还是“不在意”时，自动改成“在意”，并闪一下提醒
-  const touched = () => { e.dirty = true; if (e.imp === 'off') setImp('2', true); };
+  // 选了具体条件，却还是“不在意”时，按常见的选择预填在意程度，并闪一下提醒
+  const touched = () => { e.dirty = true; if (e.imp === 'off') setImp(defaultImp(key), true); };
   view.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => setImp(b.dataset.imp, false)));
 
   if (f.type === 'number') {
@@ -814,6 +815,18 @@ function renderIdealBreak() {
   done.onclick = () => finishIdeal(done);
 }
 
+// 在意程度的直观分布：“必须有”单独列出（达不到就不看），其余按分量从高到低画横条
+function weightBars(on, d) {
+  const must = on.filter((k) => d[k].imp === 'must');
+  const rest = on.filter((k) => IMP_WEIGHT[d[k].imp]).sort((a, b) => IMP_WEIGHT[d[b].imp] - IMP_WEIGHT[d[a].imp]);
+  if (!rest.length) return '';
+  const total = rest.reduce((t, k) => t + IMP_WEIGHT[d[k].imp], 0);
+  return `<div class="wbars"><p class="wb-title">${ic('list')}各条要求在打分里占多少</p>
+    ${must.length ? `<p class="small muted" style="margin:0 0 8px">必须有：${must.map((k) => esc(lab(S.F[k].label))).join('、')}（达不到就不看，不参与比例）</p>` : ''}
+    ${rest.map((k) => { const pc = Math.round((IMP_WEIGHT[d[k].imp] / total) * 100); return `<div class="wb-row"><span>${esc(lab(S.F[k].label))}</span><i><b style="width:${pc}%"></b></i><em>${pc}%</em></div>`; }).join('')}
+  </div>`;
+}
+
 function renderIdealReview() {
   if (!S.me.gender) return go('#/me/gender');
   const d = iDraft();
@@ -824,12 +837,13 @@ function renderIdealReview() {
   S.fromEdit = false;
   paint(`${simpleHead(S.reviewFrom, '确认你的要求', `共 ${on.length} 条`)}
     <h1 class="q">这是你的要求</h1>
-    <p class="qhint">点任意一条可以修改。都已经自动保存了。</p>
+    <p class="qhint">点一条就能改。</p>
     ${on.length ? `<div class="sum-list">${on.map((k, i) => `<button class="sum-item" data-k="${k}" style="--i:${i}">
         <div class="t"><b>${esc(lab(S.F[k].label))}</b><span>${esc(describe(k, d[k]))}</span></div>
-        <span class="badge ${d[k].imp === 'must' ? 'must' : d[k].imp === '3' ? 'l3' : ''}">${IMP_LABEL[d[k].imp]}</span>${ic('edit')}</button>`).join('')}</div>`
-    : `<div class="empty">${ic('search')}<b>还没有任何要求</b>至少选一条，我们才知道帮你找什么样的人。</div>`}
-    ${mustN >= 4 ? `<div class="tip" style="animation-delay:0s">${ic('info')}<span>你有 <b>${mustN} 条“必须有”</b>。太多了可能一个人都找不到，可以把一些改成“很在意”。</span></div>` : ''}
+        <span class="badge imp-${d[k].imp === 'must' ? 4 : d[k].imp}">${IMP_LABEL[d[k].imp]}</span>${ic('edit')}</button>`).join('')}</div>`
+    : `<div class="empty">${ic('search')}<b>还没有任何要求</b>至少选一条。</div>`}
+    ${weightBars(on, d)}
+    ${mustN >= 4 ? `<div class="tip" style="animation-delay:0s">${ic('info')}<span>你有 <b>${mustN} 条“必须有”</b>。太多可能找不到人，改几条成“很在意”试试。</span></div>` : ''}
     <div class="stack"><button class="btn block" id="add">${ic('plus')}再加几条要求</button></div>
     <div class="qfoot">${on.length ? `<button class="btn primary block" id="save">就这些，看谁适合我 ${ic('arrow')}</button>` : `<button class="btn primary block" id="pick">${ic('plus')}去选要求</button>`}</div>`);
   bindBack();
@@ -853,10 +867,10 @@ function renderIdealReview() {
 // ---------- 同意：一句人话 + 两个“可以 / 不要”的选择 ----------
 const SEE_CARD = () => `<div class="see-card">
   <p class="see-title">${ic('eye')}别人能看到你的什么？</p>
-  <div class="see-row t-good"><span class="st">${ic('check')}</span><div><b>能看到</b>年龄、身高、城市、学历、职业、结婚和孩子的打算</div></div>
+  <div class="see-row t-good"><span class="st">${ic('check')}</span><div><b>能看到</b>年龄、身高、城市、学历、职业、婚育打算</div></div>
   <div class="see-row t-warn"><span class="st">${ic('half')}</span><div><b>只看到大概范围</b>收入（比如“15 到 20 万”）</div></div>
   <div class="see-row t-bad"><span class="st">${ic('eyeOff')}</span><div><b>看不到</b>你的名字、存款、父母和家里的情况</div></div>
-  <p class="small muted" style="margin:10px 0 0">你会用一个随机代号出现，别人不知道是你。</p>
+  <p class="small muted" style="margin:10px 0 0">你用代号出现，别人不知道是你。</p>
 </div>`;
 
 function choice(name, cur, yes, no) {
@@ -866,27 +880,42 @@ function choice(name, cur, yes, no) {
 
 function renderConsent() {
   const c = S.me.consent || {};
-  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0' };
+  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0', willing: '0' };
   paint(`${simpleHead('#/ideal/review', '最后一步', '你的资料，你做主')}
-    <h1 class="q">最后，问你两件事</h1>
-    <div class="note-card" style="margin-top:6px">${ic('lock')}<span>要帮你找人，我们会用你填的资料来计算。只在我们的服务器里算，不给任何人看。以后随时可以在“我的资料”里删除。</span></div>
+    <h1 class="q">最后，问你几件事</h1>
+    <div class="note-card" style="margin-top:6px">${ic('lock')}<span>只用来帮你找人，不给任何人看。随时可以删。</span></div>
     <h2 class="sec-title">1. 让别人也能找到你吗？</h2>
     ${choice('pool', st.pool, '别人的结果里也可能出现你', '别人搜不到你')}
     ${SEE_CARD()}
     <h2 class="sec-title">2. 用于匿名统计吗？</h2>
     ${choice('research', st.research, '只算很多人加在一起的数', '不参与统计')}
+    <div id="wq" ${st.pool === '1' ? '' : 'hidden'}>
+      <h2 class="sec-title">3. 愿意被想认识你的人联系吗？</h2>
+      ${choice('willing', st.willing, '有人想认识你时，问你同不同意', '别人联系不到你')}
+    </div>
+    <div id="cq" hidden>
+    <h2 class="sec-title">${ic('user')}用手机号登录</h2>
+    <p class="small muted" style="margin:0 0 10px">用手机号登录。你同意后，这个号码才会发给对方一次。</p>
+    <div id="lbox">${S.me.phone ? loggedInNote() : loginBlock()}</div>
+    </div>
     <div class="qfoot"><button class="btn primary block" id="go">同意，开始找人 ${ic('arrow')}</button></div>
-    <p class="fine">点“同意”表示你同意我们用你的资料计算结果（同意内容 ${esc(String(S.config.consentVersion).replace(/^consent-/, ''))} 版）。</p>`);
+    <p class="fine">点“同意”，就是同意我们用你的资料帮你找人。</p>`);
   bindBack();
   view.querySelectorAll('.choice .opt').forEach((b) => (b.onclick = () => {
     st[b.dataset.name] = b.dataset.v;
+    if (b.dataset.name === 'pool') document.getElementById('wq').hidden = b.dataset.v !== '1';
+    document.getElementById('cq').hidden = !(st.pool === '1' && st.willing === '1');
     view.querySelectorAll(`[data-name="${b.dataset.name}"]`).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
   }));
+  if (!S.me.phone) bindLogin(document.getElementById('lbox'), () => { document.getElementById('lbox').innerHTML = loggedInNote(); });
   const btn = document.getElementById('go');
   btn.onclick = async () => {
     btn.classList.add('loading');
     try {
+      const wantBroker = st.pool === '1' && st.willing === '1';
+      if (wantBroker && !S.me.phone) { btn.classList.remove('loading'); toast('选了“可以”，请先用手机号登录'); document.getElementById('lphone')?.focus(); return; }
       await api('PUT', '/api/me/consent', { scoring: true, pool: st.pool === '1', research: st.research === '1' });
+      if (S.me.phone) await api('PUT', '/api/me/broker/willing', { willing: wantBroker });
       S.me = await api('GET', '/api/me');
       go('#/results');
     } catch (e) { btn.classList.remove('loading'); toast(e.message); }
@@ -940,25 +969,67 @@ function tally(items) {
 function fitLine(owner, subject, items) {
   if (!items?.length) return '';
   const t = tally(items);
-  const extra = [t.near && `${t.near} 条差一点`, t.no && `${t.no} 条不符合`, t.unk && `${t.unk} 条没填`].filter(Boolean).join('，');
-  return `<div class="fitline"><p>${owner}的 ${t.total} 条要求，${subject}符合 <b>${t.met}</b> 条${extra ? `<span class="extra">（${extra}）</span>` : ''}</p>
-    <span class="dots-row" aria-hidden="true">${items.map((it) => `<i class="${toneOf(it)}"></i>`).join('')}</span></div>`;
+  const names = (tone) => items.filter((it) => toneOf(it) === tone).map((it) => esc(lab(it.label))).join('、');
+  const miss = [t.no && `<span class="miss">没对上：${names('t-bad')}</span>`, t.near && `<span class="near">差一点：${names('t-warn')}</span>`, t.unk && `<span class="unk">没填：${names('t-unk')}</span>`].filter(Boolean).join('');
+  const pct = Math.round((t.met / t.total) * 100);
+  return `<div class="fitline"><p><span>${subject === '你' ? `你符合${owner}` : `${subject}符合你`}</span><b>${t.met}<small>/${t.total}</small></b></p>
+    <i class="bar"><b style="width:${pct}%"></b></i>${miss ? `<div class="why">${miss}</div>` : ''}</div>`;
 }
 
-function pcard(c, inner, { href = '', i = 0, head = '', more = '' } = {}) {
-  const tag = href ? 'a' : 'div';
-  const sub = [c.gender, c.facts['年龄'], c.facts['常住城市']].filter(Boolean).map(esc).join(' · ');
-  return `<${tag} class="pcard" ${href ? `href="${href}"` : ''} style="--i:${i}">
-    <div class="pcard-head">${avatar(c)}<div class="pcard-name"><b>${esc(c.alias)}</b><span>${sub}</span></div>
-      ${head}${c.simulated ? '<span class="badge sim">模拟</span>' : ''}</div>
+// 我自己（用户本人）的人称：女生是“她”，男生是“他”
+const ME = () => (S.me?.gender === 'female' ? '她' : S.me?.gender === 'male' ? '他' : '你');
+
+// 虚拟理想型：按一组要求拼出来的“样子”，明确标出不是真人
+function idealCard(reqs, { title, sub, edit = false, fold = false }) {
+  if (fold) return `<details class="ideal-fold"><summary>${ic('user')}<b>${title}</b><span>${reqs.length} 条要求</span><span class="chev">${ic('next')}</span></summary>${idealCard(reqs, { title, sub, edit })}</details>`;
+  return `<section class="ideal-card">
+    <div class="ideal-head"><span class="ideal-avatar" aria-hidden="true">${ic('user')}</span>
+      <div><b>${title}</b><span>${sub}</span></div><span class="badge virtual">想象</span></div>
+    <ul class="ideal-list">${[...reqs].sort((x, y) => (IMP_RANK[y.importance] || 0) - (IMP_RANK[x.importance] || 0)).map((q) => `<li><span class="k">${esc(lab(q.label))}</span><span class="v">${esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')))}</span>
+      <span class="badge imp-${IMP_RANK[q.importance] || 0}">${IMP_FROM_SERVER[q.importance] || esc(q.importance)}</span></li>`).join('')}</ul>
+    ${edit ? `<a class="ideal-edit" href="#/ideal/review">${ic('edit')}改改我的要求</a>` : ''}
+  </section>`;
+}
+// 把某人的逐条结果按理想型的顺序排好，圆点和对照表才能一一对上
+const byIdeal = (reqs, items) => {
+  const m = Object.fromEntries((items || []).map((it) => [it.label, it]));
+  return reqs.map((q) => m[q.label]).filter(Boolean);
+};
+// 对照表（手机优先）：三人都符合的条件收成最后一行；其余每行一条，格子只放小图标，
+// 对上的是浅绿勾，没对上的可点，点了原地显示对方的实际情况
+function compareTable(reqs, people) {
+  const itemOf = (p, q) => (p.fit.items || []).find((x) => x.label === q.label);
+  const allGood = reqs.filter((q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; }));
+  const rows = reqs.filter((q) => !allGood.includes(q));
+  const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
+  return `<div class="cmp-wrap"><table class="cmp cmp2">
+    <thead><tr><th scope="col"></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
+    <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b><span>${reqText(q)}</span></th>
+      ${people.map((p) => {
+        const it = itemOf(p, q);
+        const [tone, icon, word] = it ? (STATUS[it.status] || ['t-unk', 'help', '没填']) : ['t-unk', 'help', '没填'];
+        if (it && tone !== 't-good') return `<td class="${tone}"><button type="button" class="cell-tap" aria-expanded="false" aria-label="${word}"><span class="st">${ic(icon)}</span><span class="v">${it.value === null ? '不公开' : esc(nice(it.value))}</span></button></td>`;
+        return `<td class="${tone}"><span class="st" aria-label="${word}">${ic(icon)}</span></td>`;
+      }).join('')}</tr>`).join('')}
+    ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 1}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
+  </table>${rows.length ? '<p class="cmp-hint">点 ✕ 或 ◐ 看对方的实际情况</p>' : ''}</div>`;
+}
+
+function pcard(c, inner, { href = '', i = 0, head = '', more = '', quick = '' } = {}) {
+  const sub = [c.facts['年龄'], c.facts['常住城市']].filter(Boolean).map(esc).join(' · ');
+  // 手机上默认收起：只露头像、代号、一句符合几条；点开再看细节
+  return `<details class="pcard fold" style="--i:${i}">
+    <summary class="pcard-head"><div class="pcard-name"><b>${nameTag(c)}</b><span>${sub}</span></div>
+      ${quick ? `<span class="quick">${quick}</span>` : head}<span class="chev">${ic('next')}</span></summary>
+    ${brokerTag(c) ? `<div class="broker-tags">${brokerTag(c)}</div>` : ''}
     <div class="facts">${Object.entries(c.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 4).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
     ${inner}
-    ${href ? `<div class="pcard-more">${more || '看详细'} ${ic('next')}</div>` : ''}
-  </${tag}>`;
+    ${href ? `<a class="pcard-more" href="${href}">${more || '看详细'} ${ic('next')}</a>` : ''}
+  </details>`;
 }
 
 const TABS = {
-  ideal: { flow: () => ['你', T()], text: () => `最符合你要求的人。点开看看${T()}在找什么样的人。` },
+  ideal: { flow: () => ['你', T()], text: () => `先看你心中的${T()}，再看最接近的真人。` },
   seekers: { flow: () => [T(), '你'], text: () => `你正好符合${T()}的要求。只是条件对得上，不代表${T()}已经对你有意思。` },
   mutual: { flow: () => ['你', T(), true], text: () => `${T()}符合你的要求，你也符合${T()}的要求。` },
 };
@@ -967,29 +1038,61 @@ function tabList(r, tab) {
   const t = T();
   if (r.summary.counterpartCount === 0) return emptyCard('还没有人', `人选库里还没有${THEM()}，不是你的要求太高。过几天再来看看。`);
   if (tab === 'ideal') {
-    return r.idealMatches.map((m, i) => pcard(m,
-      fitLine('你', t, m.fit.items) + fitLine(t, '你', m.myFitToThem.items),
-      { href: `#/match/${i}`, i, head: `<span class="rank">第 ${i + 1} 位</span>`, more: `看看${t}在找什么样的人` })).join('')
-      || emptyCard('没有人达到你所有的“必须有”', '可以把一两条“必须有”改成“很在意”，再看看。', '#/ideal/review', '去改要求');
+    const reqs = r.myIdeal || [], people = r.idealMatches, table = S.view === 'table' && people.length;
+    const head = idealCard(reqs, { title: `你心中的${t}`, sub: '', edit: true, fold: true });
+    if (!people.length) return head + emptyCard('没有人达到你所有的“必须有”', '把一两条“必须有”改成“很在意”试试。', '#/ideal/review', '去改要求');
+    const switcher = `<div class="near-head"><h3>最接近的 ${people.length} 位真人</h3>
+      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${!!table}">对照着看</button></div></div>`;
+    const body = table ? compareTable(reqs, people)
+      : `<div class="cards">${people.map((m, i) => pcard(m,
+        fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
+        { href: `#/match/${i}`, i, quick: rankQ(i, m.fit.total), more: `看看${t}在找什么样的人` })).join('')}</div>`;
+    return head + switcher + body;
   }
+  // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
+  const both = (m, mine) => fitLine('你', t, m.fit?.items) + fitLine(t, '你', mine?.items);
   if (tab === 'mutual') {
-    // 同一个人在另外两组里有逐条结果，就借来用；找不到时只说结论
-    const byAlias = (list) => Object.fromEntries(list.map((x) => [x.alias, x]));
-    const im = byAlias(r.idealMatches), sk = byAlias(r.seekers);
-    return r.mutual.map((m, i) => {
-      const a = im[m.alias]?.fit.items, b = (im[m.alias] || sk[m.alias])?.myFitToThem.items;
-      const inner = a || b ? fitLine('你', t, a) + fitLine(t, '你', b) : '<p class="fitline">两边的条件都对得上。</p>';
-      return pcard(m, inner, { i });
-    }).join('') || emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`);
+    return cardsOr(r.mutual.map((m, i) => pcard(m, both(m, m.mine) + brokerBox(m), { i, quick: rankQ(i, m.mutualScore), href: `#/match/${i}/mutual`, more: `看看${t}在找什么样的人` })).join(''),
+      emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
   }
-  return r.seekers.map((m, i) => pcard(m,
-    fitLine(t, '你', m.myFitToThem.items)
-    + `<p class="small muted" style="margin:8px 0 0">${m.theirFitEligible ? `${t}也达到了你所有的“必须有”。` : `${t}没达到你的某条“必须有”。`}</p>`, { i })).join('')
-    || emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
+  return cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: rankQ(i, m.myFitToThem.total), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
+    emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
+
+// 卡片右侧：名次 + 契合度。名次按加权分排（越在意的条件分量越大），所以 8/11 也可能排在 9/11 前面
+// 资料没填全时分数是个区间：只显示保底的低值，后面加个小“+”表示可能更高（排序本来就按低值）
+const pctQ = (t) => `${Math.round(t.low)}%${Math.round(t.high) > Math.round(t.low) ? '<sup title="有些资料没填，实际可能更高">+</sup>' : ''}`;
+const rankQ = (i, t) => `<span class="rk">第 ${i + 1}</span>${t ? `<span class="pc">${pctQ(t)}</span>` : ''}`;
+// 代号：名字右上角一枚小小的、斜着的朱红印章“代号”，提醒这不是真名
+const nameTag = (c) => `<span class="nm">${esc(c.name || c.alias)}<i class="seal" aria-label="代号">代号</i></span>`;
+const cardsOr = (html, empty) => (html ? `<div class="cards">${html}</div>` : empty);
 
 function emptyCard(title, text, href, btn) {
   return `<div class="empty">${ic('search')}<b>${title}</b>${text}${href ? `<div class="stack" style="margin-top:14px"><a class="btn sm" href="${href}">${btn}</a></div>` : ''}</div>`;
+}
+
+// 结果页关系图：你 → 三组 → 每位人选；“他适合你”的人再展开“他想找的”
+function resultTree(r) {
+  const t = T(), met = (items = []) => items.filter((x) => x.status === '符合').length;
+  const who = (m) => [...String(m.alias).replace(/[^A-Za-z0-9一-龥]/g, '')][0]?.toUpperCase() || '?';
+  const age = (m) => m.facts['年龄'] ? `${m.facts['年龄']}` : '';
+  const person = (m, pre, i, extra) => ({ id: `${pre}${i}`, kind: 'person', short: [...(m.name || who(m))][0], label: m.name || age(m), seal: !!m.name, ...extra });
+  const group = (id, tab, list, note, kid) => ({ id, kind: 'group', tab, label: REL[tab](), short: String(list.length), note: list.length ? note : '暂时没有', kids: list.map(kid) });
+  return {
+    id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
+    kids: [
+      group('ideal', 'ideal', r.idealMatches, `符合你要求的人`, (m, i) => {
+        const a = met(m.fit.items), b = met(m.myFitToThem.items), n = m.myFitToThem.items.length;
+        return person(m, 'i', i, { fit: `${a}/${m.fit.items.length}`, note: `符合你 ${a} 条 · 再点看${t}想找谁`, href: `#/match/${i}`,
+          kids: [{ id: `it${i}`, kind: 'theirs', short: t, label: `${t}想找的`, fit: `你 ${b}/${n}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}` }] });
+      }),
+      group('seekers', 'seekers', r.seekers, `你符合${t}们的要求`, (m, i) => {
+        const b = met(m.myFitToThem.items);
+        return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
+      }),
+      group('mutual', 'mutual', r.mutual, '两边都对得上', (m, i) => person(m, 'm', i, { fit: '双向', note: '你们互相符合', href: `#/match/${i}/mutual` })),
+    ],
+  };
 }
 
 async function renderResults() {
@@ -1000,54 +1103,54 @@ async function renderResults() {
   if (!S.results) await renderCalc();
   const r = await loadResults();
   const s = r.summary, plan = S.config.plans[r.plan];
-  const showTip = !store.get('vier.tip.dots');
   const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
   const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
 
   paint(`<section class="res-head">
-      <p class="eyebrow rise">${ic('sparkle')} ${few ? `现在还没有${THEM()}加入` : `从 ${s.counterpartCount} 位${THEM()}里帮你挑`}</p>
-      <h1 class="display rise" style="--i:1">看看谁适合你</h1>
-      ${venn({ nums: { left: s.matchesEligible, right: s.iFitCount, mid: s.mutualCount } })}
-      <p class="small muted rise" style="--i:2">点圆圈，或点下面的按钮，切换查看</p>
+      <h1 class="display rise">看看谁适合你</h1>
+      ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
-    ${few ? `<div class="note-card">${ic('users')}<span>我们刚开始，人还不多。你的资料已经保存好了，过几天再来看看。<br>如果你愿意让别人也能找到你，可以在“我的资料”里打开“让别人也能找到我”。</span></div>` : ''}
-    ${showTip && !few ? `<div class="tip" id="tip">${ic('help')}<span><b>怎么看？</b>每个小圆点是一条要求：<span class="legend-inline"><span><i class="t-good"></i>符合</span><span><i class="t-warn"></i>差一点</span><span><i class="t-bad"></i>不符合</span><span><i class="t-unk"></i>没填</span></span><br>只比较条件，不代表一个人好不好。</span><button class="x" aria-label="知道了">${ic('x')}</button></div>` : ''}
-    <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="${S.tab === k ? 'on' : ''}">${REL[k]()}</button>`).join('')}</div>
+    ${brokerNotice()}
+    ${few ? `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。<br></span></div>` : ''}
+    <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div>
     <div id="tabpanel"></div>
     ${r.plan === 'vip'
     ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
-    : payOn ? `<div class="vip">${ic('crown')}<div class="t"><b>想多看几位？</b><span>升级 VIP，每组从 ${S.config.plans.free.matches} 位变成 ${S.config.plans.vip.matches} 位</span></div><button class="btn gold sm" id="upgrade">¥${(S.config.plans.vip.priceFen / 100).toFixed(2)} 升级</button></div>` : ''}
-    <div class="stack">
-      <a class="btn block" href="#/ideal/review">${ic('edit')}改改我的要求</a>
-      <a class="btn ghost" href="#/me/review">改改我自己的资料</a>
-    </div>
-    <p class="disclaimer">每组最多显示 ${plan.matches} 位${s.matchesPending ? ` · ${s.matchesPending} 位资料不全，暂时没放进来` : ''}${s.seekersExcludedFewRequirements ? ` · ${s.seekersExcludedFewRequirements} 位要求太少，没放进“${REL.seekers()}”` : ''}<br>只比较条件，不是好感，也不代表一个人的价值。</p>`, { wide: true });
+    : payOn ? `<button class="vip-line" id="upgrade">${ic('crown')}<span>每组看 ${S.config.plans.vip.matches} 位</span><b>¥${(S.config.plans.vip.priceFen / 100).toFixed(2)}</b></button>` : ''}
+    <div class="row-2"><a class="btn sm" href="#/ideal/review">${ic('edit')}改要求</a><a class="btn sm" href="#/me/review">${ic('user')}改资料</a></div>
+    <p class="disclaimer">只比较条件，不代表一个人好不好。</p>`, { wide: true });
 
   const panel = document.getElementById('tabpanel');
   const show = (tab, scroll) => {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
-    const t = TABS[tab], fl = t.flow();
-    panel.innerHTML = `<div class="tab-explain"><span class="flow"><span>${fl[0]}</span>${ic(fl[2] ? 'swap' : 'arrow')}<span>${fl[1]}</span></span><span>${t.text()}</span></div><div class="cards">${tabList(r, tab)}</div>`;
+    panel.innerHTML = tabList(r, tab); panel.dataset.g = tab;
+    panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
+    panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
+    bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);
     if (scroll) view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   };
   view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, b.tagName.toLowerCase() === 'g')));
   show(S.tab);
-  const tip = document.getElementById('tip');
-  if (tip) tip.querySelector('.x').onclick = () => { store.set('vier.tip.dots', '1'); tip.remove(); };
+  // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
+  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab); } });
+  view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => map?.show(b.dataset.tab)));
   const up = document.getElementById('upgrade');
   if (up) up.onclick = () => openPayment('vip');
 }
 
 // ---------- 人选详情：先讲“对方在找什么样的人”，分数和名次收起来 ----------
+// 逐条对照：没对上的放前面、醒目；对上的收成一行，不抢眼
 function checks(items, whoReq, whoVal) {
-  return `<div class="checks">${items.map((it, i) => {
+  const order = { 't-bad': 0, 't-warn': 1, 't-unk': 2, 't-good': 3 };
+  const list = [...items].sort((a, b) => order[toneOf(a)] - order[toneOf(b)]);
+  const good = list.filter((it) => toneOf(it) === 't-good'), rest = list.filter((it) => toneOf(it) !== 't-good');
+  return `<div class="checks2">${rest.map((it) => {
     const [tone, icon, word] = STATUS[it.status] || ['t-unk', 'help', nice(it.status)];
-    return `<div class="check ${tone}" style="--i:${i}"><span class="st">${ic(icon)}</span>
-      <div class="t"><b>${esc(lab(it.label))}</b> ${it.must ? '<span class="badge must">必须有</span>' : ''}
-        <div class="kv"><span>${whoReq}</span><span>${esc(nice(it.requirement))}</span><span>${whoVal}</span><span>${it.value === null ? '不公开' : esc(nice(it.value))}</span></div></div>
-      <span class="res">${word}</span></div>`;
-  }).join('')}</div>`;
+    return `<div class="ck ${tone}"><div class="ck-top"><span class="st">${ic(icon)}</span><b>${esc(lab(it.label))}</b>${it.must ? '<span class="badge imp-4">必须有</span>' : ''}<span class="res">${word}</span></div>
+      <div class="ck-kv"><span class="k">${whoReq}</span><span>${esc(nice(it.requirement))}</span><span class="k">${whoVal}</span><span class="val">${it.value === null ? '没填' : esc(nice(it.value))}</span></div></div>`;
+  }).join('')}
+  ${good.length ? `<div class="ck-good">${ic('check')}<span><b>都符合的 ${good.length} 条</b>${good.map((it) => esc(lab(it.label))).join('、')}</span></div>` : ''}</div>`;
 }
 
 function ring(label, t) {
@@ -1056,45 +1159,48 @@ function ring(label, t) {
     <p>${label}</p></div>`;
 }
 
-async function renderMatch(idx) {
+// 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
+async function renderMatch(idx, tab = 'ideal') {
   const r = await loadResults();
-  const m = r.idealMatches[idx];
-  if (!m) return go('#/results', 'back');
-  const t = T(), n = r.idealMatches.length;
+  const list = { ideal: r.idealMatches, seekers: r.seekers, mutual: r.mutual }[tab] || r.idealMatches;
+  const raw = list[idx];
+  if (!raw) return go('#/results', 'back');
+  const m = { theirPicks: [], theirIdeal: [], ...raw, myFitToThem: raw.mine || raw.myFitToThem };
+  if (!m.fit || !m.myFitToThem?.items) return go('#/results', 'back');
+  const t = T(), n = list.length, sfx = tab === 'ideal' ? '' : `/${tab}`;
   const top = m.myPlace ? m.myPlace.rankRange[1] : null;
   paint(`<div class="detail-nav">
       <button class="btn ghost sm" data-back="#/results">${ic('back')}返回</button>
-      <div class="pager"><a href="#/match/${idx - 1}" aria-label="上一位" aria-disabled="${idx === 0}">${ic('back')}</a><a href="#/match/${idx + 1}" aria-label="下一位" aria-disabled="${idx >= n - 1}">${ic('next')}</a></div>
+      <div class="pager"><a href="#/match/${idx - 1}${sfx}" aria-label="上一位" aria-disabled="${idx === 0}">${ic('back')}</a><a href="#/match/${idx + 1}${sfx}" aria-label="下一位" aria-disabled="${idx >= n - 1}">${ic('next')}</a></div>
     </div>
     <section class="profile-top rise">
-      ${avatar(m, true)}
-      <h1>${esc(m.alias)} ${m.simulated ? '<span class="badge sim">模拟</span>' : ''}</h1>
-      <p class="small muted" style="margin:2px 0 0">${esc(m.gender)} · “${REL.ideal()}”第 ${idx + 1} 位</p>
-      <div class="facts">${Object.values(m.facts).slice(0, 8).map((v) => `<span>${esc(nice(v))}</span>`).join('')}</div>
+      
+      <h1>${nameTag(m)}</h1>
+      <p class="small muted" style="margin:2px 0 0">${esc([m.facts['年龄'], m.facts['常住城市']].filter(Boolean).join(' · '))} · 第 ${idx + 1} 位</p>
+      <div class="facts">${Object.entries(m.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 8).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
     </section>
     <div class="summary-card rise" style="--i:1">
       ${fitLine('你', t, m.fit.items)}
       ${fitLine(t, '你', m.myFitToThem.items)}
     </div>
+    ${brokerBox(m, { full: true })}
 
-    <h2 class="sec-title">${ic('search')}${t}在找什么样的人</h2>
-    ${m.theirIdeal.length ? `<div class="sum-list">${m.theirIdeal.map((q, i) => `<div class="sum-item static" style="--i:${i}"><div class="t"><b>${esc(lab(q.label))}</b><span>${esc(nice(q.text))}</span></div><span class="badge ${q.must ? 'must' : ''}">${IMP_FROM_SERVER[q.importance] || esc(q.importance)}</span></div>`).join('')}</div>`
-    : `<p class="muted">${t}没有写要求。</p>`}
-
-    <h2 class="sec-title">${ic('user')}${t}的要求，你符合哪些</h2>
-    ${checks(m.myFitToThem.items, `${t}要`, '你是')}
-    <h2 class="sec-title">${ic('heart')}你的要求，${t}符合哪些</h2>
-    ${checks(m.fit.items, '你要', `${t}是`)}
+    <details class="more fold"><summary>${ic('user')}${t}的要求，你符合哪些</summary>${checks(m.myFitToThem.items, `${t}要`, '你是')}</details>
+    <details class="more fold"><summary>${ic('heart')}你的要求，${t}符合哪些</summary>${checks(m.fit.items, '你要', `${t}是`)}</details>
+    <details class="more fold"><summary>${ic('search')}${t}在找什么样的人</summary>
+      ${m.theirIdeal.length ? idealCard(m.theirIdeal, { title: `${t}心中的${ME()}`, sub: '' }) : `<p class="muted">${t}没有写要求。</p>`}</details>
 
     <details class="more" id="more">
       <summary>${ic('info')}想看分数和更多比较？</summary>
-      <p class="small muted">分数只是把上面一条条的比较加起来，100 分 = 全部符合。</p>
+      <p class="small muted">100 分 = 全部符合。</p>
       <div class="rings">${ring(`${t}符合你的要求`, m.fit.total)}${ring(`你符合${t}的要求`, m.myFitToThem.total)}</div>
-      <p class="small" style="margin:14px 0 0">${top ? `按${t}的要求，在 ${m.myPlace.of} 位条件合适的人里，你在前 ${top} 位左右。` : `按${t}的要求，你暂时没排进去（有“必须有”没达到，或资料没填全）。`}</p>
-      ${m.theirPicks.length ? `<h3 class="small" style="margin:18px 0 8px">按${t}的要求，最合适的几位</h3><div class="hscroll">${m.theirPicks.map((p, i) => pcard(p, `<p class="small muted" style="margin:10px 0 0">符合${t}的要求：${fmt(p.score)} 分</p>`, { i })).join('')}</div>` : ''}
+      ${tab !== 'ideal' ? '' : `<p class="small" style="margin:14px 0 0">${top ? `按${t}的要求，在 ${m.myPlace.of} 位条件合适的人里，你在前 ${top} 位左右。` : `按${t}的要求，你还没排进去。`}</p>`}
+      ${m.theirPicks.length ? `<h3 class="small" style="margin:18px 0 8px">按${t}的要求，最合适的几位</h3><div class="pick-list">${m.theirPicks.map((p, i) => `<details class="pick"><summary><span class="rk">${i + 1}</span><div><b>${nameTag(p)}</b><span>${esc([p.facts['年龄'], p.facts['常住城市']].filter(Boolean).join(' · '))}</span></div><em>${pctQ(p.score)}</em><span class="chev">${ic('next')}</span></summary>
+        <div class="facts">${Object.entries(p.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div></details>`).join('')}</div>` : ''}
     </details>
     <div class="stack"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`, { wide: true });
   bindBack();
+  bindAsk(view, [m]);
   document.getElementById('more').addEventListener('toggle', (e) => {
     if (e.target.open) requestAnimationFrame(() => requestAnimationFrame(() => view.querySelectorAll('.ring .fg').forEach((c) => (c.style.strokeDashoffset = 289 * (1 - Number(c.dataset.v) / 100)))));
   });
@@ -1176,14 +1282,365 @@ function openPayment(planId) {
         setTimeout(() => { m.close(); dir = 'none'; renderResults(); }, 1400);
         return;
       }
-      if (s.status === 'expired') { m.el.querySelector('#pay-hint').textContent = '二维码过期了，请点上面重新选择付款方式。'; return; }
-      if (manual) toast('还没收到付款。如果已经扣钱了，稍等一会儿会自动升级。');
+      if (s.status === 'expired') { m.el.querySelector('#pay-hint').textContent = '二维码过期了，请重新选。'; return; }
+      if (manual) toast('还没收到钱。已付款的话，稍等会自动升级。');
     } catch { /* 网络抖动时继续轮询 */ }
     timer = setTimeout(() => poll(orderNo), 2000);
   }
 
   m.el.querySelectorAll('[data-p]').forEach((a) => (a.onclick = () => start(a.dataset.p)));
   if (providers.length) start(providers[0].id);
+}
+
+// ---------- 手机号登录 ----------
+// 没有密码：手机号 + 验证码。测试环境不发短信，验证码直接显示在页面上。
+const loggedInNote = () => `<div class="note-card" style="margin:0">${ic('check')}<span>已登录 <b>${esc(S.me.phone)}</b></span></div>`;
+const loginBlock = () => `<div class="login-box">
+    <input class="text-input" id="lphone" inputmode="tel" maxlength="11" autocomplete="tel" placeholder="11 位手机号" aria-label="手机号">
+    <div class="row" style="margin-top:10px;gap:10px"><input class="text-input" id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位验证码" aria-label="验证码" style="margin:0;flex:1"><button type="button" class="btn sm" id="lsend">获取验证码</button></div>
+    <p class="small muted" id="lhint" hidden></p>
+    <button type="button" class="btn primary block" id="lgo" style="margin-top:12px">登录</button></div>`;
+function bindLogin(root, onDone) {
+  const $ = (id) => root.querySelector('#' + id);
+  const hint = (t) => { $('lhint').innerHTML = t; $('lhint').hidden = !t; };
+  let wait = 0, timer;
+  $('lsend').onclick = async () => {
+    if (wait) return;
+    try {
+      const r = await api('POST', '/api/auth/code', { phone: $('lphone').value.trim() });
+      hint(r.devCode ? `测试环境不发短信，验证码是 <b>${esc(r.devCode)}</b>` : '验证码已发送，5 分钟内有效');
+      if (r.devCode) $('lcode').value = r.devCode;
+      wait = 60; $('lsend').disabled = true;
+      timer = setInterval(() => { wait--; $('lsend').textContent = wait ? `${wait} 秒后重发` : '获取验证码'; if (!wait) { clearInterval(timer); $('lsend').disabled = false; } }, 1000);
+      $('lcode').focus();
+    } catch (e) { hint(`<span class="err">${esc(e.message)}</span>`); }
+  };
+  $('lgo').onclick = async () => {
+    const b = $('lgo'); b.classList.add('loading');
+    try {
+      const r = await api('POST', '/api/auth/verify', { phone: $('lphone').value.trim(), code: $('lcode').value.trim() });
+      if (r.token) store.set('vier.token', r.token);
+      S.me = await api('GET', '/api/me');
+      if (r.switched) { S.results = null; toast('已找回你之前的资料'); } else toast('已登录');
+      clearInterval(timer);
+      onDone(r);
+    } catch (e) { b.classList.remove('loading'); hint(`<span class="err">${esc(e.message)}</span>`); }
+  };
+}
+
+function renderLogin() {
+  const back = S.prev && !/login/.test(S.prev) ? S.prev : '#/privacy';
+  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
+    <h1 class="q">用手机号登录</h1>
+    <p class="qhint">${ic('lock')}换手机也能找回资料。不用密码，用验证码。</p>
+    ${S.me.phone ? loggedInNote() + `<div class="stack" style="margin-top:14px"><button class="btn block" id="logout">退出登录</button></div>` : `<div id="lbox">${loginBlock()}</div>`}`);
+  bindBack();
+  if (!S.me.phone) bindLogin(document.getElementById('lbox'), () => go(back, 'back'));
+  const lo = document.getElementById('logout');
+  if (lo) lo.onclick = () => { store.del('vier.token'); Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null }); go('#/', 'back'); };
+}
+
+// ---------- 牵线（docs/CONTACT-BROKER.md）----------
+// 甲看中乙 → 乙看到甲的极简信息并自己决定 → 乙同意后，甲的联系方式发给乙一次。
+const CONTACT_TYPES = { phone: '手机号', wechat: '微信号' };
+const BROKER_TAG = {
+  open: null, // 能联系是默认，不再每张卡都标
+  demo: ['', '虚拟人选，不能联系'],
+  ineligible: ['', '“必须有”没对上，不能联系'],
+  closed: ['', '该用户暂未开放牵线'],
+  pending: ['gold', '已发出牵线请求'],
+  accepted: ['l3', '已牵线'],
+  cooldown: ['', '暂时不能再次发起'],
+};
+const brokerTag = (c) => {
+  const t = BROKER_TAG[c.broker?.state];
+  if (c.broker?.state === 'cooldown') return `<span class="badge broker-tag">${waitText(c.broker.until)}后可以再联系</span>`;
+  return t ? `<span class="badge ${t[0]} broker-tag">${t[1]}</span>` : '';
+};
+
+const waitText = (until) => {
+  const ms = new Date(until) - Date.now();
+  if (!(ms > 0)) return '稍等一会儿';
+  const h = Math.ceil(ms / 3600e3);
+  return h < 24 ? `约 ${h} 小时` : `约 ${Math.ceil(h / 24)} 天`;
+};
+
+// 人选卡片下方的牵线入口；详情页用 full 版，带说明
+function brokerBox(c, { full = false } = {}) {
+  const t = T(), st = c.broker?.state;
+  if (!st) return '';
+  const line = {
+    demo: `这是虚拟人选，不能牵线。`,
+    closed: `该用户暂未开放牵线。`,
+    ineligible: `有“必须有”没对上，不能牵线。`,
+    pending: `已发出牵线请求，等${t}回应。${t}同意前你可以在“牵线”里取消。`,
+    accepted: `${t}已同意，你的联系方式已发给${t}。留意来电或好友申请。`,
+    cooldown: `${waitText(c.broker.until)}后可以再联系${t}。`,
+    open: full ? `${t}同意后，我们把你的联系方式发给${t}一次。${t}的联系方式不会给你。` : '',
+  }[st];
+  const btn = st === 'open'
+    ? `<button class="btn primary sm" data-ask="${esc(c.alias)}">${ic('heart')}想联系${t}</button>`
+    : st === 'pending' || st === 'accepted' ? `<a class="btn sm" href="#/broker">去“牵线”看看</a>` : '';
+  if (!full && !btn) return '';
+  return `<div class="broker-box ${full ? 'full' : ''}">${full ? `<b>${ic('heart')}牵线</b>` : ''}${line ? `<p>${line}</p>` : ''}${btn}</div>`;
+}
+
+function bindAsk(root, list) {
+  root.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const c = list.find((x) => x.alias === b.dataset.ask);
+    if (c) openAsk(c);
+  }));
+}
+
+function contactFields(cur) {
+  const type = cur?.type || 'phone';
+  return `<div class="chips" role="radiogroup" aria-label="联系方式">${Object.entries(CONTACT_TYPES).map(([v, l]) => `<button type="button" class="chip ${type === v ? 'on' : ''}" data-ctype="${v}" role="radio" aria-checked="${type === v}">${ic('check')}${l}</button>`).join('')}</div>
+    <input class="text-input" id="cvalue" autocomplete="off" maxlength="20" inputmode="${type === 'phone' ? 'tel' : 'text'}" placeholder="${type === 'phone' ? '11 位手机号' : '微信号'}" value="${esc(cur?.value || '')}" aria-label="联系方式">`;
+}
+function bindContactFields(root) {
+  let type = root.querySelector('.chip.on[data-ctype]')?.dataset.ctype || 'phone';
+  const input = root.querySelector('#cvalue');
+  root.querySelectorAll('[data-ctype]').forEach((b) => (b.onclick = () => {
+    type = b.dataset.ctype;
+    root.querySelectorAll('[data-ctype]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+    input.inputMode = type === 'phone' ? 'tel' : 'text';
+    input.placeholder = type === 'phone' ? '11 位手机号' : '微信号';
+    input.focus();
+  }));
+  return () => ({ type, value: input.value.trim() });
+}
+
+// 甲：想联系 → 留联系方式（第一次）→ 看清楚会发什么 → 勾选同意 → 发送
+async function openAsk(c) {
+  const t = T();
+  let ov;
+  try { ov = await api('GET', '/api/me/broker'); } catch (e) { return toast(e.message); }
+  if (!ov.loggedIn) {
+    const lm = sheet(`<h2>先用手机号登录</h2><p class="lead">${t}可能过几天才回复。登录后，换手机也能看到。</p><div id="lbox">${loginBlock()}</div>`);
+    bindLogin(lm.el, () => { lm.close(); openAsk(c); });
+    return;
+  }
+  const has = !!ov.contact;
+  const m = sheet(`<h2>想认识${t}？</h2>
+    <ul class="perks broker-rules">
+      <li>${ic('check')}${t}只看到你的年龄段、城市、职业，和你们合得上几条。</li>
+      <li>${ic('check')}${t}点了同意，我们才把你的联系方式发给${t}一次，由${t}联系你。${t}的联系方式不会给你。</li>
+      <li>${ic('check')}${t}同意前，你可以取消。</li>
+      <li>${ic('check')}${t}不同意，你只会看到“暂未同意”。</li>
+    </ul>
+    <h3 class="small" style="margin:16px 0 8px">发给${t}的联系方式</h3>
+    ${has ? `<p class="mine">${CONTACT_TYPES[ov.contact.type]}：<b>${esc(ov.contact.value)}</b> <a href="#/broker" class="small">改一下</a></p>
+      <p class="small muted" style="margin:4px 0 0">只留你愿意被联系的号码。</p>`
+    : `${contactFields()}<p class="small muted" style="margin:6px 0 0">只在${t}同意后发给${t}一次。只留你愿意被联系的号码。</p>`}
+    <label class="agree"><input type="checkbox" id="agree"> <span>我同意：${t}同意后，把我的联系方式发给${t}</span></label>
+    <p class="err" id="ask-err" hidden></p>
+    <div class="stack"><button class="btn primary block" id="send" disabled>${ic('heart')}发送请求</button><button class="btn block" id="later">先不了</button></div>`);
+  const get = has ? null : bindContactFields(m.el);
+  const send = m.el.querySelector('#send'), err = m.el.querySelector('#ask-err');
+  m.el.querySelector('#agree').onchange = (e) => { send.disabled = !e.target.checked; };
+  m.el.querySelector('#later').onclick = m.close;
+  send.onclick = async () => {
+    send.classList.add('loading'); send.disabled = true; err.hidden = true;
+    try {
+      if (!has) await api('PUT', '/api/me/broker/contact', get());
+      await api('POST', '/api/me/broker/requests', { alias: c.alias, consent: true });
+      m.close();
+      toast(`已发出，等${t}回应`);
+      if (S.results) await loadResults(true); // 静默刷新卡片状态，不重播计算动画
+      dir = 'none'; route();
+    } catch (e) {
+      err.textContent = e.message; err.hidden = false;
+      send.classList.remove('loading'); send.disabled = false;
+    }
+  };
+}
+
+const brokerCountText = () => {
+  const b = S.me?.broker || {};
+  return [b.incomingPending ? `${b.incomingPending} 个请求等你回复` : '', b.contactsToRead ? `${b.contactsToRead} 个号码等你记下` : ''].filter(Boolean).join('，');
+};
+const brokerNotice = () => (brokerCountText() ? `<a class="note-card broker-notice" href="#/broker">${ic('heart')}<span><b>有人想认识你</b><br>${brokerCountText()}。</span>${ic('next')}</a>` : '');
+
+const OUT_TEXT = {
+  pending: ['gold', '等待对方回应'],
+  accepted: ['l3', '对方已同意，你的联系方式已发给对方'],
+  not_agreed: ['', '对方暂未同意'],
+  cancelled: ['', '已取消'],
+};
+
+function minimalText(mi) {
+  const t = T();
+  const who = [mi.gender, mi.ageBand, mi.city, mi.occupation].filter(Boolean).map(esc).join(' · ');
+  return `<p class="who">${who || '对方没有填写基本信息'}</p>
+    <p class="small muted" style="margin:4px 0 0">${t}符合你 ${mi.theyFitYou.met}/${mi.theyFitYou.of} 条要求；你符合${t} ${mi.youFitThem.met}/${mi.youFitThem.of} 条要求</p>`;
+}
+
+function incomingCard(r, i) {
+  const t = T();
+  if (r.status === 'pending') {
+    return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>想认识你</span></div></div>
+      ${minimalText(r.minimal)}
+      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" data-acc="${r.id}">${ic('check')}同意</button><button class="btn sm" data-dec="${r.id}">暂不同意</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>
+      <p class="small muted" style="margin:8px 0 0">同意后，你会拿到${t}的号码。不同意，${t}不会知道原因。</p></div>`;
+  }
+  return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>你已同意</span></div></div>
+    ${minimalText(r.minimal)}
+    ${r.contact ? `<div class="released"><span>${CONTACT_TYPES[r.contact.type]}</span><b>${esc(r.contact.value)}</b></div>
+      <p class="small muted" style="margin:6px 0 0">先记下来。点“我已记下”后，号码会被删掉。</p>
+      <div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-seen="${r.id}">${ic('check')}我已记下</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`
+    : `<p class="small muted" style="margin:8px 0 0">号码已经隐藏。</p><div class="row" style="margin-top:8px"><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`}</div>`;
+}
+
+function outgoingRow(r) {
+  const [tone, word] = r.blocked ? ['', '已屏蔽'] : OUT_TEXT[r.status] || ['', r.status];
+  const act = r.status === 'pending' ? `<button class="btn ghost sm" data-cancel="${r.id}">取消</button>`
+    : r.status === 'accepted' && !r.blocked ? `<button class="btn ghost sm" data-blk="${r.id}">屏蔽</button>` : '';
+  return `<div class="out-row"><div class="t"><b>${nameTag(r)}</b><span class="badge ${tone}">${word}</span></div>${act}</div>`;
+}
+
+async function renderBroker() {
+  const ov = await api('GET', '/api/me/broker');
+  const t = T();
+  if (!ov.loggedIn) {
+    const back = S.me.consent?.scoring ? '#/results' : '#/privacy';
+    paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
+      <h1 class="q">牵线</h1><p class="qhint">${ic('lock')}先用手机号登录，换手机也能看到回复。</p><div id="lbox">${loginBlock()}</div>`);
+    bindBack();
+    bindLogin(document.getElementById('lbox'), () => { dir = 'none'; renderBroker(); });
+    return;
+  }
+  const back = /^#\/(match|results)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
+  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
+    <h1 class="q">牵线</h1>
+    <p class="qhint">${ic('lock')}你的号码加密保存，别人看不到。</p>
+
+    ${ov.incoming.length ? `<h2 class="sec-title">${ic('heart')}收到的请求</h2><div class="cards">${ov.incoming.map(incomingCard).join('')}</div>` : ''}
+
+    <h2 class="sec-title">${ic('users')}被别人联系</h2>
+    <form id="wf">${toggleCard('willing', '愿意被牵线', `打开后，有人想认识你会来问你。你同意了才互相联系。`, ov.willing)}</form>
+    ${ov.inPool ? '' : `<p class="small muted" style="margin:8px 4px 0">先在“我的资料”里打开“让别人也能找到我”。</p>`}
+
+    <h2 class="sec-title">${ic('user')}我的联系方式</h2>
+    ${ov.contact ? `<div class="contact-line"><span class="muted">${CONTACT_TYPES[ov.contact.type]}</span><b>${esc(ov.contact.value)}</b><button class="btn ghost sm" id="cedit">修改</button><button class="btn ghost sm" id="cdel">${ic('trash')}删除</button></div>` : ''}
+    <p class="small muted" style="margin:6px 0 10px">${ov.contact ? '默认用登录手机号，也可以改成微信号。' : '还没有联系方式。'}对方同意后才发给对方一次。</p>
+    <div id="cbox" ${ov.contact ? 'hidden' : ''}>${contactFields(ov.contact)}
+      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" id="csave">${ic('check')}保存</button></div></div>
+
+    ${ov.outgoing.length ? `<h2 class="sec-title">${ic('arrow')}我发出的</h2><div class="list-card out-list">${ov.outgoing.map(outgoingRow).join('')}</div>
+      <p class="small muted" style="margin:8px 4px 0">7 天没回复，也算“暂未同意”。</p>` : ''}`, { wide: true });
+  bindBack();
+  const redraw = async (msg) => { if (msg) toast(msg); S.me = await api('GET', '/api/me'); if (S.results) await loadResults(true); dir = 'none'; return renderBroker(); };
+  const act = (fn, msg) => async (e) => { const b = e.currentTarget; b.classList.add('loading'); b.disabled = true; try { await fn(b); await redraw(msg); } catch (err) { toast(err.message); b.classList.remove('loading'); b.disabled = false; } };
+  const confirmSheet = (title, text, yes, fn, msg, danger) => {
+    const m = sheet(`<h2>${title}</h2><p class="lead">${text}</p><div class="stack"><button class="btn ${danger ? 'danger' : 'primary'} block" id="yes">${yes}</button><button class="btn block" id="no">再想想</button></div>`);
+    m.el.querySelector('#no').onclick = m.close;
+    m.el.querySelector('#yes').onclick = act(async () => { await fn(); m.close(); }, msg);
+  };
+
+  document.getElementById('wf').addEventListener('change', async (e) => {
+    try { await api('PUT', '/api/me/broker/willing', { willing: e.target.checked }); toast(e.target.checked ? '已打开，有人发来请求时会出现在这里' : '已关闭'); }
+    catch (err) { e.target.checked = !e.target.checked; toast(err.message); }
+  });
+  const get = bindContactFields(document.getElementById('cbox'));
+  document.getElementById('csave').onclick = act(() => api('PUT', '/api/me/broker/contact', get()), '已保存');
+  const edit = document.getElementById('cedit');
+  if (edit) edit.onclick = () => { document.getElementById('cbox').hidden = false; edit.hidden = true; };
+  const del = document.getElementById('cdel');
+  if (del) del.onclick = () => confirmSheet('删除联系方式？', '删掉后，别人联系不到你。已经发出去的号码收不回来。', `${ic('trash')}确定删除`, () => api('DELETE', '/api/me/broker/contact'), '已删除', true);
+
+  const q = (sel, fn) => view.querySelectorAll(sel).forEach((b) => (b.onclick = fn(b)));
+  q('[data-acc]', (b) => () => confirmSheet('确定同意吗？', `同意后，你会拿到${t}的号码。不能反悔。`, `${ic('check')}确定同意`, () => api('POST', `/api/me/broker/requests/${b.dataset.acc}/accept`, { confirm: true }), '已同意，号码在下面'));
+  q('[data-dec]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.dec}/decline`), `已回复，${t}只会看到“对方暂未同意”`));
+  q('[data-seen]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.seen}/seen`), '号码已从服务器删除'));
+  q('[data-cancel]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.cancel}/cancel`), '已取消'));
+  q('[data-blk]', (b) => () => confirmSheet(`屏蔽${t}？`, `${t}以后联系不到你，也不会知道被屏蔽。`, '确定屏蔽', () => api('POST', `/api/me/broker/requests/${b.dataset.blk}/block`), '已屏蔽', true));
+}
+
+
+// ---------- 管理后台：用户、号码（打码，查看要写理由）、牵线记录 ----------
+async function adminApi(method, path, body) {
+  const res = await fetch(path, { method, headers: { 'content-type': 'application/json', 'x-admin-token': store.get('vier.admin') || '' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw Object.assign(new Error(data.error || '出错了'), { status: res.status });
+  return data;
+}
+const who = (p) => p ? `${p.virtual ? '<span class="badge sim">虚拟</span> ' : ''}${esc([p.gender, p.age && `${p.age} 岁`, p.city, p.occupation].filter(Boolean).join(' · ') || '资料未填')}` : '<span class="muted">已删除</span>';
+const ADMIN_STATUS = { pending: ['gold', '等待回应'], accepted: ['l3', '已同意'], declined: ['', '已拒绝'], cancelled: ['', '已取消'], expired: ['', '已过期'], withdrawn: ['', '已作废'] };
+const fmtTime = (t) => (t ? new Date(t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
+const ctext = (c) => (c ? `${CONTACT_TYPES[c.type]} ${esc(c.value)}` : '');
+
+function adminUserRow(u, testMode) {
+  const tags = [
+    u.suspended ? '<span class="badge must">已暂停</span>' : '',
+    u.pool ? '<span class="badge">在人选池</span>' : '',
+    u.willing ? '<span class="badge l3">愿意被牵线</span>' : '',
+    u.plan === 'vip' ? '<span class="badge gold">VIP</span>' : '',
+    u.filled ? '' : '<span class="badge">资料未填完</span>',
+  ].join('');
+  const phones = [u.loginPhone && `登录 ${esc(u.loginPhone)}`, u.contact && `联系 ${ctext(u.contact)}`].filter(Boolean).join(' · ');
+  return `<div class="pcard admin-user" data-uid="${esc(u.id)}">
+    <div class="row wrap" style="justify-content:space-between"><b>${who(u)}</b><span class="small muted">活跃 ${fmtTime(u.lastActiveAt)}</span></div>
+    <div class="row wrap" style="margin-top:8px;gap:6px">${tags}</div>
+    <p class="small" style="margin:8px 0 0">${phones || '<span class="muted">没留号码</span>'} <span class="reveal-out"></span></p>
+    <p class="small muted" style="margin:4px 0 0">发出 ${u.sent} · 收到 ${u.received} · 被屏蔽 ${u.blockedBy} · <span class="mono">${esc(u.id)}</span></p>
+    <div class="row wrap" style="margin-top:10px">
+      ${u.loginPhone || u.contact ? `<button class="btn sm" data-act="reveal">查看号码</button>` : ''}
+      <button class="btn sm" data-act="${u.suspended ? 'unsuspend' : 'suspend'}">${u.suspended ? '恢复' : '暂停'}</button>
+      <button class="btn ghost sm" data-act="delete">删除</button>
+      ${testMode && u.willing ? `<button class="btn ghost sm" data-act="vreq">让虚拟人发起</button>` : ''}
+    </div></div>`;
+}
+
+async function renderAdmin() {
+  let data;
+  try { data = await adminApi('GET', '/api/admin/overview'); } catch (e) {
+    paint(`<h1 class="q">管理后台</h1><p class="qhint">${ic('lock')}输入管理员口令（服务器的环境变量 ADMIN_TOKEN；测试环境没设时是 admin）</p>
+      <input class="text-input" id="tok" type="password" autocomplete="off"><div class="stack" style="margin-top:12px"><button class="btn primary block" id="go">进入</button></div>${e.status === 401 && store.get('vier.admin') ? '<p class="err">口令不对</p>' : `<p class="err">${e.status === 401 ? '' : esc(e.message)}</p>`}`);
+    document.getElementById('go').onclick = () => { store.set('vier.admin', document.getElementById('tok').value.trim()); dir = 'none'; renderAdmin(); };
+    return;
+  }
+  const tab = S.adminTab || 'users';
+  const q = (S.adminQ || '').trim();
+  const users = data.users.filter((u) => !q || [u.id, u.city, u.loginPhone, u.contact?.value, u.occupation].join(' ').includes(q));
+  const counts = { users: data.users.length, contact: data.users.filter((u) => u.contact).length, willing: data.users.filter((u) => u.willing).length, pending: data.requests.filter((r) => r.status === 'pending').length };
+  paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
+    ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚拟人选，这里可以替虚拟人回应。</p>` : ''}
+    <div class="admin-stats"><div><b>${counts.users}</b><span>用户</span></div><div><b>${counts.contact}</b><span>留了号码</span></div><div><b>${counts.willing}</b><span>愿意被牵线</span></div><div><b>${counts.pending}</b><span>等待回应</span></div></div>
+    <div class="tabs" role="tablist" style="margin-top:16px">${[['users', '用户'], ['contact', '带号码的'], ['requests', '牵线记录']].map(([k, l]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}</button>`).join('')}</div>
+    ${tab === 'requests' ? (data.requests.length ? `<div class="cards">${data.requests.map((r) => { const [tone, word] = ADMIN_STATUS[r.status] || ['', r.status]; return `<div class="pcard">
+        <div class="row wrap" style="justify-content:space-between"><span class="badge ${tone}">${word}</span><span class="small muted">${fmtTime(r.createdAt)}</span></div>
+        <p class="small" style="margin:8px 0 0">发起：${who(r.from)}</p><p class="small" style="margin:4px 0 0">接收：${who(r.to)}</p>
+        ${data.testMode && r.status === 'pending' && r.to?.virtual ? `<div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-a="${r.id}/accept">替虚拟人同意</button><button class="btn sm" data-a="${r.id}/decline">替虚拟人拒绝</button></div>` : ''}</div>`; }).join('')}</div>` : '<p class="muted">还没有牵线记录。</p>')
+    : `<input class="text-input" id="aq" type="search" placeholder="按城市、职业、号码后四位、用户 id 搜索" value="${esc(q)}">
+      <div class="cards" style="margin-top:12px">${users.filter((u) => tab !== 'contact' || u.contact).map((u) => adminUserRow(u, data.testMode)).join('') || '<p class="muted">没有符合的用户。</p>'}</div>`}`, { wide: true });
+
+  const again = () => { dir = 'none'; renderAdmin(); };
+  document.getElementById('out').onclick = () => { store.del('vier.admin'); again(); };
+  view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { S.adminTab = b.dataset.tab; again(); }));
+  const aq = document.getElementById('aq');
+  if (aq) aq.onchange = () => { S.adminQ = aq.value; again(); };
+  const ask = (title, text, label, danger, fn) => {
+    const m = sheet(`<h2>${title}</h2><p class="lead">${text}</p><input class="text-input" id="why" placeholder="理由（会记入审计日志）"><p class="err" id="whyerr" hidden></p>
+      <div class="stack" style="margin-top:12px"><button class="btn ${danger ? 'danger' : 'primary'} block" id="yes">${label}</button><button class="btn block" id="no">取消</button></div>`);
+    m.el.querySelector('#no').onclick = m.close;
+    m.el.querySelector('#yes').onclick = async (ev) => {
+      const b = ev.currentTarget; b.classList.add('loading');
+      try { await fn(m.el.querySelector('#why').value.trim()); m.close(); } catch (e) { b.classList.remove('loading'); const er = m.el.querySelector('#whyerr'); er.textContent = e.message; er.hidden = false; }
+    };
+  };
+  view.querySelectorAll('.admin-user [data-act]').forEach((b) => (b.onclick = () => {
+    const card = b.closest('.admin-user'), id = card.dataset.uid, act = b.dataset.act;
+    if (act === 'reveal') return ask('查看完整号码', '每次查看都会记录：谁、什么时候、为什么。', '查看', false, async (reason) => {
+      const r = await adminApi('POST', `/api/admin/users/${id}/reveal`, { reason });
+      card.querySelector('.reveal-out').innerHTML = `<br><b>${[r.loginPhone && `登录 ${esc(r.loginPhone)}`, r.contact && `联系 ${ctext(r.contact)}`].filter(Boolean).join(' · ')}</b>`;
+    });
+    if (act === 'suspend') return ask('暂停这个用户？', '暂停后不出现在任何人的结果里，不能发起或接收牵线，等待中的请求作废。可以随时恢复。', '暂停', true, async (reason) => { await adminApi('POST', `/api/admin/users/${id}/suspend`, { reason }); toast('已暂停'); again(); });
+    if (act === 'unsuspend') return adminApi('POST', `/api/admin/users/${id}/unsuspend`, {}).then(() => { toast('已恢复'); again(); }).catch((e) => toast(e.message));
+    if (act === 'delete') return ask('永久删除这个用户？', '资料、要求、号码、牵线记录全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
+    if (act === 'vreq') return adminApi('POST', '/api/admin/broker/virtual-request', { to: id }).then(() => { toast('已让一位虚拟人发起，去这个用户的“牵线”页看看'); again(); }).catch((e) => toast(e.message));
+  }));
+  view.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => adminApi('POST', `/api/admin/broker/requests/${b.dataset.a}`).then(() => { toast('已处理'); again(); }).catch((e) => toast(e.message))));
 }
 
 // ---------- 我的资料 ----------
@@ -1199,16 +1656,18 @@ function renderPrivacy() {
   const st = S.me.gender ? (S.me.requirements?.length && c.scoring ? 'done' : 'partial') : 'new';
   paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${st === 'done' ? '#/results' : '#/'}">${ic('back')}返回</button></div>
     <h1 class="q">我的资料</h1>
-    <p class="qhint">${ic('lock')}资料加密保存，只按你同意的方式使用。改动会马上生效。</p>
+    <p class="qhint">${ic('lock')}你的资料加密保存。</p>
     ${st !== 'done' ? `<a class="btn primary block" href="${resumeHash()}" style="margin-bottom:8px">${st === 'new' ? '开始填写' : '继续填写'} ${ic('arrow')}</a>` : ''}
     <div class="list-card">
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">我填的资料<span>年龄、学历、家庭等，点进去可以改</span></span>${ic('next')}</a>
       <a href="${S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age'}"><span class="ico">${ic('heart')}</span><span class="t">我的要求<span>${S.me.requirements?.length || 0} 条</span></span>${ic('next')}</a>
+      <a href="#/login"><span class="ico">${ic('lock')}</span><span class="t">账号<span>${S.me.phone ? `已登录 ${esc(S.me.phone)}` : '用手机号登录，换手机也能找回'}</span></span>${ic('next')}</a>
+      <a href="#/broker"><span class="ico">${ic('users')}</span><span class="t">牵线<span>${brokerCountText() || '联系方式、愿意被牵线、收到和发出的请求'}</span></span>${ic('next')}</a>
     </div>
     <h2 class="sec-title">${ic('shield')}你的资料怎么用</h2>
     <form id="f">
       ${toggleCard('scoring', '用我的资料帮我找人', '关掉后就看不到结果了。', !!c.scoring, { required: true, i: 0 })}
-      ${toggleCard('pool', '让别人也能找到我', '以随机代号出现，别人看不到收入细节和家里情况。关掉后，别人搜不到你。', !!c.pool, { i: 1 })}
+      ${toggleCard('pool', '让别人也能找到我', '别人只看到你的代号，看不到收入和家里情况。', !!c.pool, { i: 1 })}
       ${toggleCard('research', '用于匿名统计', '只用于很多人加在一起的统计。', !!c.research, { i: 2 })}
     </form>
     <h2 class="sec-title">${ic('download')}下载或删除</h2>
@@ -1263,10 +1722,10 @@ async function route() {
     if (!S.config) {
       S.config = await api('GET', '/api/config');
       S.F = Object.fromEntries(S.config.fields.map((f) => [f.key, f]));
-      document.getElementById('sim-banner').hidden = S.config.poolMode !== 'simulated';
     }
     if (a === '') return await renderHome();
     if (a === 'intro') return renderIntro();
+    if (a === 'admin') return await renderAdmin();
     if (!S.me) await ensureSession();
     if (a === 'me') {
       if (!b) return go('#/me/gender');
@@ -1283,8 +1742,10 @@ async function route() {
     }
     if (a === 'consent') return renderConsent();
     if (a === 'results') return await renderResults();
-    if (a === 'match') return await renderMatch(Number(b));
+    if (a === 'match') return await renderMatch(Number(b), h.split('/')[3] || 'ideal');
     if (a === 'privacy') return renderPrivacy();
+    if (a === 'broker') return await renderBroker();
+    if (a === 'login') return renderLogin();
     return await renderHome();
   } catch (e) {
     paint(`<section class="milestone"><h1 class="display">出了点小问题</h1><p class="lead">${esc(e.message)}</p>
@@ -1293,7 +1754,14 @@ async function route() {
   } finally {
     if (dir !== 'none') window.scrollTo(0, 0);
     dir = 'fwd';
+    requestAnimationFrame(placeToast);
   }
 }
+// 选项很多（如 100 个城市）时，列表上方有搜索框，按名字筛选
+document.addEventListener('input', (e) => {
+  if (!e.target.classList?.contains('opt-filter')) return;
+  const q = e.target.value.trim();
+  e.target.nextElementSibling?.querySelectorAll('[data-v]').forEach((b) => { b.hidden = q && !b.textContent.includes(q); });
+});
 window.addEventListener('hashchange', route);
 route();
