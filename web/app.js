@@ -1051,7 +1051,7 @@ function tabList(r, tab) {
   if (r.summary.counterpartCount === 0) return emptyCard('还没有人', `人选库里还没有${THEM()}，不是你的要求太高。过几天再来看看。`);
   if (tab === 'ideal') {
     const reqs = r.myIdeal || [], people = r.idealMatches, table = S.view === 'table' && people.length;
-    const head = idealCard(reqs, { title: `你心中的${t}`, sub: '', edit: true, fold: true });
+    const head = '';
     if (!people.length) return head + emptyCard('没有人达到你所有的“必须有”', '把一两条“必须有”改成“很在意”试试。', '#/ideal/review', '去改要求');
     // 正式环境里虚拟人选和真人在同一个池子：标题不写“真人”，另外说清其中几位是真人
     const real = people.filter((p) => !p.simulated).length;
@@ -1113,9 +1113,9 @@ function resultTree(r) {
   const age = (m) => m.facts['年龄'] ? `${m.facts['年龄']}` : '';
   const person = (m, pre, i, extra) => ({ id: `${pre}${i}`, kind: 'person', short: [...(m.name || who(m))][0], label: m.name || age(m), seal: !!m.name, ...extra });
   const LETTER = { ideal: 'B', theirs: 'A', seekers: 'D' };
-  const group = (id, tab, list, note, kid) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab], note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）` : '暂时没有', kids: list.map(kid) });
+  const group = (id, tab, list, note, kid) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab], note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）↓` : '暂时没有', kids: [] });
   return {
-    id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
+    id: 'me', kind: 'me', label: '你', note: '点 A、B、D 切换下面的内容',
     kids: [
       group('ideal', 'ideal', r.idealMatches, `你喜欢的人`, (m, i) => {
         const a = met(m.fit.items), b = met(m.myFitToThem.items), n = m.myFitToThem.items.length;
@@ -1245,7 +1245,7 @@ async function renderResults() {
   view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, b.tagName.toLowerCase() === 'g')));
   show(S.tab);
   // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
-  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab); } });
+  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab, true); } });
   view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => map?.show(b.dataset.tab)));
   const up = document.getElementById('upgrade');
   if (up) up.onclick = () => openPayment('vip');

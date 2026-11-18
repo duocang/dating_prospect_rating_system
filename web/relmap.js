@@ -110,12 +110,13 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       const id = b.dataset.id;
       b.classList.toggle('show', visible(id));
       b.classList.toggle('focus', id === focus);
-      b.classList.toggle('dim', focus !== tree.id && visible(id) && !under(P, id, focus) && !under(P, focus, id));
+      b.classList.toggle('dim', focus !== tree.id && !(P[focus].n.kind === 'group' && !(P[focus].n.kids || []).length) && visible(id) && !under(P, id, focus) && !under(P, focus, id));
     });
     svg.querySelectorAll('path[data-to]').forEach((l) => l.classList.toggle('show', visible(l.dataset.to)));
     const W = viewEl.clientWidth, H = viewEl.clientHeight;
     const ids = [focus, P[focus].parent, ...(open.has(focus) ? (P[focus].n.kids || []).map((k) => k.id) : [])].filter(Boolean);
-    if (focus === tree.id) ids.push(...(tree.kids || []).map((k) => k.id));
+    // 点的是没有下一层的组：镜头不动，整张 Z 字图都留在画面里，只高亮这一组
+    if (focus === tree.id || (P[focus].n.kind === 'group' && !(P[focus].n.kids || []).length)) ids.push(tree.id, ...(tree.kids || []).map((k) => k.id));
     const xs = ids.map((i) => P[i].x), ys = ids.map((i) => P[i].y);
     const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
     const sc = Math.min(1.15, (W - 20) / (x1 - x0 + 110), (H - 20) / (y1 - y0 + 110));
