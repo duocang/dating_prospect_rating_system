@@ -1212,6 +1212,7 @@ async function renderResults() {
   if (!S.results) await renderCalc();
   const r = await loadResults();
   if (S.tab === 'mutual') S.tab = 'ideal';
+  const restoreY = /^#\/(match|ideal|me|privacy|broker)/.test(S.prev || '') && S.resY != null ? S.resY : null;
   const s = r.summary, plan = S.config.plans[r.plan];
   const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
   const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
@@ -1249,6 +1250,7 @@ async function renderResults() {
   view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => map?.show(b.dataset.tab)));
   const up = document.getElementById('upgrade');
   if (up) up.onclick = () => openPayment('vip');
+  if (restoreY != null) { dir = 'none'; requestAnimationFrame(() => window.scrollTo(0, restoreY)); }
 }
 
 // ---------- 人选详情：先讲“对方在找什么样的人”，分数和名次收起来 ----------
@@ -1322,6 +1324,7 @@ function renderTheirs(r, idx) {
 
 async function renderMatch(idx, tab = 'ideal') {
   const r = await loadResults();
+  S.tab = tab === 'seekers' || tab === 'theirs' ? tab : 'ideal';
   if (tab === 'theirs') return renderTheirs(r, idx);
   const list = { ideal: r.idealMatches, seekers: r.seekers, mutual: r.mutual }[tab] || r.idealMatches;
   const raw = list[idx];
@@ -1927,6 +1930,8 @@ function renderPrivacy() {
 
 // ---------- 路由 ----------
 async function route() {
+  // 离开结果页时记住滚到哪了；从详情、改要求、改资料回来时回到原处、原页签
+  if (/^#\/results/.test(S.cur || '')) S.resY = window.scrollY;
   S.prev = S.cur; S.cur = location.hash; // 记住从哪一页来，确认页的返回键要用
   const h = location.hash.replace(/^#/, '') || '/';
   const [, a = '', b = ''] = h.split('/');
