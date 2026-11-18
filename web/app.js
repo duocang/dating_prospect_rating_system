@@ -532,13 +532,10 @@ function renderMeQ(key) {
   const cancel = () => { clearTimeout(timer); timer = null; };
   bindBack(cancel);
 
-  const here = location.hash;
   const advance = (label) => {
     cancel();
     if (busy) return; busy = true;
     nav.next();
-    // 自动跳题后给一个“改一下”的机会
-    if (label) toast(`已选：${label}`, { label: '改一下', fn: () => go(here, 'back') });
   };
   const skip = document.getElementById('skip');
   if (skip) skip.onclick = () => { cancel(); delete d.profile[key]; skipped.set(key, true); saveProfile(); advance(); };
@@ -735,7 +732,6 @@ function renderIdealQ(key) {
     if (flash) { const box = document.getElementById('imp'); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); }
   };
   // 和“关于你”一样：选完条件，下面才出现“有多在意”；点了在意程度，就自动进入下一题
-  const here = location.hash;
   let timer = null, busy = false;
   const cancel = () => { clearTimeout(timer); timer = null; };
   bindBack(() => { cancel(); if (e.imp === 'off' || entryValid(key, e)) saveReqs(); });
@@ -743,7 +739,6 @@ function renderIdealQ(key) {
     cancel(); if (busy) return; busy = true;
     saveReqs();
     nav.next();
-    if (label) toast(`已选：${label}`, { label: '改一下', fn: () => go(here, 'back') });
   };
   const touched = () => {
     e.dirty = true;
