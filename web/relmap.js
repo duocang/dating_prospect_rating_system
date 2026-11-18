@@ -4,20 +4,24 @@
 export const EXAMPLE = {
   id: 'me', kind: 'me', label: '你', note: '这是示例 · 填完就换成你的',
   kids: [
-    { id: 'ideal', kind: 'group', label: '他适合你', short: '3', note: '符合你要求的人',
+    { id: 'ideal', kind: 'group', label: '你的理想型', short: '3', note: '符合你要求的人',
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', fit: '6/6', note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
         { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：互相适合' }] },
         { id: 'p3', kind: 'person', label: '南风', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p3i', kind: 'theirs', label: '他想找的', fit: '你 3/4', note: '你符合他 3 条' }] },
       ] },
-    { id: 'seek', kind: 'group', label: '你适合他', short: '3', note: '你符合他们的要求',
+    { id: 'seek', kind: 'group', label: '想找你这样的人', short: '3', note: '你符合他们的要求',
       kids: [
         { id: 's1', kind: 'person', label: '青禾', fit: '5/5', note: '你符合他全部要求' },
         { id: 's2', kind: 'person', label: '白石', fit: '4/4', note: '你符合他全部要求' },
         { id: 's3', kind: 'person', label: '知秋', fit: '4/5', note: '你符合他 4 条' },
       ] },
-    { id: 'mutual', kind: 'group', label: '互相适合', short: '1', note: '两边都对得上',
-      kids: [{ id: 'm1', kind: 'person', label: '远山', fit: '双向', note: '你们互相符合' }] },
+    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: '3', note: '你喜欢的人，喜欢谁',
+      kids: [
+        { id: 't1', kind: 'person', label: '若溪', fit: '3/3', note: '完全符合 3 位理想型人选的要求' },
+        { id: 't2', kind: 'person', label: '初夏', fit: '2/3', note: '完全符合其中 2 位的要求' },
+        { id: 't3', kind: 'person', label: '你', fit: '前 12%', note: '按他们的要求，你排在前 12% 左右' },
+      ] },
   ],
 };
 
