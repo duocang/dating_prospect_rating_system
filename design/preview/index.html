@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIER 设计预览 · 深空</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Noto+Serif+SC:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== 深空设计令牌：颜色只取自 logo 里的星球和光丝 ===== */
+:root {
+  --void: #07060A;          /* 深空 */
+  --void-2: #0E0C12;        /* 稍亮的夜 */
+  --ink: #F3E9DA;           /* 象牙白：正文 */
+  --ink-2: #B9AD9B;         /* 月尘灰：辅助文字（对深空约 9:1） */
+  --gold: #E2C08D;          /* 香槟金：主色、光丝 */
+  --gold-2: #F6DFB6;
+  --gold-deep: #A9824F;
+  --copper: #C98A6B;        /* 玫瑰金：D 星 */
+  --line: rgba(226, 192, 141, .18);
+  --card: rgba(255, 236, 210, .035);
+  --glow: 0 0 24px rgba(240, 200, 140, .35), 0 0 2px rgba(255, 230, 190, .8);
+  --display-cn: "Noto Serif SC", "Songti SC", "STSong", serif;
+  --display-en: "Cormorant Garamond", "Cormorant", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", sans-serif;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: #030305; color: var(--ink); font: 18px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+
+/* 预览页本身 */
+.page { max-width: 1320px; margin: 0 auto; padding: 48px 24px 80px; }
+.page-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
+.page-head h1 { margin: 0; font: 500 44px/1.1 var(--display-en); letter-spacing: .02em; }
+.page-head h1 i { color: var(--gold); }
+.page-head p { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.sw { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); text-align: center; }
+.sw i { width: 46px; height: 46px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.phones { display: flex; gap: 36px; justify-content: center; flex-wrap: wrap; }
+.phone-wrap { display: grid; gap: 14px; justify-items: center; }
+.phone-wrap figcaption { font: italic 400 20px var(--display-en); color: var(--ink-2); letter-spacing: .04em; }
+.phone-wrap figcaption b { font: 500 14px var(--sans); color: var(--gold); letter-spacing: .1em; margin-right: 8px; font-style: normal; }
+
+/* 手机外框 */
+.phone { position: relative; width: 390px; height: 844px; border-radius: 52px; overflow: hidden; background: var(--void); box-shadow: 0 0 0 10px #16141A, 0 0 0 11px #2A262E, 0 40px 120px rgba(0,0,0,.8); }
+.screen { position: absolute; inset: 0; overflow-y: auto; scrollbar-width: none; background:
+  radial-gradient(120% 60% at 50% 0%, rgba(226,192,141,.07), transparent 60%),
+  radial-gradient(90% 50% at 80% 100%, rgba(201,138,107,.06), transparent 60%), var(--void); }
+.screen::-webkit-scrollbar { display: none; }
+.stars { position: absolute; inset: 0; pointer-events: none; }
+.status { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 14px 32px 0; font: 600 15px var(--sans); }
+.content { position: relative; padding: 0 24px 40px; }
+
+/* 顶栏：小 Z + 字标 */
+.top { display: flex; align-items: center; justify-content: space-between; padding: 8px 24px 0; position: relative; }
+.mark { display: flex; align-items: center; gap: 10px; }
+.mark svg { width: 26px; height: 26px; }
+.word { font: 500 22px/1 var(--display-en); letter-spacing: .38em; padding-left: .2em; }
+.link { font-size: 15px; color: var(--ink-2); display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
+.ic { width: 18px; height: 18px; flex: none; }
+
+/* 文字 */
+.display { font: 600 34px/1.3 var(--display-cn); letter-spacing: .04em; margin: 0; }
+.display em { font-style: normal; background: linear-gradient(100deg, var(--gold-2), var(--gold) 45%, var(--copper)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.eyebrow { font: italic 400 17px var(--display-en); color: var(--gold); letter-spacing: .06em; margin: 0 0 6px; }
+.sub { color: var(--ink-2); font-size: 16px; margin: 10px 0 0; letter-spacing: .04em; }
+.q { font: 600 30px/1.35 var(--display-cn); margin: 6px 0 8px; letter-spacing: .03em; }
+.hint { color: var(--ink-2); font-size: 16px; margin: 0 0 22px; }
+.fine { color: var(--ink-2); font-size: 14px; text-align: center; margin: 18px 0 0; display: flex; gap: 6px; justify-content: center; align-items: center; }
+
+/* 按钮：香槟金实心 + 发丝线幽灵 */
+.btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 58px; border: 0; border-radius: 999px; font: 600 18px var(--sans); letter-spacing: .12em; cursor: pointer; color: var(--ink); background: transparent; box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .3s var(--ease), transform .2s var(--ease); }
+.btn:hover { box-shadow: inset 0 0 0 1px rgba(226,192,141,.5); }
+.btn.gold { color: #1A1208; background: linear-gradient(180deg, #F3D9AE, #D9B47E 55%, #C29A63); box-shadow: 0 0 0 1px rgba(255,236,200,.4) inset, 0 10px 30px rgba(226,192,141,.25), 0 0 60px rgba(226,192,141,.15); }
+.stack { display: grid; gap: 12px; margin-top: 26px; }
+
+/* 首页星图 */
+.hero-map { display: block; width: 100%; height: auto; margin: 6px 0 4px; overflow: visible; }
+.hero-map .lbl { font: 500 13px var(--sans); fill: var(--ink-2); letter-spacing: .06em; }
+.hero-map .lbl-b { font: 600 15px var(--sans); fill: var(--ink); }
+.hero-map .code { font: italic 500 22px var(--display-en); fill: var(--gold); }
+
+/* 答题页进度：四颗小星沿一条光丝点亮 */
+.qhead { display: flex; align-items: center; gap: 14px; margin: 10px 0 26px; }
+.back { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); }
+.prog { flex: 1; }
+.prog-meta { display: flex; justify-content: space-between; font-size: 14px; color: var(--ink-2); margin-bottom: 10px; letter-spacing: .04em; }
+.prog-meta b { color: var(--gold); font-weight: 600; }
+.orbit { position: relative; height: 14px; }
+.orbit::before { content: ""; position: absolute; left: 6px; right: 6px; top: 6px; height: 1px; background: var(--line); }
+.orbit .lit { position: absolute; left: 6px; top: 6px; height: 1px; width: 18%; background: linear-gradient(90deg, var(--gold-2), var(--gold)); box-shadow: 0 0 8px rgba(240,200,140,.8); }
+.orbit .dot { position: absolute; top: 1px; width: 12px; height: 12px; border-radius: 50%; background: #2A2620; box-shadow: inset 0 0 0 1px var(--line); }
+.orbit .dot.on { background: radial-gradient(circle at 35% 30%, #FFF6E6, var(--gold) 70%); box-shadow: var(--glow); }
+.prog-sub { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; color: var(--ink-2); }
+.saved { color: var(--gold); }
+
+/* 选项：深色玻璃 + 发丝线；选中是金环发光 */
+.opts { display: grid; gap: 12px; }
+.opt { display: flex; align-items: center; gap: 16px; min-height: 64px; padding: 12px 20px; border-radius: 20px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 18px; letter-spacing: .04em; cursor: pointer; transition: box-shadow .3s var(--ease), background .3s; }
+.opt small { display: block; color: var(--ink-2); font-size: 14px; letter-spacing: .02em; }
+.opt .m { flex: none; width: 26px; height: 26px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(226,192,141,.35); display: grid; place-items: center; color: transparent; }
+.opt.on { background: linear-gradient(180deg, rgba(226,192,141,.12), rgba(226,192,141,.04)); box-shadow: inset 0 0 0 1px rgba(242,214,170,.75), 0 0 30px rgba(226,192,141,.12); }
+.opt.on .m { background: radial-gradient(circle at 35% 30%, #FFF6E6, var(--gold) 70%); color: #1A1208; box-shadow: var(--glow); }
+.foot { position: sticky; bottom: 0; padding: 18px 24px 30px; margin: 30px -24px 0; background: linear-gradient(to top, var(--void) 70%, transparent); }
+
+/* 结果页 */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 5px; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--line); margin: 18px 0 18px; }
+.tabs span { min-height: 46px; display: grid; place-items: center; border-radius: 14px; font-size: 15px; color: var(--ink-2); letter-spacing: .04em; }
+.tabs span.on { background: linear-gradient(180deg, rgba(226,192,141,.18), rgba(226,192,141,.06)); color: var(--gold-2); box-shadow: inset 0 0 0 1px rgba(226,192,141,.35); }
+
+.ideal { position: relative; padding: 20px; border-radius: 24px; background: radial-gradient(120% 90% at 0% 0%, rgba(226,192,141,.09), transparent 60%), var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.ideal::after { content: ""; position: absolute; inset: 8px; border-radius: 18px; border: 1px dashed rgba(226,192,141,.22); pointer-events: none; }
+.ideal-head { display: flex; align-items: center; gap: 14px; }
+.ideal-head svg { flex: none; }
+.ideal-head b { display: block; font: 600 21px var(--display-cn); letter-spacing: .06em; }
+.ideal-head span { font-size: 14px; color: var(--ink-2); }
+.tag { margin-left: auto; align-self: flex-start; font: italic 500 15px var(--display-en); letter-spacing: .12em; color: var(--gold); padding: 2px 10px; border-radius: 99px; box-shadow: inset 0 0 0 1px rgba(226,192,141,.45); }
+.ideal ul { list-style: none; margin: 14px 0 0; padding: 0; }
+.ideal li { display: flex; align-items: baseline; gap: 10px; padding: 10px 0; font-size: 16px; border-top: 1px solid rgba(226,192,141,.1); }
+.ideal li .k { width: 5.6em; flex: none; color: var(--ink-2); }
+.ideal li .v { flex: 1; letter-spacing: .02em; }
+.ideal li .w { font-size: 13px; color: var(--ink-2); letter-spacing: .08em; }
+.ideal li .w.must { color: var(--gold); }
+
+.near { display: flex; align-items: baseline; justify-content: space-between; margin: 28px 0 12px; }
+.near h3 { margin: 0; font: 600 19px var(--display-cn); letter-spacing: .06em; }
+.near span { font: italic 400 16px var(--display-en); color: var(--gold); letter-spacing: .06em; }
+.person { padding: 18px; border-radius: 22px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); margin-bottom: 12px; }
+.p-head { display: flex; align-items: center; gap: 14px; }
+.p-head b { display: block; font-size: 19px; letter-spacing: .06em; }
+.p-head span { font-size: 14px; color: var(--ink-2); }
+.rank { margin-left: auto; font: italic 500 22px var(--display-en); color: var(--gold); }
+.fit { margin-top: 14px; font-size: 15px; color: var(--ink-2); }
+.fit b { font: 600 22px var(--sans); color: var(--ink); margin: 0 3px; }
+.stars-row { display: flex; gap: 7px; margin-top: 8px; }
+.stars-row i { width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFF6E6, var(--gold) 75%); box-shadow: 0 0 8px rgba(240,200,140,.7); }
+.stars-row i.half { background: radial-gradient(circle at 35% 30%, #F7E1D3, var(--copper) 75%); box-shadow: 0 0 8px rgba(201,138,107,.6); }
+.stars-row i.off { background: transparent; box-shadow: inset 0 0 0 1px rgba(226,192,141,.35); }
+
+/* 动效：光丝上的光点沿 Z 流动；星球缓慢呼吸 */
+.spark { stroke-dasharray: 2 260; animation: flow 4.5s linear infinite; }
+@keyframes flow { from { stroke-dashoffset: 262; } to { stroke-dashoffset: 0; } }
+.breath { animation: breath 6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes breath { 50% { opacity: .75; } }
+.rise { animation: rise .9s var(--ease) both; animation-delay: calc(var(--i, 0) * 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.notes { max-width: 860px; margin: 56px auto 0; color: var(--ink-2); font-size: 15px; line-height: 1.8; }
+.notes h2 { font: 500 28px var(--display-en); color: var(--ink); letter-spacing: .03em; margin: 0 0 8px; }
+.notes b { color: var(--gold); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-head">
+    <div>
+      <h1>VIER · <i>Deep Space</i></h1>
+      <p>设计预览 · 颜色只取自 logo：深空、象牙、香槟金、珍珠、玫瑰金</p>
+    </div>
+    <div class="swatches">
+      <div class="sw"><i style="background:#07060A"></i>深空</div>
+      <div class="sw"><i style="background:#F3E9DA"></i>象牙</div>
+      <div class="sw"><i style="background:#E2C08D"></i>香槟金</div>
+      <div class="sw"><i style="background:#D9CEC0"></i>珍珠</div>
+      <div class="sw"><i style="background:#C98A6B"></i>玫瑰金</div>
+    </div>
+  </div>
+
+  <div class="phones">
+    <!-- ========== 1 首页 ========== -->
+    <figure class="phone-wrap" style="margin:0">
+      <div class="phone"><div class="screen">
+        <svg class="stars" data-stars="70"></svg>
+        <div class="status"><span>9:41</span><span>●●●</span></div>
+        <div class="top"><span class="mark"><svg data-mini></svg><span class="word">VIER</span></span><span class="link">我的资料</span></div>
+        <div class="content">
+          <svg class="hero-map" viewBox="0 0 340 330" data-z="hero"></svg>
+          <h1 class="display rise" style="--i:1">你喜欢的人，<br><em>喜欢谁</em></h1>
+          <p class="sub rise" style="--i:2">约 5 分钟 · 免费 · 不用注册</p>
+          <div class="stack rise" style="--i:3">
+            <a class="btn gold">开始填写</a>
+            <a class="btn">已经填过？用手机号登录</a>
+          </div>
+          <p class="fine"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>自动保存 · 别人看不到你的收入和家庭</p>
+        </div>
+      </div></div>
+      <figcaption><b>01</b>Home · 星图即主视觉</figcaption>
+    </figure>
+
+    <!-- ========== 2 答题 ========== -->
+    <figure class="phone-wrap" style="margin:0">
+      <div class="phone"><div class="screen">
+        <svg class="stars" data-stars="40"></svg>
+        <div class="status"><span>9:41</span><span>●●●</span></div>
+        <div class="content">
+          <div class="qhead">
+            <span class="back"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"/></svg></span>
+            <div class="prog">
+              <div class="prog-meta"><b>你的情况</b><span>第 1 段 · 共 4 段</span></div>
+              <div class="orbit"><span class="lit"></span><i class="dot on" style="left:0"></i><i class="dot" style="left:33%"></i><i class="dot" style="left:66%"></i><i class="dot" style="right:0"></i></div>
+              <div class="prog-sub"><span>第 6 题，共 11 题</span><span class="saved">✓ 已自动保存</span></div>
+            </div>
+          </div>
+          <p class="eyebrow">Question vi</p>
+          <h1 class="q">你的学历是？</h1>
+          <p class="hint">读到哪一步就选哪一个。</p>
+          <div class="opts">
+            <div class="opt"><span class="m"></span>高中及以下</div>
+            <div class="opt"><span class="m"></span>大专</div>
+            <div class="opt on"><span class="m"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:14px;height:14px"><path d="M20 6 9 17l-5-5"/></svg></span>本科</div>
+            <div class="opt"><span class="m"></span>硕士</div>
+            <div class="opt"><span class="m"></span>博士</div>
+          </div>
+          <div class="foot"><a class="btn">跳过这题</a></div>
+        </div>
+      </div></div>
+      <figcaption><b>02</b>Question · 四颗星就是四段</figcaption>
+    </figure>
+
+    <!-- ========== 3 结果 ========== -->
+    <figure class="phone-wrap" style="margin:0">
+      <div class="phone"><div class="screen">
+        <svg class="stars" data-stars="60"></svg>
+        <div class="status"><span>9:41</span><span>●●●</span></div>
+        <div class="top"><span class="mark"><svg data-mini></svg><span class="word">VIER</span></span><span class="link">我的资料</span></div>
+        <div class="content">
+          <p class="eyebrow" style="margin-top:14px">From 250 · 从 250 位男生里帮你挑</p>
+          <h1 class="display" style="font-size:30px">你的 Z 字星图</h1>
+          <svg class="hero-map" viewBox="0 0 340 300" data-z="result"></svg>
+          <div class="tabs"><span class="on">他适合你</span><span>你适合他</span><span>互相适合</span></div>
+          <section class="ideal">
+            <div class="ideal-head"><svg width="54" height="54" viewBox="0 0 54 54" data-ghost></svg>
+              <div><b>你心中的他</b><span>按你的要求拼出来的</span></div><span class="tag">virtual</span></div>
+            <ul>
+              <li><span class="k">年龄</span><span class="v">28 到 35 岁</span><span class="w">很在意</span></li>
+              <li><span class="k">身高</span><span class="v">175 到 190 厘米</span><span class="w">在意</span></li>
+              <li><span class="k">学历</span><span class="v">本科及以上</span><span class="w">在意</span></li>
+              <li><span class="k">一年挣多少</span><span class="v">至少 15 万</span><span class="w">很在意</span></li>
+              <li><span class="k">要不要孩子</span><span class="v">希望育儿</span><span class="w must">必须有</span></li>
+            </ul>
+          </section>
+          <div class="near"><h3>最接近的 3 位真人</h3><span>closest three</span></div>
+          <div class="person">
+            <div class="p-head"><svg width="50" height="50" viewBox="0 0 50 50" data-orb="gas" data-letter="晴"></svg>
+              <div><b>晴川</b><span>男 · 31 岁 · 上海 · 本科</span></div><span class="rank">i</span></div>
+            <div class="fit">你的 5 条要求，他符合<b>5</b>条</div>
+            <div class="stars-row"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="fit">他的 4 条要求，你符合<b>3</b>条</div>
+            <div class="stars-row"><i></i><i></i><i></i><i class="half"></i></div>
+          </div>
+          <div class="person">
+            <div class="p-head"><svg width="50" height="50" viewBox="0 0 50 50" data-orb="copper" data-letter="远"></svg>
+              <div><b>远山</b><span>男 · 33 岁 · 上海 · 硕士</span></div><span class="rank">ii</span></div>
+            <div class="fit">你的 5 条要求，他符合<b>4</b>条</div>
+            <div class="stars-row"><i></i><i></i><i></i><i class="half"></i><i></i></div>
+          </div>
+        </div>
+      </div></div>
+      <figcaption><b>03</b>Results · 虚拟理想型 + 真人</figcaption>
+    </figure>
+  </div>
+
+  <div class="notes">
+    <h2>这一版的想法</h2>
+    <p><b>整个产品就是那张 Z 字星图。</b>首页的主视觉直接用 logo：左上 A 是“你喜欢的人喜欢的”，右上 B 是“你喜欢的人”，左下 C 是你，右下 D 是“想找你这样的人”。光丝上有光点沿着 Z 慢慢流动，结果页同一张图换成真实人数。</p>
+    <p><b>克制就是高级。</b>深空做底，只有星球和光丝在发光；颜色只取 logo 里的象牙、香槟金、珍珠、玫瑰金，不再用粉色。标题用衬线（中文思源宋体、西文 Cormorant），正文仍是系统黑体 18px，好读不变。</p>
+    <p><b>细节都和星有关。</b>答题进度是一条光丝上的四颗星，答完一段点亮一颗；选中的选项是金色光环；结果里“符合几条”的圆点是一排小星，差一点的是玫瑰金色，没达到的是空心星。虚拟理想型用虚线轨道和半透明的星，一看就知道不是真人。</p>
+  </div>
+</div>
+
+<script>
+// ===== 程序生成的星球：径向渐变 + 噪声纹理 + 光晕，四种材质对应 logo 里的四颗 =====
+const NS = 'http://www.w3.org/2000/svg';
+let uid = 0;
+const KINDS = {
+  moon:   { light: '#FFF8EC', dark: '#B9A890', freq: '0.06', oct: 4, stretch: 1,  tint: [0.55, 0.5, 0.45], glow: '#F2D7A8' },
+  gas:    { light: '#FCF2E2', dark: '#C7A479', freq: '0.012 0.09', oct: 3, stretch: 1, tint: [0.75, 0.62, 0.45], glow: '#F0CF9C' },
+  pearl:  { light: '#FBF7F1', dark: '#B5A895', freq: '0.035', oct: 5, stretch: 1, tint: [0.85, 0.7, 0.45], glow: '#EEDDBF' },
+  copper: { light: '#F2C7AE', dark: '#8F4E36', freq: '0.015 0.07', oct: 3, stretch: 1, tint: [0.7, 0.4, 0.3], glow: '#E7A27E' },
+};
+function planet(cx, cy, r, kind, { glow = 1, letter = '' } = {}) {
+  const k = KINDS[kind], id = `p${uid++}`;
+  const [tr, tg, tb] = k.tint;
+  return `
+  <defs>
+    <radialGradient id="${id}g" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="${k.light}"/><stop offset="1" stop-color="${k.dark}"/></radialGradient>
+    <radialGradient id="${id}s" cx="38%" cy="32%" r="70%"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
+    <radialGradient id="${id}h" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="${k.glow}" stop-opacity=".55"/><stop offset=".45" stop-color="${k.glow}" stop-opacity=".16"/><stop offset="1" stop-color="${k.glow}" stop-opacity="0"/></radialGradient>
+    <filter id="${id}t" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="${k.freq}" numOctaves="${k.oct}" seed="${uid * 7}"/>
+      <feColorMatrix values="0 0 0 0 ${tr}  0 0 0 0 ${tg}  0 0 0 0 ${tb}  0 0 0 -1.6 1.05"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+    <clipPath id="${id}c"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath>
+  </defs>
+  <circle class="breath" cx="${cx}" cy="${cy}" r="${r * 2.1 * glow}" fill="url(#${id}h)"/>
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${id}g)"/>
+  <g clip-path="url(#${id}c)" opacity=".75"><rect x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" fill="#fff" filter="url(#${id}t)"/></g>
+  <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${id}s)"/>
+  <circle cx="${cx}" cy="${cy}" r="${r - .5}" fill="none" stroke="#FFF1D8" stroke-opacity=".35" stroke-width="1"/>
+  ${letter ? `<text x="${cx}" y="${cy + r * .32}" text-anchor="middle" font-family="Noto Serif SC, serif" font-weight="700" font-size="${r * .85}" fill="#2A1C10" fill-opacity=".75">${letter}</text>` : ''}`;
+}
+// 两颗星之间的光丝：一条发光的弧线 + 一个沿线流动的光点
+function filament(a, b, delay = 0) {
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  const d = `M${a[0]} ${a[1]} C ${mx} ${a[1] + (b[1] - a[1]) * .15}, ${mx} ${b[1] - (b[1] - a[1]) * .15}, ${b[0]} ${b[1]}`;
+  return `
+  <path d="${d}" fill="none" stroke="#F3D2A0" stroke-width="8" stroke-opacity=".22" filter="url(#blur6)"/>
+  <path d="${d}" fill="none" stroke="url(#thread)" stroke-width="1.9"/>
+  <path class="spark" d="${d}" fill="none" stroke="#FFF4DC" stroke-width="3" stroke-linecap="round" filter="url(#blur2)" style="animation-delay:${delay}s"/>`;
+}
+const COMMON = `<defs>
+  <filter id="blur6" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter>
+  <filter id="blur2" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.2"/></filter>
+  <linearGradient id="thread" x1="0" x2="1"><stop offset="0" stop-color="#FFE6BE"/><stop offset=".5" stop-color="#E2C08D" stop-opacity=".7"/><stop offset="1" stop-color="#FFE6BE"/></linearGradient>
+</defs>`;
+
+// Z 星图：A 左上、B 右上、C（你）左下、D 右下，和 logo 一样；标签放在星的外侧，不压光丝
+function zMap(svg, mode) {
+  const hero = mode === 'hero', H = hero ? 330 : 300, r = hero ? 36 : 31;
+  const P = hero
+    ? { A: [128, 58], B: [214, 126], C: [124, 204], D: [214, 272] }
+    : { A: [128, 52], B: [214, 114], C: [124, 182], D: [214, 246] };
+  const lab = hero
+    ? { A: ['A', '你喜欢的人', '喜欢的人'], B: ['B', '你喜欢', '的人'], C: ['C', '你', ''], D: ['D', '想找你', '这样的人'] }
+    : { A: ['A', '他们想找的', ''], B: ['B', '他适合你', '85 位'], C: ['C', '你', ''], D: ['D', '你适合他', '119 位'] };
+  // 光丝从星球朝向下一颗星的那一点出发
+  const toward = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy); return [p[0] + dx / L * r * .96, p[1] + dy / L * r * .96]; };
+  let s = COMMON;
+  [['A', 'B', 0], ['B', 'C', 1.5], ['C', 'D', 3]].forEach(([a, b, d]) => { s += filament(toward(P[a], P[b]), toward(P[b], P[a]), d); });
+  s += planet(...P.A, r, 'moon') + planet(...P.B, r, 'gas') + planet(...P.C, r, 'pearl', { glow: 1.2 }) + planet(...P.D, r, 'copper');
+  const text = (p, [code, l1, l2], right) => {
+    const x = right ? p[0] + r + 14 : p[0] - r - 14, anchor = right ? 'start' : 'end';
+    return `<text class="code" x="${x}" y="${p[1] - 8}" text-anchor="${anchor}">${code}</text>
+      <text class="${code === 'C' ? 'lbl-b' : 'lbl'}" x="${x}" y="${p[1] + 12}" text-anchor="${anchor}">${l1}</text>
+      ${l2 ? `<text class="${hero ? 'lbl' : 'lbl-b'}" x="${x}" y="${p[1] + 30}" text-anchor="${anchor}">${l2}</text>` : ''}`;
+  };
+  s += text(P.A, lab.A, false) + text(P.B, lab.B, true) + text(P.C, lab.C, false) + text(P.D, lab.D, true);
+  svg.setAttribute('viewBox', `0 0 340 ${H}`);
+  svg.innerHTML = s;
+}
+document.querySelectorAll('[data-z]').forEach((el) => zMap(el, el.dataset.z));
+
+// 顶栏小 Z：四颗小星 + 细光丝
+document.querySelectorAll('[data-mini]').forEach((el) => {
+  el.setAttribute('viewBox', '0 0 64 64');
+  el.innerHTML = COMMON + `<path d="M18 16 C32 16,32 26,46 26 M46 26 C32 26,32 38,18 38 M18 38 C32 38,32 48,46 48" fill="none" stroke="#E2C08D" stroke-width="1.6" stroke-opacity=".8"/>`
+    + planet(18, 16, 8, 'moon', { glow: .7 }) + planet(46, 26, 8, 'gas', { glow: .7 }) + planet(18, 38, 8, 'pearl', { glow: .7 }) + planet(46, 48, 8, 'copper', { glow: .7 });
+});
+// 真人头像：一颗带字的小星球
+document.querySelectorAll('[data-orb]').forEach((el) => { el.innerHTML = planet(25, 25, 19, el.dataset.orb, { glow: .65, letter: el.dataset.letter }); });
+// 虚拟理想型：虚线轨道 + 半透明的星
+document.querySelectorAll('[data-ghost]').forEach((el) => {
+  el.innerHTML = `<circle cx="27" cy="27" r="25" fill="none" stroke="#E2C08D" stroke-opacity=".6" stroke-dasharray="3 4"/>
+    <g opacity=".5">${planet(27, 27, 15, 'gas', { glow: .9 })}</g>`;
+});
+// 背景星点：固定种子，静止不闪，避免分散注意力
+document.querySelectorAll('[data-stars]').forEach((el, k) => {
+  let seed = 11 + k * 97;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  el.setAttribute('viewBox', '0 0 390 844');
+  el.setAttribute('preserveAspectRatio', 'none');
+  el.innerHTML = Array.from({ length: Number(el.dataset.stars) }, () =>
+    `<circle cx="${(rnd() * 390).toFixed(1)}" cy="${(rnd() * 844).toFixed(1)}" r="${(rnd() * .9 + .2).toFixed(2)}" fill="#F3E9DA" opacity="${(rnd() * .45 + .08).toFixed(2)}"/>`).join('');
+});
+</script>
+</body>
+</html>

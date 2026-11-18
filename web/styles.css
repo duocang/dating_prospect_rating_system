@@ -1,33 +1,17 @@
-/* VIER 择偶坐标 · 设计令牌 */
+/* VIER · 深空主题：颜色只取自 logo —— 深空、象牙、香槟金、珍珠、玫瑰金。只有深色，没有浅色模式。 */
 :root {
-  --bg: #FBFAF8; --surface: #FFFFFF; --surface-2: #F4F2EF; --ink: #24212A; --ink-2: #6A6470; --line: #ECE8E3;
-  --brand: #A84461; --brand-2: #A84461; --brand-ink: #FFFFFF; --brand-soft: #F9EFF2;
-  --gold: #8A6420; --gold-soft: #F4E7C8;
-  --good: #1B7558; --good-soft: #DFF1E8; --warn: #8F5B00; --warn-soft: #FBEFD5; --bad: #B3261E; --bad-soft: #FBE4E1; --unk: #6E6673; --unk-soft: #EEEAEF;
+  --bg: #07060A; --surface: #121016; --surface-2: #1B181F; --ink: #F3E9DA; --ink-2: #BDB1A0; --line: #332B23;
+  --brand: #E2C08D; --brand-2: #F2D6AA; --brand-ink: #1A1208; --brand-soft: #251E15;
+  --gold: #D99A78; --gold-soft: #2A1C16;
+  --good: #E2C08D; --good-soft: #251E15; --warn: #D99A78; --warn-soft: #2A1C16; --bad: #E58C80; --bad-soft: #2D1615; --unk: #948A7E; --unk-soft: #1B1815;
   --shadow: 0 0 0 1px var(--line);
-  --shadow-lg: 0 0 0 1px var(--line), 0 6px 20px rgba(40, 30, 40, .06);
+  --shadow-lg: 0 0 0 1px var(--line), 0 20px 60px rgba(0, 0, 0, .55);
+  --glow: 0 0 22px rgba(240, 200, 140, .32), 0 0 2px rgba(255, 230, 190, .7);
   --r: 20px; --r-sm: 14px;
   --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   --serif: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --latin: "Cormorant Garamond", "Didot", "Bodoni 72", "Bodoni MT", "Georgia", serif; /* 只用系统字体，不从外网加载 */
   --ease: cubic-bezier(.2, .8, .2, 1);
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #141116; --surface: #1E1A21; --surface-2: #29232D; --ink: #F4EEF5; --ink-2: #BEB4C3; --line: #39323E;
-    --brand: #F0789A; --brand-2: #F59AB3; --brand-ink: #2A0614; --brand-soft: #3B1C28;
-    --gold: #E8C47A; --gold-soft: #3A2E17;
-    --good: #5FCBA2; --good-soft: #17342A; --warn: #F0BC5E; --warn-soft: #3A2D12; --bad: #F2867B; --bad-soft: #3D1C19; --unk: #A79FAD; --unk-soft: #2D2831;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 28px rgba(0, 0, 0, .3);
-    --shadow-lg: 0 20px 60px rgba(0, 0, 0, .5);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #141116; --surface: #1E1A21; --surface-2: #29232D; --ink: #F4EEF5; --ink-2: #BEB4C3; --line: #39323E;
-  --brand: #F0789A; --brand-2: #F59AB3; --brand-ink: #2A0614; --brand-soft: #3B1C28;
-  --gold: #E8C47A; --gold-soft: #3A2E17;
-  --good: #5FCBA2; --good-soft: #17342A; --warn: #F0BC5E; --warn-soft: #3A2D12; --bad: #F2867B; --bad-soft: #3D1C19; --unk: #A79FAD; --unk-soft: #2D2831;
   color-scheme: dark;
 }
 
@@ -105,7 +89,7 @@ h1, h2, h3 { margin: 0; line-height: 1.3; font-weight: 700; }
 .hero .lead { font-size: 18px; max-width: 26em; margin: 14px auto 0; }
 .venn { display: block; width: min(330px, 100%); margin: 18px auto 4px; overflow: visible; }
 .venn circle { mix-blend-mode: multiply; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .venn circle { mix-blend-mode: screen; } }
+.venn circle { mix-blend-mode: screen; }
 .venn .c1 { animation: slide-l 1s var(--ease) .15s both; }
 .venn .c2 { animation: slide-r 1s var(--ease) .15s both; }
 .venn .mid { animation: pop .6s var(--ease) .9s both; transform-origin: center; transform-box: fill-box; }
@@ -744,7 +728,7 @@ h1 .nm { padding-right: 24px; }
 h1 .seal { top: 0; font-size: 9.5px; }
 .rm-node .lb .seal { top: -5px; right: -19px; font-size: 6.5px; }
 details.pcard.fold .pcard-name b { overflow: visible; }
-@media (prefers-color-scheme: dark) { .seal { color: #E0605A; } }
+.seal { color: #E0605A; }
 .pcard-name, .pcard-name b, .pick div, .pick b, .out-row .t, .cmp thead th a { overflow: visible !important; }
 .pcard-name b .nm, .pick b .nm { margin-top: 4px; }
 .pcard-name .nm, .pick .nm { overflow: visible !important; font-size: inherit !important; color: inherit !important; }
@@ -753,7 +737,7 @@ details.pcard.fold .pcard-name b { overflow: visible; }
 .seal, .pcard-name .seal, .pick .seal { color: #fff !important; background: #C0312B !important; border: 0 !important; border-radius: 0 !important; padding: 1.5px 3.5px 2px !important; opacity: .92;
   clip-path: polygon(6% 10%, 30% 2%, 58% 7%, 82% 0%, 97% 12%, 94% 40%, 100% 66%, 92% 94%, 64% 88%, 40% 100%, 14% 92%, 2% 72%, 7% 44%, 0% 22%);
   box-shadow: none !important; transform: rotate(-5deg); }
-@media (prefers-color-scheme: dark) { .seal { background: #D9463F !important; color: #fff !important; } }
+.seal { background: #D9463F !important; color: #fff !important; }
 .cmp thead th a .al { max-width: none !important; overflow: visible !important; text-overflow: clip; white-space: nowrap; font-size: 13px; color: var(--ink-2); margin-top: 6px; }
 .cmp thead th a .al .nm { padding-right: 19px; }
 .cmp thead th { overflow: visible; }
@@ -992,3 +976,106 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .cmp2 thead b, .cmp-a thead b { color: var(--brand) !important; }
 .cmp2 tbody th, .cmp-a tbody th { min-width: 5.5em; white-space: nowrap; }
 .cmp2 thead th, .cmp-a thead th { vertical-align: bottom; }
+
+/* =====================================================================
+   深空主题（2026-11-19）：页面长成 logo 的样子
+   深空做底，只有星球和光丝在发光；颜色只取象牙、香槟金、珍珠、玫瑰金
+   ===================================================================== */
+
+/* 背景：极淡的星点 + 顶部一层金色微光，静止不动 */
+body {
+  background:
+    radial-gradient(120% 45% at 50% 0%, rgba(226, 192, 141, .07), transparent 62%),
+    radial-gradient(90% 40% at 85% 100%, rgba(217, 154, 120, .05), transparent 60%),
+    radial-gradient(1px 1px at 23px 41px, rgba(243, 233, 218, .55), transparent 70%),
+    radial-gradient(1px 1px at 137px 96px, rgba(243, 233, 218, .35), transparent 70%),
+    radial-gradient(1.4px 1.4px at 211px 18px, rgba(243, 233, 218, .45), transparent 70%),
+    radial-gradient(1px 1px at 68px 187px, rgba(243, 233, 218, .25), transparent 70%),
+    radial-gradient(1.2px 1.2px at 179px 213px, rgba(243, 233, 218, .4), transparent 70%),
+    radial-gradient(1px 1px at 251px 151px, rgba(243, 233, 218, .3), transparent 70%),
+    var(--bg);
+  background-size: 100% 100%, 100% 100%, 270px 260px, 270px 260px, 270px 260px, 270px 260px, 270px 260px, 270px 260px, auto;
+  background-attachment: fixed;
+}
+.backdrop { display: none; }
+
+/* 顶栏：小 Z + 字距拉开的 VIER */
+.top { background: color-mix(in srgb, var(--bg) 78%, transparent); }
+.brand b { font: 500 22px/1 var(--latin); letter-spacing: .36em; color: var(--ink); }
+.logo-z { filter: drop-shadow(0 0 6px rgba(240, 200, 140, .35)); }
+.top-link { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); }
+
+/* 标题：宋体；强调字用金色渐变 */
+.display em, .display .em { background: linear-gradient(100deg, var(--brand-2), var(--brand) 45%, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* 按钮：香槟金实心 + 发丝线幽灵 */
+.btn { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 26%, var(--line)); color: var(--ink); letter-spacing: .06em; }
+.btn:hover { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 55%, transparent); }
+.btn.primary, .btn.gold { background: linear-gradient(180deg, #F3D9AE, #D9B47E 55%, #C29A63); color: var(--brand-ink); box-shadow: inset 0 0 0 1px rgba(255, 236, 200, .45), 0 10px 30px rgba(226, 192, 141, .2), 0 0 50px rgba(226, 192, 141, .1); }
+.btn.primary:hover, .btn.gold:hover { filter: brightness(1.05); }
+.btn.ghost { box-shadow: none; color: var(--ink-2); }
+.btn.ghost:hover { background: var(--surface-2); color: var(--ink); }
+.btn.danger { background: var(--bad); color: #1F0807; }
+
+/* 卡片：深色玻璃 + 发丝线 */
+.opt, .chip, .sum-item, .imp, .pcard, .list-card, .toggle-card, .note-card, .see-card, .summary-card, .more, .empty, .stepper, .ideal-card, .cmp-wrap, .vip, .wbars, .contact-line {
+  background: linear-gradient(180deg, rgba(255, 236, 210, .045), rgba(255, 236, 210, .02)), var(--surface);
+}
+.opt.soft { background: transparent; }
+
+/* 选中：金色光环 + 微光 */
+.opt.on, .imp-opt.on, .chip.on { background: linear-gradient(180deg, rgba(226, 192, 141, .14), rgba(226, 192, 141, .04)), var(--surface); box-shadow: inset 0 0 0 1px rgba(242, 214, 170, .75), 0 0 28px rgba(226, 192, 141, .12); color: var(--ink); }
+.chip.on { color: var(--brand-2); }
+.opt.on .mark, .imp-opt.on .mark, .check-row.on .mark { background: radial-gradient(circle at 35% 30%, #FFF6E6, var(--brand) 70%); color: var(--brand-ink); box-shadow: var(--glow); }
+.opt .mark { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 40%, transparent); }
+.badge.must, .badge.imp-3, .cmp2 tbody th b em { color: var(--brand-ink); }
+.calc-steps li.done .dot { color: var(--brand-ink); }
+
+/* 进度：四格光丝，点亮的部分发光 */
+.seg { background: color-mix(in srgb, var(--line) 80%, transparent); }
+.seg i { background: linear-gradient(90deg, var(--brand-2), var(--brand)); box-shadow: 0 0 8px rgba(240, 200, 140, .7); }
+.saved { color: var(--brand); }
+
+/* 页签：选中是金色微光 */
+.tabs { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+.tabs button.on, .seg-switch button.on, .pay-tabs button.on { background: linear-gradient(180deg, rgba(226, 192, 141, .16), rgba(226, 192, 141, .05)); box-shadow: inset 0 0 0 1px rgba(226, 192, 141, .35); }
+
+/* 三组颜色：B 香槟金、D 玫瑰金、A 月光银 */
+:root { --g-ideal: #E2C08D; --g-seekers: #D99A78; --g-theirs: #D3CABD; }
+
+/* 真人头像：一颗带字的小星球，按名字取一点色相，但都压在暖金范围里 */
+.avatar { color: #24170C; background: radial-gradient(circle at 35% 30%, #FFF6E6, hsl(calc(30 + var(--h, 0) / 12) 40% 66%) 58%, hsl(calc(25 + var(--h, 0) / 12) 30% 30%)); box-shadow: 0 0 18px rgba(240, 200, 140, .28), inset 0 0 0 1px rgba(255, 241, 216, .35); text-shadow: 0 1px 0 rgba(255, 245, 225, .4); }
+
+/* 关系图：每个圆是一颗星球，连线是发光的光丝 */
+.rm-lines path { stroke: color-mix(in srgb, var(--brand) 70%, transparent); stroke-width: 1.5; filter: drop-shadow(0 0 3px rgba(240, 200, 140, .65)); }
+.rm-lines .rm-ah { fill: var(--brand); stroke: none; }
+.rm-node .dot { color: #24170C; font-weight: 700; text-shadow: 0 1px 0 rgba(255, 245, 225, .45); box-shadow: 0 0 20px rgba(240, 200, 140, .3), inset 0 0 0 1px rgba(255, 241, 216, .4), inset -6px -8px 14px rgba(0, 0, 0, .28);
+  background: radial-gradient(circle at 35% 30%, #FFF7EA, #CDBBA2 62%, #7A6A55); }
+.rm-node.k-me .dot { color: #24170C; background: radial-gradient(circle at 35% 30%, #FFFFFF, #E9E0D2 45%, #A3968A); box-shadow: 0 0 34px rgba(255, 236, 205, .45), 0 0 4px rgba(255, 245, 225, .9), inset -8px -10px 18px rgba(0, 0, 0, .22); }
+.rm-node.g-ideal .dot, .rm-node.k-group[data-id="ideal"] .dot { background: repeating-linear-gradient(168deg, rgba(255, 255, 255, .1) 0 3px, transparent 3px 10px), radial-gradient(circle at 35% 30%, #FFF4DE, #E2C08D 58%, #8E6E43); color: #24170C; }
+.rm-node.g-seekers .dot, .rm-node.k-group[data-id="seekers"] .dot { background: repeating-linear-gradient(172deg, rgba(255, 230, 215, .1) 0 3px, transparent 3px 11px), radial-gradient(circle at 35% 30%, #F8D9C6, #CF8E6F 58%, #6E3B27); color: #2A120A; box-shadow: 0 0 20px rgba(217, 154, 120, .35), inset 0 0 0 1px rgba(255, 225, 205, .35), inset -6px -8px 14px rgba(0, 0, 0, .3); }
+.rm-node.g-theirs .dot, .rm-node.k-group[data-id="theirs"] .dot { background: radial-gradient(circle at 62% 58%, rgba(0, 0, 0, .12) 0 9%, transparent 10%), radial-gradient(circle at 30% 64%, rgba(0, 0, 0, .1) 0 6%, transparent 7%), radial-gradient(circle at 35% 30%, #FFFFFF, #DAD3C7 52%, #857D72); color: #24170C; }
+.rm-node.k-theirs .dot { opacity: .85; }
+.rm-node.focus .dot, .rm-node.k-group.focus .dot { box-shadow: 0 0 0 2px rgba(255, 236, 205, .9), 0 0 36px rgba(240, 200, 140, .55); }
+.rm-node .lb { color: var(--ink-2); text-shadow: 0 1px 6px #000; }
+.rm-node .fit { background: var(--surface); color: var(--brand); box-shadow: inset 0 0 0 1px rgba(226, 192, 141, .4); }
+.rm-note { color: var(--ink-2); }
+
+/* 弹层 */
+.modal { background: rgba(0, 0, 0, .62); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.sheet { background: radial-gradient(120% 60% at 50% 0%, rgba(226, 192, 141, .08), transparent 60%), var(--bg); box-shadow: 0 -1px 0 rgba(226, 192, 141, .3), var(--shadow-lg); }
+
+/* 提示条：深色玻璃 + 金线 */
+.toast { background: #1B181F; color: var(--ink); box-shadow: inset 0 0 0 1px rgba(226, 192, 141, .35), 0 20px 50px rgba(0, 0, 0, .6); }
+.toast button { background: rgba(226, 192, 141, .16); color: var(--brand-2); }
+
+/* 虚拟理想型：虚线轨道 */
+.ideal-card { border-color: rgba(226, 192, 141, .35); }
+.ideal-avatar { border-color: var(--brand); color: var(--brand); background: var(--surface); box-shadow: 0 0 18px rgba(240, 200, 140, .2); }
+/* 页签：三格平分宽度，长名字换行，不再超出屏幕 */
+.tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tabs button { white-space: normal; line-height: 1.25; padding: 4px 6px; }
+/* 对照表的左列是固定的实色，外框也用实色，免得出现色块 */
+.cmp-wrap { background: var(--surface); }
+/* 底部按钮区：渐隐到深空，不切断背景里的微光 */
+.qfoot { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 88%, transparent) 60%, transparent); }

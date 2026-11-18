@@ -58,9 +58,11 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   let focus = tree.id;
   el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"><defs><marker id="rm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="rm-ah"/></marker></defs></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
   const stage = el.querySelector('.rm-stage'), svg = el.querySelector('svg'), note = el.querySelector('.rm-note'), viewEl = el.querySelector('.rm-view');
+  // 每个圆属于哪一组（A/B/D），星球按组上色
+  const groupOf = (id) => { let g = id; while (P[g]?.parent && P[g].parent !== tree.id) g = P[g].parent; return g; };
   for (const { n, x, y, parent, linkFrom } of Object.values(P)) {
     const d = SIZE[n.kind];
-    stage.insertAdjacentHTML('beforeend', `<button type="button" class="rm-node k-${n.kind}" data-id="${esc(n.id)}" style="left:${x}px;top:${y}px;--d:${d}px">
+    stage.insertAdjacentHTML('beforeend', `<button type="button" class="rm-node k-${n.kind} g-${esc(groupOf(n.id))}" data-id="${esc(n.id)}" style="left:${x}px;top:${y}px;--d:${d}px">
       <span class="dot">${esc(n.short || (n.kind === 'me' ? n.label : [...n.label][0]))}</span>
       ${n.kind === 'me' ? '' : `<span class="lb">${esc(n.label)}${n.seal ? '<i class="seal">代号</i>' : ''}</span>`}
       ${n.fit ? `<span class="fit">${esc(n.fit)}</span>` : ''}</button>`);
