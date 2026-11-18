@@ -1011,15 +1011,15 @@ function compareTable(reqs, people, sfx = '') {
   const rows = reqs.filter((q) => !allGood.includes(q));
   const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
   return `<div class="cmp-wrap"><table class="cmp cmp2">
-    <thead><tr><th scope="col"></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
-    <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b><span>${reqText(q)}</span></th>
+    <thead><tr><th scope="col"></th><th scope="col" class="ideal-col"><span class="al">你的理想型</span></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
+    <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b></th><td class="ideal-col">${reqText(q)}</td>
       ${people.map((p) => {
         const it = itemOf(p, q);
         const [tone, icon, word] = it ? (STATUS[it.status] || ['t-unk', 'help', '没填']) : ['t-unk', 'help', '没填'];
         if (it && tone !== 't-good') return `<td class="${tone}"><button type="button" class="cell-tap" aria-expanded="false" aria-label="${word}"><span class="st">${ic(icon)}</span><span class="v">${it.value === null ? '不公开' : esc(nice(it.value))}</span></button></td>`;
         return `<td class="${tone}"><span class="st" aria-label="${word}">${ic(icon)}</span></td>`;
       }).join('')}</tr>`).join('')}
-    ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 1}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
+    ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 2}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
   </table>${rows.length ? '<p class="cmp-hint">点 ✕ 或 ◐ 看对方的实际情况</p>' : ''}</div>`;
 }
 
