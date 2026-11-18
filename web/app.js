@@ -1022,7 +1022,7 @@ function compareTable(reqs, people, sfx = '') {
         return `<td class="${tone}"><span class="st" aria-label="${word}">${ic(icon)}</span></td>`;
       }).join('')}</tr>`).join('')}
     ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 2}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
-  </table>${rows.length ? '<p class="cmp-hint">点 ✕ 或 ◐ 看对方的实际情况</p>' : ''}</div>`;
+  </table>${rows.length ? '<p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : ''}</div>`;
 }
 
 function pcard(c, inner, { href = '', i = 0, head = '', more = '', quick = '' } = {}) {
@@ -1299,7 +1299,7 @@ function aCompareTable(myFacts, list, mine) {
   return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp-a">
     <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
     <tbody>${keys.map((k) => `<tr><th scope="row"><b>${esc(lab(k))}</b></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}</tbody>
-  </table><p class="cmp-hint">标色 = 和你不一样</p></div>`;
+  </table><p class="cmp-hint">橙色字 = 和你不一样</p></div>`;
 }
 
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
