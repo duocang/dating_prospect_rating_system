@@ -936,3 +936,5 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .near-head { flex-wrap: nowrap; } .near-head h3 { white-space: nowrap; } .near-head .seg-switch { flex: none; }
 .a-bars .d i { background: linear-gradient(90deg, var(--g-seekers) var(--w), var(--line) var(--w)); }
 .cmp .ideal-col { font-size: 13px; color: var(--brand); background: var(--brand-soft); text-align: center; min-width: 5.5em; } .cmp thead .ideal-col .al { font-weight: 700; }
+.a-bars .b i { background: linear-gradient(90deg, var(--g-ideal) var(--w), var(--line) var(--w)); }
+.a-bars .me i { background: linear-gradient(90deg, var(--ink) var(--w), var(--line) var(--w)); }

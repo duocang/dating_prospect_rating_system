@@ -1080,10 +1080,7 @@ function tabList(r, tab) {
   }
   // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
   const both = (m, mine) => fitLine('你', t, m.fit?.items) + fitLine(t, '你', mine?.items);
-  if (tab === 'mutual') {
-    return cardsOr(r.mutual.map((m, i) => pcard(m, both(m, m.mine) + brokerBox(m), { i, quick: rankQ(i, m.mutualScore, m.rankRange), href: `#/match/${i}/mutual`, more: `看看${t}在找什么样的人` })).join(''),
-      emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
-  }
+
   if (!r.seekers.length) return emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
   const table = S.view === 'table', reqs = r.myIdeal || [];
   const switcherD = `<div class="near-head"><h3>他们中最合适的 ${r.seekers.length} 位</h3>
@@ -1117,16 +1114,16 @@ function resultTree(r) {
   return {
     id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
     kids: [
-      group('ideal', 'ideal', r.idealMatches, `符合你要求的人`, (m, i) => {
+      group('ideal', 'ideal', r.idealMatches, `你喜欢什么样的人：最接近你理想型的人`, (m, i) => {
         const a = met(m.fit.items), b = met(m.myFitToThem.items), n = m.myFitToThem.items.length;
         return person(m, 'i', i, { fit: `${a}/${m.fit.items.length}`, note: `符合你 ${a} 条 · 再点看${t}想找谁`, href: `#/match/${i}`,
           kids: [{ id: `it${i}`, kind: 'theirs', short: t, label: `${t}想找的`, fit: `你 ${b}/${n}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}` }] });
       }),
-      group('seekers', 'seekers', r.seekers, `你符合${t}们的要求`, (m, i) => {
+      group('seekers', 'seekers', r.seekers, `你这样的人配谁：${t}们的要求你都对得上`, (m, i) => {
         const b = met(m.myFitToThem.items);
         return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
       }),
-      group('theirs', 'theirs', r.idealOfIdeal || [], `你的理想型人选最常看中的人`, (m, i) => person(m, 'a', i, { fit: `${Math.round(m.score.low)}%`, note: `按你喜欢的${t}们的要求，接近程度 ${Math.round(m.score.low)}%` })),
+      group('theirs', 'theirs', r.idealOfIdeal || [], `你喜欢的人，喜欢谁`, (m, i) => person(m, 'a', i, { fit: `${Math.round(m.score.low)}%`, note: `按你喜欢的${t}们的要求，接近程度 ${Math.round(m.score.low)}%` })),
     ],
   };
 }
@@ -1148,6 +1145,22 @@ function positionCard(s, tab, r) {
         <div class="me"><span>你</span><i style="--w:${me}%"></i><b>${me}%</b></div>
       </div>
       <p class="a-sum-t">${gap > 0 ? `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你比他们看中的人低 ${gap} 分。` : `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你和他们看中的人不相上下。`}${where}。</p>
+      ${miss}
+    </div>`;
+  }
+  if (tab === 'ideal') {
+    const list = r?.idealMatches || [], p = s.position?.ideal;
+    if (!list.length) return '';
+    const t = T(), them = THEM(), avg = (f) => Math.round(list.reduce((x, q) => x + (f(q)?.low || 0), 0) / list.length);
+    const theirs = avg((q) => q.fit?.total), mine = avg((q) => q.myFitToThem?.total);
+    const miss = p?.topMisses?.length ? `<div class="pos-miss"><span>最常没对上你的：</span>${p.topMisses.map((m) => `<a class="miss-link" href="#/ideal/${esc(m.field)}" data-edit-req>${esc(lab(m.label))}<small>${m.count} 位</small>${ic('edit')}</a>`).join('')}</div><p class="pos-tip">点一下可以改这条要求</p>` : '';
+    return `<div class="pos-card a-sum">
+      <p class="a-sum-q">最接近你理想型的${t}们，合不合</p>
+      <div class="a-bars">
+        <div class="b"><span>${t}们符合你</span><i style="--w:${theirs}%"></i><b>${theirs}%</b></div>
+        <div class="me"><span>你符合${t}们</span><i style="--w:${mine}%"></i><b>${mine}%</b></div>
+      </div>
+      ${p?.of ? `<p class="a-sum-t">在 ${p.of} 位${them}里，有 ${p.allMet} 位完全符合你的要求。</p>` : ''}
       ${miss}
     </div>`;
   }

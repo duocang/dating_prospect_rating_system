@@ -7,7 +7,7 @@ export const EXAMPLE = {
     { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你喜欢什么样的人：最接近你要求的几位',
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', fit: '6/6', note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
-        { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：互相适合' }] },
+        { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：两边都对得上' }] },
         { id: 'p3', kind: 'person', label: '南风', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p3i', kind: 'theirs', label: '他想找的', fit: '你 3/4', note: '你符合他 3 条' }] },
       ] },
     { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 你这样的人配谁：要求你正好都符合的几位',
