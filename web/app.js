@@ -111,8 +111,9 @@ const THEM = () => (S.me?.gender === 'female' ? '男生' : S.me?.gender === 'mal
 const tx = (s) => String(s).replace(/\{T\}/g, T());
 // 三种关系，全站只用这三个名字
 const REL = {
-  ideal: () => `${T()}适合你`,
-  seekers: () => `你适合${T()}`,
+  ideal: () => '你的理想型',
+  theirs: () => '理想型的理想型',
+  seekers: () => '想找你这样的人',
   mutual: () => '互相适合',
 };
 // 服务端字段名里的术语，换成口语
@@ -383,17 +384,17 @@ async function renderHome() {
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
-      done: `${brokerNotice()}<a class="btn primary block" href="#/results">${ic('list')}看谁适合我</a>
+      done: `${brokerNotice()}<a class="btn primary block" href="#/results">${ic('list')}看我的 Z 字图</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
     paint(`<section class="hero">
-      <h1 class="display rise">看看<em>谁适合你</em></h1>
+      <h1 class="display rise">你喜欢的人，<em>喜欢谁</em></h1>
       ${st === 'new' ? '<p class="hero-sub rise">约 5 分钟 · 免费 · 不用注册</p>' : ''}
       <div class="relmap rise" id="relmap" style="--i:1"></div>
       <div class="stack rise" style="--i:2">${actions}</div>
       <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
     </section>`);
-    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seek: 'seekers', mutual: 'mutual' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
+    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seekers: 'seekers', theirs: 'theirs' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
     // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
@@ -422,7 +423,7 @@ function renderIntro() {
   const slides = [
     ['user', '第一步：说说你自己', `点一点就行，不想答可以跳过。`],
     ['heart', '第二步：说说你想找的人', '每条要求，说说你有多在意。'],
-    ['users', '第三步：看看谁适合你', '谁合适、合适几条，一看就懂。'],
+    ['users', '第三步：看看你喜欢的人，喜欢谁', '还有谁在找你这样的人。'],
   ];
   paint(`<section class="intro">
     <div class="slides" id="slides">${slides.map(([i, h, p]) => `<div class="slide"><div class="art">${ic(i)}</div><h2>${h}</h2><p>${p}</p></div>`).join('')}</div>
@@ -598,7 +599,7 @@ function renderMeReview() {
     const t = profileText(k, v);
     return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
   };
-  const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看谁适合我'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
+  const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看看结果'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
   paint(`${simpleHead('#/', '我填的资料', '随时可以改')}
     <h1 class="q">这是你填的资料</h1>
     <p class="qhint">点一行就能改。</p>
@@ -804,7 +805,7 @@ async function finishIdeal(btn) {
 
 function renderIdealBreak() {
   paint(milestone('主要的要求说完了', `还想对${T()}的<b>经济和家庭情况</b>提要求吗？这部分可以不填。`, '',
-    `<button class="btn primary block" id="done">不用了，看看谁适合我 ${ic('arrow')}</button>
+    `<button class="btn primary block" id="done">不用了，看看结果 ${ic('arrow')}</button>
      <button class="btn block" id="more">要加几条（8 题，大约 1 分钟）</button>
      <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>
      <button class="btn ghost" data-back="#/ideal/lifestyle">${ic('back')} 返回上一题</button>`));
@@ -846,7 +847,7 @@ function renderIdealReview() {
     ${weightBars(on, d)}
     ${mustN >= 4 ? `<div class="tip" style="animation-delay:0s">${ic('info')}<span>你有 <b>${mustN} 条“必须有”</b>。太多可能找不到人，改几条成“很在意”试试。</span></div>` : ''}
     <div class="stack"><button class="btn block" id="add">${ic('plus')}再加几条要求</button></div>
-    <div class="qfoot">${on.length ? `<button class="btn primary block" id="save">就这些，看谁适合我 ${ic('arrow')}</button>` : `<button class="btn primary block" id="pick">${ic('plus')}去选要求</button>`}</div>`);
+    <div class="qfoot">${on.length ? `<button class="btn primary block" id="save">就这些，看看结果 ${ic('arrow')}</button>` : `<button class="btn primary block" id="pick">${ic('plus')}去选要求</button>`}</div>`);
   bindBack();
   view.querySelectorAll('[data-k]').forEach((b) => (b.onclick = () => { S.backToReview = true; go(`#/ideal/${b.dataset.k}`); }));
   // 加条件：弹出还没加的条件列表，选一条、改完直接回到这里，不再从头走一遍
@@ -1038,7 +1039,11 @@ const TABS = {
   ideal: { flow: () => ['你', T()], text: () => `先看你心中的${T()}，再看最接近的真人。` },
   seekers: { flow: () => [T(), '你'], text: () => `你正好符合${T()}的要求。只是条件对得上，不代表${T()}已经对你有意思。` },
   mutual: { flow: () => ['你', T(), true], text: () => `${T()}符合你的要求，你也符合${T()}的要求。` },
+  theirs: { flow: () => [T(), '你'], text: () => `你喜欢的${T()}们，喜欢什么样的人。` },
 };
+// 两边都对得上的人，在卡片上加一枚“双向”小标，不再单独成组
+const mutualIds = (r) => new Set((r.mutual || []).map((m) => m.id));
+const twoWay = (r, m) => (mutualIds(r).has(m.id) ? '<span class="two-way">双向</span>' : '');
 
 function tabList(r, tab) {
   const t = T();
@@ -1055,8 +1060,17 @@ function tabList(r, tab) {
     const body = tie + (table ? compareTable(reqs, people)
       : `<div class="cards">${people.map((m, i) => pcard(m,
         fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
-        { href: `#/match/${i}`, i, quick: rankQ(i, m.fit.total, m.rankRange), more: `看看${t}在找什么样的人` })).join('')}</div>`);
+        { href: `#/match/${i}`, i, quick: twoWay(r, m) + rankQ(i, m.fit.total, m.rankRange), more: `看看${t}在找什么样的人` })).join('')}</div>`);
     return head + switcher + body;
+  }
+  if (tab === 'theirs') {
+    const list = r.idealOfIdeal || [];
+    if (!r.idealMatches.length) return emptyCard('先要有理想型人选', '把一两条“必须有”放宽，理想型人选多了，这里才算得出来。', '#/ideal/review', '去改要求');
+    const n = r.idealMatches.length;
+    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位和第 1 名一样接近，所以是并列。</p>` : '';
+    return `<div class="near-head"><h3>你的 ${n} 位理想型人选，最常看中的 ${list.length} 位</h3></div>` + tieA
+      + cardsOr(list.map((a, i) => pcard(a, `<p class="small muted" style="margin:8px 0 0">完全符合其中 ${a.fullyMetIdeals} 位的要求</p>`, { i, quick: rankQ(i, a.score, a.rankRange) })).join(''),
+        emptyCard('暂时算不出来', `人选库里和你同为${S.me?.gender === 'female' ? '女生' : '男生'}的人还不够多。`));
   }
   // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
   const both = (m, mine) => fitLine('你', t, m.fit?.items) + fitLine(t, '你', mine?.items);
@@ -1064,7 +1078,7 @@ function tabList(r, tab) {
     return cardsOr(r.mutual.map((m, i) => pcard(m, both(m, m.mine) + brokerBox(m), { i, quick: rankQ(i, m.mutualScore, m.rankRange), href: `#/match/${i}/mutual`, more: `看看${t}在找什么样的人` })).join(''),
       emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
   }
-  return cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
+  return cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
     emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
 
@@ -1100,13 +1114,23 @@ function resultTree(r) {
         const b = met(m.myFitToThem.items);
         return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
       }),
-      group('mutual', 'mutual', r.mutual, '两边都对得上', (m, i) => person(m, 'm', i, { fit: '双向', note: '你们互相符合', href: `#/match/${i}/mutual` })),
+      group('theirs', 'theirs', r.idealOfIdeal || [], `你的理想型人选最常看中的人`, (m, i) => person(m, 'a', i, { fit: `${m.fullyMetIdeals}/${r.idealMatches.length}`, note: `完全符合其中 ${m.fullyMetIdeals} 位的要求` })),
     ],
   };
 }
 
 // 你的位置：多少位异性的要求你全都满足，最常没对上的是哪一条。只说事实，不给人打分
-function positionCard(s, tab) {
+function positionCard(s, tab, r) {
+  if (tab === 'theirs') {
+    const a = r?.myPlaceA;
+    if (!a) return '';
+    const top = a.rankRange[1];
+    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>你最常差的：</span>${a.topMisses.map((m) => `<em>${esc(m.label)}<small>${m.count} 位</small></em>`).join('')}</div>` : '';
+    return `<div class="pos-card">
+      <div class="pos-main"><b class="pos-n">${a.fullyMet}</b><div><strong>位理想型人选的要求，你完全符合</strong><span>一共 ${a.ofIdeals} 位 · ${a.eligible ? `按他们的要求，你在 ${a.of} 位里排前 ${top} 位左右` : '按他们的要求，你暂时还没排进去'}</span></div></div>
+      ${miss}
+    </div>`;
+  }
   const p = s.position?.[tab];
   if (!p?.of) return '';
   const them = THEM();
@@ -1132,17 +1156,18 @@ async function renderResults() {
   if (!S.me.consent?.scoring) return go('#/consent');
   if (!S.results) await renderCalc();
   const r = await loadResults();
+  if (S.tab === 'mutual') S.tab = 'ideal';
   const s = r.summary, plan = S.config.plans[r.plan];
   const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
   const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
 
   paint(`<section class="res-head">
-      <h1 class="display rise">看看谁适合你</h1>
+      <h1 class="display rise">你喜欢的人，喜欢谁</h1>
       ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
     ${brokerNotice()}
     ${few ? `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。<br></span></div>` : ''}
-    <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div>
+    <div class="tabs" role="tablist">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div>
     <div id="tabpanel"></div>
     ${r.plan === 'vip'
     ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
@@ -1154,7 +1179,7 @@ async function renderResults() {
   const show = (tab, scroll) => {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
-    panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab) : '') + tabList(r, tab); panel.dataset.g = tab;
+    panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab, r) : '') + tabList(r, tab); panel.dataset.g = tab;
     panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.backToReview = true; }));
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));

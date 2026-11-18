@@ -4,32 +4,48 @@
 export const EXAMPLE = {
   id: 'me', kind: 'me', label: '你', note: '这是示例 · 填完就换成你的',
   kids: [
-    { id: 'ideal', kind: 'group', label: '他适合你', short: '3', note: '符合你要求的人',
+    { id: 'ideal', kind: 'group', label: '你的理想型', short: '3', note: '符合你要求的人',
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', fit: '6/6', note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
         { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：互相适合' }] },
         { id: 'p3', kind: 'person', label: '南风', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p3i', kind: 'theirs', label: '他想找的', fit: '你 3/4', note: '你符合他 3 条' }] },
       ] },
-    { id: 'seek', kind: 'group', label: '你适合他', short: '3', note: '你符合他们的要求',
+    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: '3', note: '你符合他们的要求',
       kids: [
         { id: 's1', kind: 'person', label: '青禾', fit: '5/5', note: '你符合他全部要求' },
         { id: 's2', kind: 'person', label: '白石', fit: '4/4', note: '你符合他全部要求' },
         { id: 's3', kind: 'person', label: '知秋', fit: '4/5', note: '你符合他 4 条' },
       ] },
-    { id: 'mutual', kind: 'group', label: '互相适合', short: '1', note: '两边都对得上',
-      kids: [{ id: 'm1', kind: 'person', label: '远山', fit: '双向', note: '你们互相符合' }] },
+    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: '3', note: '你喜欢的人，喜欢谁',
+      kids: [
+        { id: 't1', kind: 'person', label: '若溪', fit: '3/3', note: '完全符合 3 位理想型人选的要求' },
+        { id: 't2', kind: 'person', label: '初夏', fit: '2/3', note: '完全符合其中 2 位的要求' },
+        { id: 't3', kind: 'person', label: '你', fit: '前 12%', note: '按他们的要求，你排在前 12% 左右' },
+      ] },
   ],
 };
 
 const SIZE = { me: 76, group: 62, person: 50, theirs: 50 };
+// Z 字：A 理想型的理想型（左上）← B 你的理想型（右上）← C 你（左下）← D 想找你这样的人（右下）
+const ZPOS = { theirs: [-1, -1], ideal: [1, -1], seekers: [1, 1] };
+const ZS = 105; // 半边距
 function layout(n, x, y, dir, parent, depth, out) {
   out[n.id] = { n, x, y, parent };
   const k = n.kids || [];
-  const R = depth === 0 ? 118 : 108;
+  if (depth === 0) { // 根“你”在左下，三组按 Z 字放
+    out[n.id].x = x = -ZS; out[n.id].y = y = ZS;
+    k.forEach((c) => {
+      const [zx, zy] = ZPOS[c.id] || [0, 0];
+      const cx = zx * ZS, cy = zy * ZS;
+      layout(c, cx, cy, Math.atan2(cy, cx), n.id, 1, out);
+      if (c.id === 'theirs' && k.some((o) => o.id === 'ideal')) out[c.id].linkFrom = 'ideal'; // B → A
+    });
+    return out;
+  }
+  const R = 100;
   const spread = Math.min(2.4, 0.62 * (k.length - 1));
   k.forEach((c, i) => {
-    const a = depth === 0 ? -Math.PI / 2 + (i * 2 * Math.PI) / k.length
-      : dir + (k.length === 1 ? 0 : (i / (k.length - 1) - 0.5) * spread);
+    const a = dir + (k.length === 1 ? 0 : (i / (k.length - 1) - 0.5) * spread);
     layout(c, x + Math.cos(a) * R, y + Math.sin(a) * R, a, n.id, depth + 1, out);
   });
   return out;
@@ -42,14 +58,14 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   let focus = tree.id;
   el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
   const stage = el.querySelector('.rm-stage'), svg = el.querySelector('svg'), note = el.querySelector('.rm-note'), viewEl = el.querySelector('.rm-view');
-  for (const { n, x, y, parent } of Object.values(P)) {
+  for (const { n, x, y, parent, linkFrom } of Object.values(P)) {
     const d = SIZE[n.kind];
     stage.insertAdjacentHTML('beforeend', `<button type="button" class="rm-node k-${n.kind}" data-id="${esc(n.id)}" style="left:${x}px;top:${y}px;--d:${d}px">
       <span class="dot">${esc(n.short || (n.kind === 'me' ? n.label : [...n.label][0]))}</span>
       ${n.kind === 'me' ? '' : `<span class="lb">${esc(n.label)}${n.seal ? '<i class="seal">代号</i>' : ''}</span>`}
       ${n.fit ? `<span class="fit">${esc(n.fit)}</span>` : ''}</button>`);
     if (parent) {
-      const p = P[parent], mx = (p.x + x) / 2 + (y - p.y) * 0.12, my = (p.y + y) / 2 - (x - p.x) * 0.12;
+      const p = P[linkFrom || parent], mx = (p.x + x) / 2 + (y - p.y) * 0.12, my = (p.y + y) / 2 - (x - p.x) * 0.12;
       svg.insertAdjacentHTML('beforeend', `<path data-to="${esc(n.id)}" d="M${p.x} ${p.y} Q${mx} ${my} ${x} ${y}"/>`);
     }
   }

@@ -592,7 +592,7 @@ a.pcard:hover .pcard-more .ic { transform: translateX(3px); }
 .rm-node.k-me .dot { background: var(--brand); color: var(--brand-ink); font-size: 22px; box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 28%, transparent); }
 .rm-node.k-group .dot { background: var(--brand-soft); color: var(--brand); font-size: 22px; }
 .rm-node.k-group[data-id="seek"] .dot, .rm-node.k-group[data-id="seekers"] .dot { background: var(--gold-soft); color: var(--gold); }
-.rm-node.k-group[data-id="mutual"] .dot { background: var(--good-soft); color: var(--good); }
+.rm-node.k-group[data-id="theirs"] .dot { background: var(--good-soft); color: var(--good); }
 .rm-node.k-theirs .dot { background: var(--surface-2); font-size: 13px; color: var(--ink-2); }
 .rm-note { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; margin: 4px 0 0; font-size: 17px; color: var(--ink-2); text-align: center; }
 @media (prefers-reduced-motion: reduce) { .rm-stage, .rm-node, .rm-node .dot { transition: none; } }
@@ -666,21 +666,21 @@ details.pcard.fold .pcard-name span { font-size: 12px; color: var(--unk); letter
 .vip-line b { margin-left: auto; font-size: 15px; }
 .pc sup, .cmp thead b sup { font-size: .6em; margin-left: 1px; opacity: .7; }
 /* 三组共用一套颜色：图上的圆 = 页签的小圆点 = 选中时的字色 */
-:root { --g-ideal: var(--brand); --g-seekers: var(--gold); --g-mutual: var(--good); }
+:root { --g-ideal: var(--brand); --g-seekers: var(--gold); --g-theirs: var(--good); }
 .tabs .tdot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; opacity: .55; transition: opacity .2s, transform .2s; }
 .tabs .g-ideal .tdot { background: var(--g-ideal); }
 .tabs .g-seekers .tdot { background: var(--g-seekers); }
-.tabs .g-mutual .tdot { background: var(--g-mutual); }
+.tabs .g-theirs .tdot { background: var(--g-theirs); }
 .tabs button.on .tdot { opacity: 1; transform: scale(1.2); }
 .tabs button.g-ideal.on { color: var(--g-ideal); }
 .tabs button.g-seekers.on { color: var(--g-seekers); }
-.tabs button.g-mutual.on { color: var(--g-mutual); }
+.tabs button.g-theirs.on { color: var(--g-theirs); }
 .rm-node.k-group[data-id="ideal"] .dot { background: color-mix(in srgb, var(--g-ideal) 12%, var(--surface)); color: var(--g-ideal); }
 .rm-node.k-group[data-id="seekers"] .dot { background: color-mix(in srgb, var(--g-seekers) 14%, var(--surface)); color: var(--g-seekers); }
-.rm-node.k-group[data-id="mutual"] .dot { background: color-mix(in srgb, var(--g-mutual) 12%, var(--surface)); color: var(--g-mutual); }
+.rm-node.k-group[data-id="theirs"] .dot { background: color-mix(in srgb, var(--g-theirs) 12%, var(--surface)); color: var(--g-theirs); }
 .rm-node.k-group[data-id="ideal"].focus .dot { box-shadow: 0 0 0 2px var(--g-ideal); }
 .rm-node.k-group[data-id="seekers"].focus .dot { box-shadow: 0 0 0 2px var(--g-seekers); }
-.rm-node.k-group[data-id="mutual"].focus .dot { box-shadow: 0 0 0 2px var(--g-mutual); }
+.rm-node.k-group[data-id="theirs"].focus .dot { box-shadow: 0 0 0 2px var(--g-theirs); }
 .rm-view { touch-action: auto; cursor: grab; user-select: none; }
 .rm-stage.dragging { transition: none; }
 .rm-view:active { cursor: grabbing; }
@@ -800,7 +800,7 @@ details.pcard.fold .pcard-name b { overflow: visible; }
 /* 卡片里的百分比和进度条，跟所在组同色 */
 #tabpanel { --gc: var(--g-ideal); }
 #tabpanel[data-g="seekers"] { --gc: var(--g-seekers); }
-#tabpanel[data-g="mutual"] { --gc: var(--g-mutual); }
+#tabpanel[data-g="theirs"] { --gc: var(--g-theirs); }
 #tabpanel .pcard-head .quick .pc { color: var(--gc); }
 #tabpanel .fitline .bar b { background: var(--gc); }
 
@@ -909,3 +909,6 @@ details.wbars > summary span:first-of-type { flex: 1; }
 details.wbars > summary .chev .ic { width: 16px; height: 16px; color: var(--brand); transition: transform .2s; }
 details.wbars[open] > summary { margin-bottom: 10px; }
 details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
+.two-way { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 99px; background: var(--good-soft, #E6F2EC); color: var(--good); margin-bottom: 2px; }
+.tabs button { font-size: 14px; white-space: nowrap; }
+.brand { align-items: center; } .brand .logo-z { width: 28px; height: 28px; display: block; }

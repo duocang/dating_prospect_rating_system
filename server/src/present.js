@@ -105,6 +105,9 @@ export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtu
       theirEligibleCount: m.theirEligibleCount,
       theirPicks: m.theirPicks.map((p) => ({ ...card(p.person), score: p.fit.total, rankRange: p.rankRange })),
     })),
+    // 理想型的理想型：和你同性别，不能牵线，只给卡片上的粗粒度事实
+    idealOfIdeal: (rel.idealOfIdeal || []).map((a) => ({ ...card(a.person), score: a.score, rankRange: a.rankRange, fullyMetIdeals: a.fullN, eligibleIdeals: a.eligibleN })),
+    myPlaceA: rel.myPlaceA,
     seekers: rel.seekers.map((s) => ({
       ...contactable(s.person),
       theirIdeal: s.person.requirements.map(formatRequirement),

@@ -55,14 +55,35 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
   toMyIdeal.forEach((e) => { e.tieBreak = meFit.get(e.id).total.low; });
   const ideal = topEligible(scorer, toMyIdeal, limits.matches);
 
+  // 理想型的理想型（A）：把每位理想型人选对同性别人选的打分汇总，合成一组
+  const aAgg = new Map(); // id -> { person, lows, highs, eligibleN, fullN }
+  const meAgg = { lows: [], highs: [], eligibleN: 0, fullN: 0, misses: new Map() };
+  const fullyMetR = (r) => r.gate.status === 'pass' && (r.items || []).length > 0 && r.items.every((it) => it.status === 'met');
+
   const idealMatches = ideal.list.map((entry) => {
     const cand = entry.person;
     // TA 的其他人选：与你同一方向的人（不含你），按 TA 的理想型排序
     const rivals = others.filter((p) => p.id !== cand.id && directionOk(p, cand));
     const scoredRivals = scoreAll(scorer, rivals, cand.requirements, params);
     const picks = topEligible(scorer, scoredRivals, limits.theirPicks);
+    for (const e of scoredRivals) {
+      const a = aAgg.get(e.id) || { person: e.person, lows: [], highs: [], eligibleN: 0, fullN: 0 };
+      a.lows.push(e.result.eligible ? e.result.total.low : 0);
+      a.highs.push(e.result.eligible ? e.result.total.high : 0);
+      if (e.result.eligible) a.eligibleN++;
+      if (fullyMetR(e.result)) a.fullN++;
+      aAgg.set(e.id, a);
+    }
     // 你在 TA 理想型下的名次范围（把你放进同一个排序池）
     const myResult = meFit.get(cand.id);
+    meAgg.lows.push(myResult.eligible ? myResult.total.low : 0);
+    meAgg.highs.push(myResult.eligible ? myResult.total.high : 0);
+    if (myResult.eligible) meAgg.eligibleN++;
+    if (fullyMetR(myResult)) meAgg.fullN++;
+    for (const it of myResult.items || []) if (it.status === 'unmet' || it.status === 'partial') {
+      const m = meAgg.misses.get(it.field) || { field: it.field, label: it.label, count: 0 };
+      m.count++; meAgg.misses.set(it.field, m);
+    }
     let myPlace = null;
     if (myResult.eligible) {
       const pool2 = scorer.rank([...scoredRivals.filter((e) => e.result.eligible), { id: me.id, result: myResult }]);
@@ -82,6 +103,30 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
       myPlace,
     };
   });
+
+  // A 分 = 对这几位理想型人选分数的平均（没达门槛的按 0 算）；至少对一半理想型人选达标才入榜
+  const nB = idealMatches.length;
+  const mean = (xs) => Math.round((xs.reduce((s, x) => s + x, 0) / Math.max(1, xs.length)) * 10) / 10;
+  const aOk = (x) => nB > 0 && x.eligibleN * 2 >= nB;
+  const aEntries = [...aAgg.entries()].filter(([, a]) => aOk(a)).map(([id, a]) => ({
+    id, person: a.person, tieBreak: a.fullN, fullN: a.fullN, eligibleN: a.eligibleN,
+    result: { total: { low: mean(a.lows), high: mean(a.highs) } },
+  }));
+  const aLimit = limits.idealOfIdeal ?? limits.theirPicks;
+  const aRanked = scorer.rank(aEntries);
+  const idealOfIdeal = aRanked.slice(0, aLimit);
+  // 你在同一口径下的名次
+  let myPlaceA = null;
+  if (nB) {
+    const mine = { id: me.id, tieBreak: meAgg.fullN, result: { total: { low: mean(meAgg.lows), high: mean(meAgg.highs) } } };
+    const all = scorer.rank([...aEntries, mine]);
+    const me2 = all.find((e) => e.id === me.id);
+    myPlaceA = {
+      score: mine.result.total, rankRange: me2.rankRange, of: all.length, eligible: aOk(meAgg),
+      ofIdeals: nB, fullyMet: meAgg.fullN, eligibleFor: meAgg.eligibleN,
+      topMisses: [...meAgg.misses.values()].sort((a, b) => b.count - a.count).slice(0, 2),
+    };
+  }
 
   // 3. 在找你的人：你的条件符合其理想型
   const seekerEntries = counterparts
@@ -132,6 +177,8 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
     limits,
     myIdeal: me.requirements,
     idealMatches,
+    idealOfIdeal: idealOfIdeal.map((e) => ({ id: e.id, person: e.person, score: e.result.total, rankRange: e.rankRange, fullN: e.fullN, eligibleN: e.eligibleN })),
+    myPlaceA,
     seekers: seekers.list.map((e) => ({ id: e.id, person: e.person, myFitToThem: e.result, rankRange: e.rankRange, theirFitToMyIdeal: toMyIdealById.get(e.id) })),
     mutual: mutual.map((e) => ({ id: e.id, person: e.person, mutualScore: e.result.total, fitToMyIdeal: e.fitToMyIdeal, myFitToThem: e.myFitToThem, rankRange: e.rankRange })),
     summary: {
@@ -145,6 +192,8 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
       // 和第一名同分的有几位：分数相同时“第 1、2、3”其实是并列，界面要说清楚
       topTie: ideal.list.length ? toMyIdeal.filter((e) => e.result.eligible && e.result.total.low === ideal.list[0].result.total.low).length : 0,
       position,
+      topTieA: idealOfIdeal.length ? aEntries.filter((e) => e.result.total.low === idealOfIdeal[0].result.total.low).length : 0,
+      topTieD: seekers.list.length ? seekerEntries.filter((e) => e.result.eligible && e.result.total.low === seekers.list[0].result.total.low).length : 0,
       avgMyFitToMatches: idealMatches.length ? { low: avg(idealMatches.map((m) => m.myFitToThem.total.low)), high: avg(idealMatches.map((m) => m.myFitToThem.total.high)) } : null,
     },
   };
