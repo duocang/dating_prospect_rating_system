@@ -389,8 +389,7 @@ async function renderHome() {
     }[st];
     paint(`<section class="hero">
       <h1 class="display rise">你喜欢的人，<em>喜欢谁</em></h1>
-      <p class="hero-sub rise">${st === 'new' ? '约 5 分钟 · 免费 · 不用注册' : '点图上的 A、B、D 看看各是什么'}</p>
-      <ul class="z-legend rise"><li><b>B</b>你喜欢什么样的人</li><li><b>A</b>你喜欢的人，喜欢谁</li><li><b>D</b>你这样的人，配谁</li></ul>
+      ${st === 'new' ? '<p class="hero-sub rise">约 5 分钟 · 免费 · 不用注册</p>' : ''}
       <div class="relmap rise" id="relmap" style="--i:1"></div>
       <div class="stack rise" style="--i:2">${actions}</div>
       <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
