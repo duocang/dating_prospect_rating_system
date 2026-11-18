@@ -1071,8 +1071,8 @@ function tabList(r, tab) {
     const table = S.view === 'table';
     const mine = r.myPlaceA?.score;
     const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位一样接近，所以是并列。</p>` : '';
-    const switcher = `<div class="near-head"><h3>${t}们最常看中的 ${list.length} 位</h3>
-      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">和我对照</button></div></div>`;
+    const switcher = `<div class="near-head"><h3>他们看中的 ${list.length} 位</h3>
+      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
     const vs = (a) => mine ? `<p class="vs-line"><span>${t}们眼里</span><b>${pctQ(a.score)}</b><span>你</span><b class="me">${pctQ(mine)}</b></p>` : '';
     const body = table ? aCompareTable(r.myFacts || {}, list, mine)
       : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange) })).join('')}</div>`;

@@ -933,3 +933,4 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .cmp-a td.t-diff { background: color-mix(in srgb, var(--gold) 14%, transparent); }
 .cmp-a .me-col .al { color: var(--brand); font-weight: 700; }
 .cmp-a thead th { white-space: nowrap; min-width: 4.2em; } .cmp-a thead .al { display: block; } .cmp-a td { white-space: nowrap; }
+.near-head { flex-wrap: nowrap; } .near-head h3 { white-space: nowrap; } .near-head .seg-switch { flex: none; }
