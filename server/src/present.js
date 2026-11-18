@@ -108,6 +108,8 @@ export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtu
     // 理想型的理想型：和你同性别，不能牵线，只给卡片上的粗粒度事实
     idealOfIdeal: (rel.idealOfIdeal || []).map((a) => ({ ...card(a.person), score: a.score, rankRange: a.rankRange, fullyMetIdeals: a.fullN, eligibleIdeals: a.eligibleN })),
     myPlaceA: rel.myPlaceA,
+    // 你自己的卡片事实（和别人同样的粒度），用于和理想型的理想型逐条对照
+    myFacts: presentCard(key, viewer.id, viewer).facts,
     seekers: rel.seekers.map((s) => ({
       ...contactable(s.person),
       theirIdeal: s.person.requirements.map(formatRequirement),

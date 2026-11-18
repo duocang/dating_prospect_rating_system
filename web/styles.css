@@ -918,3 +918,18 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .z-legend { list-style: none; padding: 0; margin: 10px auto 0; display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); max-width: 320px; text-align: left; }
 .z-legend b { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; margin-right: 8px; font-size: 12px; background: var(--brand-soft); color: var(--brand); font-family: var(--serif); }
 .hero .hero-sub { margin-top: 10px; }
+.vs-line { display: flex; align-items: baseline; gap: 6px; margin: 10px 0 0; font-size: 13px; color: var(--ink-2); }
+.vs-line b { font-size: 15px; color: var(--g-theirs); margin-right: 10px; }
+.vs-line b.me { color: var(--brand); }
+.a-sum { display: grid; gap: 12px; }
+.a-sum-q { margin: 0; font-weight: 700; font-size: 16px; color: var(--ink); }
+.a-bars { display: grid; gap: 8px; }
+.a-bars div { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.a-bars i { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--g-theirs) var(--w), var(--line) var(--w)); }
+.a-bars .me i { background: linear-gradient(90deg, var(--brand) var(--w), var(--line) var(--w)); }
+.a-bars b { text-align: right; color: var(--ink); }
+.a-sum-t { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.cmp-a td { font-size: 13px; text-align: center; padding: 8px 6px; }
+.cmp-a td.t-diff { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.cmp-a .me-col .al { color: var(--brand); font-weight: 700; }
+.cmp-a thead th { white-space: nowrap; min-width: 4.2em; } .cmp-a thead .al { display: block; } .cmp-a td { white-space: nowrap; }

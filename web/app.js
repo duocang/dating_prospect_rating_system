@@ -1067,11 +1067,16 @@ function tabList(r, tab) {
   if (tab === 'theirs') {
     const list = r.idealOfIdeal || [];
     if (!r.idealMatches.length) return emptyCard('先要有理想型人选', '把一两条“必须有”放宽，理想型人选多了，这里才算得出来。', '#/ideal/review', '去改要求');
-    const n = r.idealMatches.length;
-    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位和第 1 名一样接近，所以是并列。</p>` : '';
-    return `<div class="near-head"><h3>你的 ${n} 位理想型人选，最常看中的 ${list.length} 位</h3></div>` + tieA
-      + cardsOr(list.map((a, i) => pcard(a, `<p class="small muted" style="margin:8px 0 0">完全符合其中 ${a.fullyMetIdeals} 位的要求</p>`, { i, quick: rankQ(i, a.score, a.rankRange) })).join(''),
-        emptyCard('暂时算不出来', `人选库里和你同为${S.me?.gender === 'female' ? '女生' : '男生'}的人还不够多。`));
+    if (!list.length) return emptyCard('暂时算不出来', `人选库里和你同为${S.me?.gender === 'female' ? '女生' : '男生'}的人还不够多。`);
+    const table = S.view === 'table';
+    const mine = r.myPlaceA?.score;
+    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位一样接近，所以是并列。</p>` : '';
+    const switcher = `<div class="near-head"><h3>${t}们最常看中的 ${list.length} 位</h3>
+      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">和我对照</button></div></div>`;
+    const vs = (a) => mine ? `<p class="vs-line"><span>${t}们眼里</span><b>${pctQ(a.score)}</b><span>你</span><b class="me">${pctQ(mine)}</b></p>` : '';
+    const body = table ? aCompareTable(r.myFacts || {}, list, mine)
+      : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange) })).join('')}</div>`;
+    return switcher + tieA + body;
   }
   // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
   const both = (m, mine) => fitLine('你', t, m.fit?.items) + fitLine(t, '你', mine?.items);
@@ -1116,7 +1121,7 @@ function resultTree(r) {
         const b = met(m.myFitToThem.items);
         return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
       }),
-      group('theirs', 'theirs', r.idealOfIdeal || [], `你的理想型人选最常看中的人`, (m, i) => person(m, 'a', i, { fit: `${m.fullyMetIdeals}/${r.idealMatches.length}`, note: `完全符合其中 ${m.fullyMetIdeals} 位的要求` })),
+      group('theirs', 'theirs', r.idealOfIdeal || [], `你的理想型人选最常看中的人`, (m, i) => person(m, 'a', i, { fit: `${Math.round(m.score.low)}%`, note: `按你喜欢的${t}们的要求，接近程度 ${Math.round(m.score.low)}%` })),
     ],
   };
 }
@@ -1124,12 +1129,20 @@ function resultTree(r) {
 // 你的位置：多少位异性的要求你全都满足，最常没对上的是哪一条。只说事实，不给人打分
 function positionCard(s, tab, r) {
   if (tab === 'theirs') {
-    const a = r?.myPlaceA;
-    if (!a) return '';
-    const top = a.rankRange[1];
-    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>你最常差的：</span>${a.topMisses.map((m) => `<em>${esc(m.label)}<small>${m.count} 位</small></em>`).join('')}</div>` : '';
-    return `<div class="pos-card">
-      <div class="pos-main"><b class="pos-n">${a.fullyMet}</b><div><strong>位理想型人选的要求，你完全符合</strong><span>一共 ${a.ofIdeals} 位 · ${a.eligible ? `按他们的要求，你在 ${a.of} 位里排前 ${top} 位左右` : '按他们的要求，你暂时还没排进去'}</span></div></div>
+    const a = r?.myPlaceA, list = r?.idealOfIdeal || [];
+    if (!a || !list.length) return '';
+    const t = T(), avg = Math.round(list.reduce((x, p) => x + p.score.low, 0) / list.length), me = Math.round(a.score.low);
+    const pct = Math.max(1, Math.round((a.rankRange[1] / a.of) * 100));
+    const where = a.eligible ? (pct <= 50 ? `在 ${a.of} 位和你同性别的人里，你大约排在前 ${pct}%` : `在 ${a.of} 位和你同性别的人里，你排在后半段`) : `${t}们的要求里，有些你还没达到，暂时排不进去`;
+    const gap = avg - me;
+    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>差距主要在：</span>${a.topMisses.map((m) => `<em>${esc(lab(m.label))}<small>${m.count}/${a.ofIdeals} 位${t}在意</small></em>`).join('')}</div>` : '';
+    return `<div class="pos-card a-sum">
+      <p class="a-sum-q">你和${t}们看中的人，差在哪</p>
+      <div class="a-bars">
+        <div><span>${t}们看中的 ${list.length} 位</span><i style="--w:${avg}%"></i><b>${avg}%</b></div>
+        <div class="me"><span>你</span><i style="--w:${me}%"></i><b>${me}%</b></div>
+      </div>
+      <p class="a-sum-t">${gap > 0 ? `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你比他们看中的人低 ${gap} 分。` : `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你和他们看中的人不相上下。`}${where}。</p>
       ${miss}
     </div>`;
   }
@@ -1215,6 +1228,16 @@ function ring(label, t) {
   const v = Math.max(0, Math.min(100, t.low));
   return `<div class="ring-card"><div class="ring"><svg viewBox="0 0 110 110" aria-hidden="true"><circle class="bg" cx="55" cy="55" r="46"/><circle class="fg" cx="55" cy="55" r="46" data-v="${v}"/></svg><b class="${Math.round(t.low) === Math.round(t.high) ? '' : 'range'}">${fmt(t)}</b></div>
     <p>${label}</p></div>`;
+}
+
+// 你和理想型的理想型逐条对照：每行一个条件，第一列是你；和你不一样的格子标出来
+function aCompareTable(myFacts, list, mine) {
+  const keys = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
+  const cell = (v, diff) => `<td class="${diff ? 't-diff' : ''}">${v ? esc(nice(v)) : '<span class="muted">—</span>'}</td>`;
+  return `<div class="cmp-wrap"><table class="cmp cmp-a">
+    <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
+    <tbody>${keys.map((k) => `<tr><th scope="row"><b>${esc(lab(k))}</b></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}</tbody>
+  </table><p class="cmp-hint">百分比：按你喜欢的人的要求算的接近程度。标色的格子和你不一样。</p></div>`;
 }
 
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
