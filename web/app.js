@@ -272,18 +272,23 @@ function growBar() {
   requestAnimationFrame(() => requestAnimationFrame(() => view.querySelectorAll('.segs i[data-to]').forEach((i) => i.style.setProperty('--p', `${i.dataset.to}%`))));
 }
 
+// 选项很多（100 个城市）时：只摆出 10 个常见大城市和已选的，其他城市输入名字搜出来
+const TOP_CITIES = ['北京', '上海', '广州', '深圳', '杭州', '成都', '重庆', '武汉', '南京', '西安'];
+const longList = (items) => items.length > 20;
+const hiddenMore = (items, it, on) => longList(items) && !on && !TOP_CITIES.includes(it.v);
+const searchBox = (items) => (longList(items) ? `<input class="text-input opt-filter" type="search" placeholder="其他城市：输入名字搜索" aria-label="搜索城市" style="margin:0 0 12px">` : '');
 function optList(items, sel, { multi = false, cls = '' } = {}) {
-  return `${items.length > 20 ? `<input class="text-input opt-filter" type="search" placeholder="输入城市名搜索" aria-label="搜索" style="margin:0 0 12px">` : ''}<div class="opts ${cls}" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
+  return `${searchBox(items)}<div class="opts ${cls}" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
     const on = multi ? sel.includes(it.v) : sel === it.v;
-    return `<button type="button" class="opt ${multi ? 'multi' : ''} ${it.soft ? 'soft' : ''} ${on ? 'on' : ''}" data-v="${esc(it.v)}" data-label="${esc(it.label)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}">
+    return `<button type="button" class="opt ${multi ? 'multi' : ''} ${it.soft ? 'soft' : ''} ${on ? 'on' : ''}" data-v="${esc(it.v)}" data-label="${esc(it.label)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}"${hiddenMore(items, it, on) ? ' data-more hidden' : ''}>
       <span class="mark">${ic('check')}</span><span class="opt-t">${esc(it.label)}${it.sub ? `<small>${esc(it.sub)}</small>` : ''}</span></button>`;
   }).join('')}</div>`;
 }
 
 function chipList(items, sel, { multi = false } = {}) {
-  return `${items.length > 20 ? `<input class="text-input opt-filter" type="search" placeholder="输入城市名搜索" aria-label="搜索" style="margin:0 0 12px">` : ''}<div class="chips" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
+  return `${searchBox(items)}<div class="chips" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
     const on = multi ? sel.includes(it.v) : sel === it.v;
-    return `<button type="button" class="chip ${on ? 'on' : ''}" data-v="${esc(it.v)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}">${ic('check')}${esc(it.label)}</button>`;
+    return `<button type="button" class="chip ${on ? 'on' : ''}" data-v="${esc(it.v)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}"${hiddenMore(items, it, on) ? ' data-more hidden' : ''}>${ic('check')}${esc(it.label)}</button>`;
   }).join('')}</div>`;
 }
 
@@ -689,8 +694,8 @@ function iNav(key) {
 function impBlock(e, key) {
   return `<div class="imp" id="imp">
     <h3>这一条，你有多在意？</h3>
-    <p class="small muted" style="margin:-4px 0 10px">不确定就用默认的“${IMP_LABEL[defaultImp(key)]}”，你可以改。</p>
-    <div class="imp-list" role="radiogroup" aria-label="在意程度">${IMP.map(([v, l, note]) => `<button type="button" class="imp-opt ${e.imp === v ? 'on' : ''}" data-imp="${v}" role="radio" aria-checked="${e.imp === v}">
+    <p class="small muted" style="margin:-4px 0 10px">点一下就会进入下一题。</p>
+    <div class="imp-list" role="radiogroup" aria-label="在意程度">${IMP.filter(([v]) => v !== 'off').map(([v, l, note]) => `<button type="button" class="imp-opt ${e.imp === v ? 'on' : ''}" data-imp="${v}" role="radio" aria-checked="${e.imp === v}">
       <span class="mark">${ic('check')}</span><span class="t"><b>${l}</b><span>${note}</span></span></button>`).join('')}</div>
   </div>`;
 }
@@ -718,21 +723,40 @@ function renderIdealQ(key) {
     <h1 class="q">${tx(q)}</h1>
     <p class="qhint">${hint}</p>
     <div id="target">${body}</div>
-    ${impBlock(e, key)}
+    <div id="impwrap" ${f.type === 'number' || entryValid(key, e) ? '' : 'hidden'}>${impBlock(e, key)}</div>
     <div class="qfoot">
-      <button class="btn primary" id="ok">${S.backToReview ? '改好了' : '下一题'} ${ic('arrow')}</button>
+      <button class="btn block" id="skip">不在意，跳过这题</button>
     </div>`);
   growBar();
-  bindBack(() => { if (e.imp === 'off' || entryValid(key, e)) saveReqs(); });
 
   const setImp = (v, flash) => {
     e.imp = v;
     view.querySelectorAll('[data-imp]').forEach((b) => { b.classList.toggle('on', b.dataset.imp === v); b.setAttribute('aria-checked', b.dataset.imp === v); });
     if (flash) { const box = document.getElementById('imp'); box.classList.remove('flash'); void box.offsetWidth; box.classList.add('flash'); }
   };
-  // 选了具体条件，却还是“不在意”时，按常见的选择预填在意程度，并闪一下提醒
-  const touched = () => { e.dirty = true; if (e.imp === 'off') setImp(defaultImp(key), true); };
-  view.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => setImp(b.dataset.imp, false)));
+  // 和“关于你”一样：选完条件，下面才出现“有多在意”；点了在意程度，就自动进入下一题
+  const here = location.hash;
+  let timer = null, busy = false;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  bindBack(() => { cancel(); if (e.imp === 'off' || entryValid(key, e)) saveReqs(); });
+  const advance = (label) => {
+    cancel(); if (busy) return; busy = true;
+    saveReqs();
+    nav.next();
+    if (label) toast(`已选：${label}`, { label: '改一下', fn: () => go(here, 'back') });
+  };
+  const touched = () => {
+    e.dirty = true;
+    const w = document.getElementById('impwrap'), ok = entryValid(key, e);
+    if (w.hidden && ok) { w.hidden = false; w.classList.remove('flash'); void w.offsetWidth; w.classList.add('flash'); }
+    if (!ok) { w.hidden = true; cancel(); }
+  };
+  view.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => {
+    if (busy) return;
+    setImp(b.dataset.imp, false);
+    cancel(); // 等待期间改选：以最后一次为准
+    timer = setTimeout(() => advance(`${describe(key, e)} · ${IMP_LABEL[b.dataset.imp]}`), reduceMotion() ? 80 : 600);
+  }));
 
   if (f.type === 'number') {
     const n = NUM[key];
@@ -759,15 +783,7 @@ function renderIdealQ(key) {
     }));
   }
 
-  document.getElementById('ok').onclick = () => {
-    if (e.imp !== 'off' && !entryValid(key, e)) {
-      toast(f.type === 'category' ? '请至少选一个；如果都可以，就选“不在意”' : '请先选一个；如果无所谓，就选“不在意”');
-      const t = document.getElementById('target'); t.classList.remove('flash'); void t.offsetWidth; t.classList.add('flash');
-      return;
-    }
-    saveReqs();
-    nav.next();
-  };
+  document.getElementById('skip').onclick = () => { setImp('off', false); advance(); };
 }
 
 // 要求填完：保存，直接去看谁适合你（第一次会先经过同意页）
@@ -1808,7 +1824,10 @@ async function route() {
 document.addEventListener('input', (e) => {
   if (!e.target.classList?.contains('opt-filter')) return;
   const q = e.target.value.trim();
-  e.target.nextElementSibling?.querySelectorAll('[data-v]').forEach((b) => { b.hidden = q && !b.textContent.includes(q); });
+  // 没输入时：只显示常见城市和已选的；输入后：显示所有名字里带这几个字的
+  e.target.nextElementSibling?.querySelectorAll('[data-v]').forEach((b) => {
+    b.hidden = q ? !b.textContent.includes(q) : b.hasAttribute('data-more') && !b.classList.contains('on');
+  });
 });
 window.addEventListener('hashchange', route);
 route();
