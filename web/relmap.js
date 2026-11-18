@@ -2,7 +2,7 @@
 // 首页用示例人物（EXAMPLE），结果页用真实结果拼出来的树。
 // 节点：{ id, kind: me|group|person|theirs, label, short?, fit?, note?, href?, tab?, kids? }
 export const EXAMPLE = {
-  id: 'me', kind: 'me', label: '你', note: '这是示例，填完换成你的',
+  id: 'me', kind: 'me', label: '你',
   kids: [
     { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你喜欢的人',
       kids: [
