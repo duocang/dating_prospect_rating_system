@@ -100,7 +100,7 @@ test('完整流程：甲发起 → 乙只看到极简信息 → 乙二次确认�
   assert.equal(inc.minimal.occupation, '软件与技术');
   assert.deepEqual(inc.minimal.theyFitYou, { met: 2, of: 2 });
   const raw = JSON.stringify(ov);
-  for (const leak of [PHONE, '不该出现', '800000', '"31"', '180']) assert.ok(!raw.includes(leak), `乙不应看到 ${leak}`);
+  for (const leak of [PHONE, '不该出现', '800000', '"31"', ':180', '180 cm', 'heightCm']) assert.ok(!raw.includes(leak), `乙不应看到 ${leak}`);
   assert.equal(inc.contact, null);
 
   // 每次同意都要再确认
