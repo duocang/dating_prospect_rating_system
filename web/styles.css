@@ -911,3 +911,4 @@ details.wbars[open] > summary { margin-bottom: 10px; }
 details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .two-way { display: inline-block; font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 99px; background: var(--good-soft, #E6F2EC); color: var(--good); margin-bottom: 2px; }
 .tabs button { font-size: 14px; white-space: nowrap; }
+.brand { align-items: center; } .brand .logo-z { width: 28px; height: 28px; display: block; }

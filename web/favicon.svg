@@ -1,0 +1,13 @@
+<svg style="background:#141116;border-radius:14px" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VIER">
+  <defs>
+    <radialGradient id="p1" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FFF8EC"/><stop offset="1" stop-color="#CDBBA2"/></radialGradient>
+    <radialGradient id="p2" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FBF1E1"/><stop offset="1" stop-color="#C9A97E"/></radialGradient>
+    <radialGradient id="p3" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#F6F1EA"/><stop offset="1" stop-color="#B9AC9C"/></radialGradient>
+    <radialGradient id="p4" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#F2C6A6"/><stop offset="1" stop-color="#A9583D"/></radialGradient>
+  </defs>
+  <path d="M15 13 Q32 15 47 25 Q32 33 17 41 Q32 46 48 51" fill="none" stroke="#E2B66E" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="15" cy="13" r="8.5" fill="url(#p1)"/>
+  <circle cx="47" cy="25" r="8.5" fill="url(#p2)"/>
+  <circle cx="17" cy="41" r="8.5" fill="url(#p3)"/>
+  <circle cx="48" cy="51" r="8.5" fill="url(#p4)"/>
+</svg>
