@@ -4,6 +4,7 @@
       "label": "免费版",
       "matches": 3,
       "theirPicks": 3,
+      "idealOfIdeal": 3,
       "seekers": 3,
       "mutual": 3,
       "priceFen": 0
@@ -12,6 +13,7 @@
       "label": "VIP",
       "matches": 5,
       "theirPicks": 5,
+      "idealOfIdeal": 5,
       "seekers": 5,
       "mutual": 5,
       "priceFen": 199

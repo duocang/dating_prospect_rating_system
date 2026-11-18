@@ -59,3 +59,17 @@ test('双向相合：两个方向都达标才进入', () => {
   assert.ok(ids.includes('m2'));
   for (const m of r.mutual) assert.ok(m.fitToMyIdeal.eligible && m.myFitToThem.eligible);
 });
+
+test('理想型的理想型：合成一组同性别人选，并给出你的名次', () => {
+  const r = computeRelations({ me, pool, limits: { matches: 3, theirPicks: 3, seekers: 3, mutual: 3 } });
+  assert.ok(r.idealOfIdeal.length > 0 && r.idealOfIdeal.length <= 3);
+  for (const a of r.idealOfIdeal) assert.equal(a.person.gender, 'female');
+  assert.ok(!r.idealOfIdeal.some((a) => a.id === 'me'));
+  assert.ok(r.myPlaceA && r.myPlaceA.ofIdeals === r.idealMatches.length);
+  assert.ok(r.myPlaceA.rankRange[0] >= 1 && r.myPlaceA.rankRange[1] <= r.myPlaceA.of);
+});
+
+test('理想型的理想型数量可以单独设置', () => {
+  const r = computeRelations({ me, pool, limits: { matches: 3, theirPicks: 3, idealOfIdeal: 1, seekers: 3, mutual: 3 } });
+  assert.equal(r.idealOfIdeal.length, 1);
+});

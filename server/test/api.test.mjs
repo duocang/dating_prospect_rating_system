@@ -67,6 +67,9 @@ test('完整流程：注册、填写、同意、结果、导出、删除', async
   const vip = await call('GET', '/api/me/results', token);
   assert.equal(vip.body.idealMatches.length, 5);
   assert.equal(vip.body.idealMatches[0].theirPicks.length, 5);
+  assert.ok(vip.body.idealOfIdeal.length > 0 && vip.body.idealOfIdeal.length <= 5);
+  assert.ok(vip.body.idealOfIdeal.every((a) => !a.broker), '同性别人选不能牵线');
+  assert.ok(vip.body.myPlaceA && vip.body.myPlaceA.of >= 1);
 
   // 数据最小化：未注册字段被丢弃
   const me = await call('GET', '/api/me', token);
