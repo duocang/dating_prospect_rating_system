@@ -1005,12 +1005,12 @@ const byIdeal = (reqs, items) => {
   const m = Object.fromEntries((items || []).map((it) => [it.label, it]));
   return reqs.map((q) => m[q.label]).filter(Boolean);
 };
-// 对照表（手机优先）：三人都符合的条件收成最后一行；其余每行一条，格子只放小图标，
+// 对照表（手机优先）：每条要求一行，全部显示；每行一条，格子只放小图标，
 // 对上的是浅绿勾，没对上的可点，点了原地显示对方的实际情况
 function compareTable(reqs, people, sfx = '') {
   const itemOf = (p, q) => (p.fit.items || []).find((x) => x.label === q.label);
-  const allGood = reqs.filter((q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; }));
-  const rows = reqs.filter((q) => !allGood.includes(q));
+  const allGood = [];
+  const rows = reqs;
   const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
   return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp2">
     <thead><tr><th scope="col"></th><th scope="col" class="ideal-col"><span class="al">你的理想型</span></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
@@ -1022,7 +1022,7 @@ function compareTable(reqs, people, sfx = '') {
         return `<td class="${tone}"><span class="st" aria-label="${word}">${ic(icon)}</span></td>`;
       }).join('')}</tr>`).join('')}
     ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 2}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
-  </table>${rows.length ? '<p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : ''}</div>`;
+  </table>${rows.some((q) => people.some((p) => { const it = itemOf(p, q); return it && toneOf(it) !== 't-good'; })) ? '<p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : ''}</div>`;
 }
 
 function pcard(c, inner, { href = '', i = 0, head = '', more = '', quick = '' } = {}) {
