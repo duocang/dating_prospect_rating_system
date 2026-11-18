@@ -129,9 +129,9 @@ const IMP_RANK = { 灵活: 1, 重要: 2, 很重要: 3, 必须: 4 }; // 越在意
 const IMP_FROM_SERVER = { 灵活: '有最好', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
-const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
+const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
 const P2 = ['incomeAnnual', 'personalNetAssets', 'housing', 'familySupport', 'familyNetAssets', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
-const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
+const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
 const I2 = ['personalNetAssets', 'housing', 'familySupport', 'familyNetAssets', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
 const TOTAL_Q = P1.length + P2.length + I1.length + I2.length;
 // 四段：进度条全程只有一条，分成四格，不会中途重置
@@ -150,6 +150,8 @@ const ME_Q = {
   settlement: ['以后打算在哪里安家？'],
   education: ['你的学历是？', '读到哪一步就选哪一个。'],
   occupation: ['你做哪一行？', '选最接近的一个就行。'],
+  maritalStatus: ['你现在的婚姻状况？'],
+  childrenStatus: ['你现在有孩子吗？'],
   marriagePlan: ['你打算什么时候结婚？'],
   childrenPlan: ['以后想要孩子吗？'],
   personality: ['你和别人相处，更像哪一种？'],
@@ -172,6 +174,8 @@ const IDEAL_Q = {
   education: ['你希望{T}的学历至少是？', '选一个最低要求。'],
   occupation: ['你能接受{T}做哪一行？', '可以选好几个。'],
   incomeAnnual: ['你希望{T}一年至少挣多少？', '税前，选一个最低要求。'],
+  maritalStatus: ['你能接受{T}的婚姻状况是？', '可以选好几个。'],
+  childrenStatus: ['你能接受{T}有孩子吗？', '可以选好几个。'],
   marriagePlan: ['你希望{T}什么时候结婚？', '可以选好几个。'],
   childrenPlan: ['关于孩子，你能接受{T}怎么想？', '可以选好几个。'],
   personality: ['你喜欢{T}是哪种性格？', '可以选好几个。'],
@@ -197,10 +201,10 @@ const INCOME_P = [['5 万以下', 30000, 0, 50000], ['5 到 10 万', 75000, 5000
 const MIN_WAN = { incomeAnnual: [5, 10, 15, 20, 30, 50], personalNetAssets: [10, 50, 100, 300, 600], familyNetAssets: [50, 150, 300, 600] };
 const IMP = [
   ['off', '不在意', '这一条不看，不影响结果。'],
-  ['1', '有最好', '有更好，没有也行。分量最轻。'],
-  ['2', '在意', '会认真比较这一条。'],
-  ['3', '很在意', '非常看重，占的分量大。'],
-  ['must', '必须有', '达不到就不看。最多给 1–2 条。'],
+  ['1', '有最好', '没有也行'],
+  ['2', '在意', '会认真比较'],
+  ['3', '很在意', '分量很大'],
+  ['must', '必须有', '不符合就不看'],
 ];
 const IMP_LABEL = Object.fromEntries(IMP.map(([v, l]) => [v, l]));
 // 默认在意程度：用户点了某条要求的具体条件时，先按常见情况预填，随时能改。
@@ -209,6 +213,7 @@ const IMP_LABEL = Object.fromEntries(IMP.map(([v, l]) => [v, l]));
 const DEFAULT_IMP = {
   age: { m: '3', f: '3' }, heightCm: { m: '2', f: '1' }, city: { m: '3', f: '3' }, settlement: { m: '2', f: '2' },
   education: { m: '2', f: '2' }, occupation: { m: '1', f: '1' }, incomeAnnual: { m: '3', f: '1' },
+  maritalStatus: { m: '3', f: '3' }, childrenStatus: { m: '3', f: '3' },
   marriagePlan: { m: '3', f: '3' }, childrenPlan: { m: '3', f: '3' }, personality: { m: '2', f: '2' }, lifestyle: { m: '1', f: '1' },
   personalNetAssets: { m: '1', f: '1' }, housing: { m: '2', f: '1' }, familySupport: { m: '1', f: '1' }, familyNetAssets: { m: '1', f: '1' },
   parentsSecurity: { m: '2', f: '2' }, siblings: { m: '1', f: '1' }, care: { m: '1', f: '1' }, parentsMarriage: { m: '1', f: '1' },
@@ -288,7 +293,7 @@ function optList(items, sel, { multi = false, cls = '' } = {}) {
 function chipList(items, sel, { multi = false } = {}) {
   return `${searchBox(items)}<div class="chips" role="${multi ? 'group' : 'radiogroup'}">${items.map((it, i) => {
     const on = multi ? sel.includes(it.v) : sel === it.v;
-    return `<button type="button" class="chip ${on ? 'on' : ''}" data-v="${esc(it.v)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}"${hiddenMore(items, it, on) ? ' data-more hidden' : ''}>${ic('check')}${esc(it.label)}</button>`;
+    return `<button type="button" class="chip ${on ? 'on' : ''}" data-v="${esc(it.v)}" data-label="${esc(it.label)}" role="${multi ? 'checkbox' : 'radio'}" aria-checked="${on}" style="--i:${i}"${hiddenMore(items, it, on) ? ' data-more hidden' : ''}>${ic('check')}${esc(it.label)}</button>`;
   }).join('')}</div>`;
 }
 
@@ -514,7 +519,8 @@ function renderMeQ(key) {
     }
     // 敏感题：既可以“不清楚”，也可以“不想说”
     if (f.tier === 'L2') items.push({ v: '不清楚', label: '不清楚', soft: true }, { v: '不愿透露', label: '不想说', soft: true });
-    body = optList(items, String(sel), { cls: key === 'occupation' ? 'grid2' : '' });
+    // 城市和“你想找的人”里一样：小圆角标签，只摆 10 个大城市，其他搜索
+    body = key === 'city' ? chipList(items, String(sel)) : optList(items, String(sel), { cls: key === 'occupation' ? 'grid2' : '' });
   }
 
   paint(`${qHead(nav.back, nav.seg, nav.i)}
@@ -547,9 +553,9 @@ function renderMeQ(key) {
     document.getElementById('ok').onclick = () => { d.profile[key] = v; skipped.set(key, false); saveProfile(); advance(); };
     return;
   }
-  view.querySelectorAll('.opt').forEach((b) => (b.onclick = () => {
+  view.querySelectorAll('.opt, .chip').forEach((b) => (b.onclick = () => {
     if (busy) return;
-    view.querySelectorAll('.opt').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
+    view.querySelectorAll('.opt, .chip').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
     const v = b.dataset.v;
     if (key === 'gender') {
       if (d.gender && d.gender !== v) S.iDraft = null; // 换了性别，理想型默认值要重算
@@ -691,7 +697,6 @@ function iNav(key) {
 function impBlock(e, key) {
   return `<div class="imp" id="imp">
     <h3>这一条，你有多在意？</h3>
-    <p class="small muted" style="margin:-4px 0 10px">点一下就会进入下一题。</p>
     <div class="imp-list" role="radiogroup" aria-label="在意程度">${IMP.filter(([v]) => v !== 'off').map(([v, l, note]) => `<button type="button" class="imp-opt ${e.imp === v ? 'on' : ''}" data-imp="${v}" role="radio" aria-checked="${e.imp === v}">
       <span class="mark">${ic('check')}</span><span class="t"><b>${l}</b><span>${note}</span></span></button>`).join('')}</div>
   </div>`;
@@ -711,7 +716,7 @@ function renderIdealQ(key) {
   } else if (f.type === 'money') {
     body = chipList(MIN_WAN[key].map((w) => ({ v: String(w * 10000), label: `至少 ${w} 万` })), e.target == null ? '' : String(e.target));
   } else if (f.type === 'ordinal') {
-    body = chipList(f.levels.map((l) => ({ v: l, label: `${l}及以上` })), e.target || '');
+    body = chipList(f.levels.map((l, i) => ({ v: l, label: i === 0 ? '都可以' : `${l}及以上` })), e.target || ''); // 最低一档写“及以上”很别扭（如“高中及以下及以上”）
   } else {
     body = chipList(f.options.map((o) => ({ v: o, label: nice(o) })), e.target || [], { multi: true });
   }
@@ -722,7 +727,7 @@ function renderIdealQ(key) {
     <div id="target">${body}</div>
     <div id="impwrap" ${f.type === 'number' || entryValid(key, e) ? '' : 'hidden'}>${impBlock(e, key)}</div>
     <div class="qfoot">
-      <button class="btn block" id="skip">不在意，跳过这题</button>
+      ${e.imp !== 'off' ? `<button class="btn primary" id="ok">${S.backToReview ? '改好了' : '好了，下一题'} ${ic('arrow')}</button><button class="btn ghost" id="skip">不在意</button>` : '<button class="btn block" id="skip">不在意，跳过这题</button>'}
     </div>`);
   growBar();
 
@@ -779,6 +784,12 @@ function renderIdealQ(key) {
   }
 
   document.getElementById('skip').onclick = () => { setImp('off', false); advance(); };
+  // 改已有的要求：在意程度本来就选好了，给一个“改好了”按钮，不用为了跳走再点一次在意程度
+  const ok = document.getElementById('ok');
+  if (ok) ok.onclick = () => {
+    if (!entryValid(key, e)) { toast('请至少选一个；都可以的话就点“不在意”'); return; }
+    advance();
+  };
 }
 
 // 要求填完：保存，直接去看谁适合你（第一次会先经过同意页）
@@ -810,10 +821,11 @@ function weightBars(on, d) {
   const rest = on.filter((k) => IMP_WEIGHT[d[k].imp]).sort((a, b) => IMP_WEIGHT[d[b].imp] - IMP_WEIGHT[d[a].imp]);
   if (!rest.length) return '';
   const total = rest.reduce((t, k) => t + IMP_WEIGHT[d[k].imp], 0);
-  return `<div class="wbars"><p class="wb-title">${ic('list')}各条要求在打分里占多少</p>
+  // 默认收起，点开再看比例
+  return `<details class="wbars"><summary class="wb-title">${ic('list')}<span>各条要求在打分里占多少</span><span class="chev">${ic('next')}</span></summary>
     ${must.length ? `<p class="small muted" style="margin:0 0 8px">必须有：${must.map((k) => esc(lab(S.F[k].label))).join('、')}（达不到就不看，不参与比例）</p>` : ''}
     ${rest.map((k) => { const pc = Math.round((IMP_WEIGHT[d[k].imp] / total) * 100); return `<div class="wb-row"><span>${esc(lab(S.F[k].label))}</span><i><b style="width:${pc}%"></b></i><em>${pc}%</em></div>`; }).join('')}
-  </div>`;
+  </details>`;
 }
 
 function renderIdealReview() {
@@ -854,13 +866,14 @@ function renderIdealReview() {
 }
 
 // ---------- 同意：一句人话 + 两个“可以 / 不要”的选择 ----------
-const SEE_CARD = () => `<div class="see-card">
-  <p class="see-title">${ic('eye')}别人能看到你的什么？</p>
+// 默认收起：只一行“别人只看到代号和基本情况”，点开再看三档明细
+const SEE_CARD = () => `<details class="see-card">
+  <summary class="see-title">${ic('eye')}<span>别人只看到你的代号和基本情况</span><em>详情</em><span class="chev">${ic('next')}</span></summary>
   <div class="see-row t-good"><span class="st">${ic('check')}</span><div><b>能看到</b>年龄、身高、城市、学历、职业、婚育打算</div></div>
   <div class="see-row t-warn"><span class="st">${ic('half')}</span><div><b>只看到大概范围</b>收入（比如“15 到 20 万”）</div></div>
   <div class="see-row t-bad"><span class="st">${ic('eyeOff')}</span><div><b>看不到</b>你的名字、存款、父母和家里的情况</div></div>
   <p class="small muted" style="margin:10px 0 0">你用代号出现，别人不知道是你。</p>
-</div>`;
+</details>`;
 
 function choice(name, cur, yes, no) {
   return `<div class="choice" role="radiogroup">${[['1', '可以', yes], ['0', '不要', no]].map(([v, l, s]) =>
@@ -921,23 +934,23 @@ async function loadResults(force) {
   return S.results;
 }
 
+// 计算中：一个细圆环 + 一行会换的字 + 一条细进度条。干净，不堆勾选
 async function renderCalc() {
-  const steps = ['读取你的要求', '和人选库里的每个人比一比', '反过来，看你符合谁的要求', '整理结果'];
+  const steps = ['读取你的要求', '和每个人比一比', '看你符合谁的要求', '整理结果'];
   paint(`<section class="calc">
-    <div class="pulse" aria-hidden="true"><i></i><i></i><i></i><b>${ic('heart')}</b></div>
-    <h1 class="q">正在帮你找……</h1>
-    <ul class="calc-steps">${steps.map((s) => `<li><span class="dot">${ic('check')}</span>${s}</li>`).join('')}</ul>
+    <div class="spin" aria-hidden="true"></div>
+    <p class="calc-t" aria-live="polite">${steps[0]}</p>
+    <div class="calc-bar" aria-hidden="true"><i></i></div>
   </section>`);
-  const lis = [...view.querySelectorAll('.calc-steps li')];
+  const t = view.querySelector('.calc-t'), bar = view.querySelector('.calc-bar i');
   const job = loadResults();
-  const per = reduceMotion() ? 0 : 520;
-  for (let i = 0; i < lis.length; i++) {
-    lis[i].classList.add('on');
+  const per = reduceMotion() ? 0 : 450;
+  for (let i = 0; i < steps.length; i++) {
+    t.textContent = steps[i];
+    bar.style.width = `${((i + 1) / steps.length) * 100}%`;
     await delay(per);
-    if (i === lis.length - 1) await job;
-    lis[i].classList.add('done');
+    if (i === steps.length - 1) await job;
   }
-  await delay(per / 2);
 }
 
 // ---------- 结果：主结论是“符合几条”，分数收进详情 ----------
@@ -1093,11 +1106,23 @@ function resultTree(r) {
 }
 
 // 你的位置：多少位异性的要求你全都满足，最常没对上的是哪一条。只说事实，不给人打分
-function positionCard(s) {
-  const p = s.position;
+function positionCard(s, tab) {
+  const p = s.position?.[tab];
   if (!p?.of) return '';
-  const miss = p.topMisses?.length ? `<br>最常没对上：${p.topMisses.map((m) => `${esc(m.label)}（${m.count} 位）`).join('、')}` : '';
-  return `<div class="note-card pos-card">${ic('users')}<span><b>${p.allMet} 位${THEM()}的要求，你全都符合</b><br>一共看了 ${p.of} 位${miss}</span></div>`;
+  const them = THEM();
+  const text = {
+    ideal: [`位${them}完全符合你的要求`, '最常不符合你的：'],
+    seekers: [`位${them}的要求，你完全符合`, '你最常没达到的：'],
+    mutual: [`位${them}和你互相完全符合`, ''],
+  }[tab];
+  const miss = p.topMisses?.length ? `<div class="pos-miss"><span>${text[1]}</span>${p.topMisses.map((m) => tab === 'ideal'
+    // 他适合你：点一下直接去改这条要求
+    ? `<a class="miss-link" href="#/ideal/${esc(m.field)}" data-edit-req>${esc(m.label)}<small>${m.count} 位</small>${ic('edit')}</a>`
+    : `<em>${esc(m.label)}<small>${m.count} 位</small></em>`).join('')}</div>${tab === 'ideal' ? '<p class="pos-tip">点一下可以改这条要求</p>' : ''}` : '';
+  return `<div class="pos-card">
+    <div class="pos-main"><b class="pos-n">${p.allMet}</b><div><strong>${text[0]}</strong><span>一共 ${p.of} 位${them}</span></div></div>
+    ${miss}
+  </div>`;
 }
 
 async function renderResults() {
@@ -1116,7 +1141,7 @@ async function renderResults() {
       ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
     ${brokerNotice()}
-    ${few ? `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。<br></span></div>` : positionCard(s)}
+    ${few ? `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。<br></span></div>` : ''}
     <div class="tabs" role="tablist">${['ideal', 'seekers', 'mutual'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div>
     <div id="tabpanel"></div>
     ${r.plan === 'vip'
@@ -1129,7 +1154,8 @@ async function renderResults() {
   const show = (tab, scroll) => {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
-    panel.innerHTML = tabList(r, tab); panel.dataset.g = tab;
+    panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab) : '') + tabList(r, tab); panel.dataset.g = tab;
+    panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.backToReview = true; }));
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
     bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);

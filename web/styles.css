@@ -849,3 +849,63 @@ details[open] > :not(summary) { animation: fadeDown .25s var(--ease) both; }
 .legal p { margin: 0; color: var(--ink-2); line-height: 1.7; font-size: 15px; }
 .site-foot { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; padding: 28px 16px calc(28px + env(safe-area-inset-bottom)); font-size: 13px; }
 .site-foot a { color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+
+/* 手机上一屏放下：在意程度改成两列四格，选项更紧凑 */
+.imp { margin-top: 16px; padding: 14px 12px; }
+.imp h3 { font-size: 17px; margin: 0 0 10px; }
+.imp-list { grid-template-columns: 1fr 1fr; gap: 8px; }
+.imp-opt { min-height: 0; padding: 10px 12px; gap: 8px; }
+.imp-opt .mark { width: 22px; height: 22px; }
+.imp-opt .t b { font-size: 16px; }
+.imp-opt .t span { font-size: 13px; }
+.chips { gap: 8px; }
+.chip { min-height: 44px; padding: 0 16px; font-size: 16px; }
+.qfoot { margin-top: 14px; padding-top: 10px; }
+/* “别人能看到你的什么”默认收起 */
+details.see-card { padding: 0; }
+details.see-card > summary { list-style: none; display: flex; align-items: center; gap: 8px; padding: 14px 16px; margin: 0; cursor: pointer; }
+details.see-card > summary::-webkit-details-marker { display: none; }
+details.see-card > summary span:first-of-type { flex: 1; }
+details.see-card > summary em { font-style: normal; font-size: 14px; color: var(--brand); font-weight: 400; }
+details.see-card > summary .chev .ic { width: 16px; height: 16px; color: var(--brand); transition: transform .2s; }
+details.see-card[open] > summary .chev .ic { transform: rotate(90deg); }
+details.see-card > :not(summary) { margin-left: 16px; margin-right: 16px; }
+details.see-card > p:last-child { padding-bottom: 14px; }
+/* 计算中：简洁版 */
+.calc { min-height: 55vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding-top: 0; }
+.calc .spin { width: 44px; height: 44px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--brand); animation: spin .9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.calc-t { margin: 0; font-size: 17px; color: var(--ink-2); }
+.calc-bar { width: 160px; height: 3px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.calc-bar i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .4s var(--ease); }
+@media (prefers-reduced-motion: reduce) { .calc .spin { animation: none; } }
+/* 页脚始终在屏幕最底部（内容短时贴底，内容长时在页面末尾） */
+body { display: flex; flex-direction: column; min-height: 100dvh; }
+body > main { flex: 1 0 auto; width: 100%; box-sizing: border-box; }
+.site-foot { flex: none; padding-top: 12px; }
+/* 你的位置：大数字 + 一句话，下面一行“最常没对上”的小标签 */
+.pos-card { margin: 0 0 16px; padding: 16px; border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow); }
+.pos-main { display: flex; align-items: center; gap: 14px; }
+.pos-card .pos-n { font-size: 44px; line-height: 1; font-weight: 700; color: var(--brand); font-variant-numeric: tabular-nums; min-width: 1.2em; text-align: center; }
+.pos-main strong { display: block; font-size: 17px; color: var(--ink); }
+.pos-main span { display: block; font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+.pos-miss { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
+.pos-miss em { font-style: normal; display: inline-flex; align-items: baseline; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--ink); }
+.pos-miss em small { font-size: 12px; color: var(--ink-2); }
+/* 搜索出来的城市立刻显示：原来的入场动画按序号延迟，排在第 80 位的城市要等 2 秒多才出现 */
+.chip[data-more], .opt[data-more] { animation: none; }
+/* 收起的提示条：小一号、常规字重、灰色，和题目、选项区分开，一行放下 */
+details.see-card > summary { font-size: 14px; font-weight: 400; color: var(--ink-2); padding: 10px 14px; }
+details.see-card > summary .ic { width: 18px; height: 18px; }
+details.see-card > summary em { font-size: 13px; }
+details.see-card .see-row { font-size: 14px; }
+.pos-miss .miss-link { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); text-decoration: none; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, transparent); }
+.pos-miss .miss-link small { font-size: 12px; opacity: .8; }
+.pos-miss .miss-link .ic { width: 13px; height: 13px; }
+.pos-tip { margin: 8px 0 0; font-size: 12px; color: var(--ink-2); }
+details.wbars > summary { list-style: none; display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0; }
+details.wbars > summary::-webkit-details-marker { display: none; }
+details.wbars > summary span:first-of-type { flex: 1; }
+details.wbars > summary .chev .ic { width: 16px; height: 16px; color: var(--brand); transition: transform .2s; }
+details.wbars[open] > summary { margin-bottom: 10px; }
+details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }

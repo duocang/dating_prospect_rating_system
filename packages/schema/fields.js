@@ -54,6 +54,8 @@ export const FIELDS = [
   { key: 'siblings', label: '兄弟姐妹', type: 'category', tier: 'L2', group: 'family', options: ['独生子女', '一位兄弟姐妹', '两位及以上兄弟姐妹'] },
   { key: 'care', label: '父母照护责任', type: 'category', tier: 'L2', group: 'family', options: ['暂时无固定照护责任', '定期探望及协助', '承担日常照护', '需要经济赡养'] },
   { key: 'parentsMarriage', label: '父母婚姻状态', type: 'category', tier: 'L2', group: 'family', options: ['父母目前为婚姻关系', '父母离异', '一方丧偶'] },
+  { key: 'maritalStatus', label: '婚姻状况', type: 'category', tier: 'L1', group: 'future', options: ['未婚', '离异', '丧偶'] },
+  { key: 'childrenStatus', label: '有没有孩子', type: 'category', tier: 'L1', group: 'future', options: ['没有孩子', '有孩子，跟我生活', '有孩子，不跟我生活'] },
   { key: 'marriagePlan', label: '结婚打算', type: 'category', tier: 'L1', group: 'future', options: ['1–3年内考虑结婚', '婚姻安排可协商', '长期伴侣，暂不结婚'] },
   { key: 'childrenPlan', label: '生育打算', type: 'category', tier: 'L1', group: 'future', options: ['希望育儿', '尚未决定', '不计划育儿'] },
   { key: 'personality', label: '沟通方式', type: 'category', tier: 'L1', group: 'lifestyle', options: ['直接沟通', '慢热温和', '活跃外向', '独立安静'] },

@@ -110,3 +110,10 @@ test('匿名分布：小于 k 的档位合并', async () => {
   assert.ok(Object.values(r.body.counts).every((n) => n >= 10));
   assert.equal((await call('GET', '/api/stats?field=incomeAnnual')).status, 400);
 });
+
+test('虚拟人选带婚姻状况和有没有孩子', async () => {
+  const { generateCityPool } = await import('../src/sim-generate.js');
+  const pool = generateCityPool({ cityId: 'SH', cityName: '上海', count: 200 });
+  assert.ok(pool.every((p) => ['未婚', '离异', '丧偶'].includes(p.profile.maritalStatus)));
+  assert.ok(pool.some((p) => p.requirements.some((r) => r.field === 'maritalStatus')));
+});

@@ -92,18 +92,24 @@ export function computeRelations({ me, pool, limits = DEFAULT_LIMITS, scorerId =
 
   // 你的位置：在要求写得够多的人里，多少人的要求你全都满足；没对上的条件里哪几条最常见。
   // 只陈述事实（多少人、哪一条），不给人打“市场价值”分。
-  const missTally = new Map();
-  let allMet = 0;
-  for (const e of seekerEntries) {
-    const items = e.result.items || [];
-    const missed = items.filter((it) => it.status === 'unmet' || it.status === 'partial');
-    if (!missed.length && e.result.gate.status === 'pass' && items.every((it) => it.status === 'met')) allMet++;
-    for (const it of missed) missTally.set(it.label, (missTally.get(it.label) || 0) + 1);
+  // 三个页签各一份：完全符合的人数 + 最常没对上的两条
+  const fullyMet = (r) => r.gate.status === 'pass' && (r.items || []).length > 0 && r.items.every((it) => it.status === 'met');
+  function tallyOf(results) {
+    const miss = new Map();
+    let allMet = 0;
+    for (const r of results) {
+      if (fullyMet(r)) allMet++;
+      for (const it of r.items || []) if (it.status === 'unmet' || it.status === 'partial') {
+        const m = miss.get(it.field) || { field: it.field, label: it.label, count: 0 };
+        m.count++; miss.set(it.field, m);
+      }
+    }
+    return { of: results.length, allMet, topMisses: [...miss.values()].sort((a, b) => b.count - a.count).slice(0, 2) };
   }
   const position = {
-    of: seekerEntries.length,
-    allMet,
-    topMisses: [...missTally].sort((a, b) => b[1] - a[1]).slice(0, 2).map(([label, count]) => ({ label, count })),
+    ideal: tallyOf(toMyIdeal.map((e) => e.result)), // 多少人完全符合你的要求
+    seekers: tallyOf(seekerEntries.map((e) => e.result)), // 你完全符合多少人的要求
+    mutual: { of: counterparts.length, allMet: counterparts.filter((p) => fullyMet(toMyIdeal.find((e) => e.id === p.id).result) && fullyMet(meFit.get(p.id))).length, topMisses: [] },
   };
 
   // 4. 双向相合：两个方向都通过门槛和覆盖率；按两个方向分数下界的几何平均排序

@@ -67,7 +67,7 @@ export function presentScore(result, profile, { subjectIsViewer }) {
   };
 }
 
-const CARD_FIELDS = ['age', 'heightCm', 'city', 'education', 'occupation', 'settlement', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'incomeAnnual'];
+const CARD_FIELDS = ['age', 'heightCm', 'city', 'education', 'occupation', 'settlement', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'incomeAnnual'];
 
 export function presentCard(key, viewerId, person, { hideVirtual = false, name = null } = {}) {
   const facts = {};

@@ -107,3 +107,14 @@ test('排名按下界排序，标出并列与名次范围', () => {
   assert.equal(out[1].tiedWithPrevious, true);
   assert.deepEqual(out[3].rankRange, [1, 4]);
 });
+
+test('婚姻状况和有没有孩子：按多选类别打分，“必须有”没对上直接不进排名', async () => {
+  const { getScorer } = await import('../src/index.js');
+  const s = getScorer('fit-v1');
+  const reqs = [{ field: 'maritalStatus', op: 'in', target: ['未婚', '离异'], importance: 2 }, { field: 'childrenStatus', op: 'in', target: ['没有孩子'], importance: 'must' }];
+  const ok = s.score({ maritalStatus: '离异', childrenStatus: '没有孩子' }, reqs);
+  assert.equal(ok.gate.status, 'pass');
+  assert.equal(ok.total.low, 100);
+  const no = s.score({ maritalStatus: '未婚', childrenStatus: '有孩子，跟我生活' }, reqs);
+  assert.equal(no.gate.status, 'fail');
+});

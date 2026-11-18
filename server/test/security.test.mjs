@@ -51,9 +51,11 @@ test('结果里带“你的位置”和第一名并列人数', async () => {
   const t = await filled(29);
   await call('PUT', '/api/me/consent', t, { adult: true, scoring: true, pool: false });
   const r = (await call('GET', '/api/me/results', t)).body;
-  assert.ok(r.summary.position.of > 0);
-  assert.ok(r.summary.position.allMet <= r.summary.position.of);
-  assert.ok(Array.isArray(r.summary.position.topMisses));
+  for (const k of ['ideal', 'seekers', 'mutual']) {
+    assert.ok(r.summary.position[k].of > 0);
+    assert.ok(r.summary.position[k].allMet <= r.summary.position[k].of);
+  }
+  assert.ok(r.summary.position.mutual.allMet <= Math.min(r.summary.position.ideal.allMet, r.summary.position.seekers.allMet));
   assert.ok(r.summary.topTie >= 1);
 });
 

@@ -91,6 +91,26 @@ function categoryReq(field, accepted, importance) {
   return { field, op: 'in', target: list, importance };
 }
 
+// 婚姻状况和有没有孩子：老生成器没有这两项。按 id 的哈希单独抽，不打乱原来的随机序列，已有虚拟人选的其他资料不变
+function hashUnit(id, salt) {
+  let h = 2166136261;
+  for (const ch of salt + id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return ((h >>> 0) % 10000) / 10000;
+}
+function maritalOf(p) {
+  const u = hashUnit(p.id, 'm'), older = p.age >= 30;
+  const status = u < (older ? 0.82 : 0.95) ? '未婚' : u < (older ? 0.98 : 0.995) ? '离异' : '丧偶';
+  const k = hashUnit(p.id, 'k');
+  const kids = status === '未婚' ? '没有孩子' : k < 0.5 ? '没有孩子' : k < 0.8 ? '有孩子，跟我生活' : '有孩子，不跟我生活';
+  // 要求：约六成只接受未婚，约两成接受未婚或离异，其余不限；孩子：约一半要求对方没有孩子
+  const r = hashUnit(p.id, 'r'), c = hashUnit(p.id, 'c');
+  const reqs = [
+    r < 0.6 ? { field: 'maritalStatus', op: 'in', target: ['未婚'], importance: 2 } : r < 0.8 ? { field: 'maritalStatus', op: 'in', target: ['未婚', '离异'], importance: 1 } : null,
+    c < 0.5 ? { field: 'childrenStatus', op: 'in', target: ['没有孩子'], importance: c < 0.15 ? 'must' : 2 } : null,
+  ].filter(Boolean);
+  return { status, kids, reqs };
+}
+
 function convert(p) {
   const pr = p.preferences;
   const imp = (k) => pr.importance?.[IMP_KEYS[k]] ?? 1;
@@ -107,6 +127,8 @@ function convert(p) {
     categoryReq('personality', pr.personalityAccepted, imp('personality')),
     categoryReq('lifestyle', pr.lifestyleAccepted, imp('lifestyle')),
   ].filter(Boolean);
+  const ms = maritalOf(p);
+  requirements.push(...ms.reqs);
   const f = p.family;
   return {
     id: p.id,
@@ -119,6 +141,7 @@ function convert(p) {
       personalNetAssets: p.personalNetAssetsBand, housing: p.housing,
       familySupport: f.support, familyNetAssets: f.netAssetsBand, parentsSecurity: f.parentsSecurity,
       siblings: f.siblings, care: f.care, parentsMarriage: f.parentsMarriage,
+      maritalStatus: ms.status, childrenStatus: ms.kids,
       marriagePlan: p.marriage, childrenPlan: p.children, personality: p.personality, lifestyle: p.lifestyle,
     },
     requirements,
