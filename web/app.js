@@ -394,7 +394,7 @@ async function renderHome() {
       <div class="stack rise" style="--i:2">${actions}</div>
       <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
     </section>`);
-    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seek: 'seekers', theirs: 'theirs' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
+    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seekers: 'seekers', theirs: 'theirs' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
     // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
