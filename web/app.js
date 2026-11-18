@@ -1010,7 +1010,7 @@ function compareTable(reqs, people, sfx = '') {
   const allGood = reqs.filter((q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; }));
   const rows = reqs.filter((q) => !allGood.includes(q));
   const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
-  return `<div class="cmp-wrap"><table class="cmp cmp2">
+  return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp2">
     <thead><tr><th scope="col"></th><th scope="col" class="ideal-col"><span class="al">你的理想型</span></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
     <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b></th><td class="ideal-col">${reqText(q)}</td>
       ${people.map((p) => {
@@ -1075,7 +1075,7 @@ function tabList(r, tab) {
       <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
     const vs = (a) => mine ? `<p class="vs-line"><span>${t}们眼里</span><b>${pctQ(a.score)}</b><span>你</span><b class="me">${pctQ(mine)}</b></p>` : '';
     const body = table ? aCompareTable(r.myFacts || {}, list, mine)
-      : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange) })).join('')}</div>`;
+      : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange), href: `#/match/${i}/theirs`, more: '和你逐条对照' })).join('')}</div>`;
     return switcher + tieA + body;
   }
   // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
@@ -1233,6 +1233,7 @@ async function renderResults() {
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
     panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab, r) : '') + tabList(r, tab); panel.dataset.g = tab;
     panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.backToReview = true; }));
+    bindScrollHint(panel);
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
     bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);
@@ -1267,19 +1268,58 @@ function ring(label, t) {
     <p>${label}</p></div>`;
 }
 
+// 表格比屏幕宽时：右边缘渐隐 + 一行“左右滑动看更多”，滑过一次就不再提示
+const SCROLL_HINT = '<p class="scroll-hint" hidden>左右滑动看更多 →</p>';
+function bindScrollHint(root = document) {
+  root.querySelectorAll('.cmp-wrap').forEach((w) => {
+    const hint = w.previousElementSibling?.classList.contains('scroll-hint') ? w.previousElementSibling : null;
+    const upd = () => {
+      const more = w.scrollWidth - w.clientWidth - w.scrollLeft > 4;
+      w.classList.toggle('more-r', more);
+      w.classList.toggle('more-l', w.scrollLeft > 4);
+    };
+    const wide = w.scrollWidth > w.clientWidth + 4;
+    if (hint) hint.hidden = !wide || store.get('vier.scrolled') === '1';
+    w.addEventListener('scroll', () => { upd(); if (hint && !hint.hidden) { hint.hidden = true; store.set('vier.scrolled', '1'); } }, { passive: true });
+    upd();
+  });
+}
+
 // 你和理想型的理想型逐条对照：每行一个条件，第一列是你；和你不一样的格子标出来
 function aCompareTable(myFacts, list, mine) {
   const keys = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
   const cell = (v, diff) => `<td class="${diff ? 't-diff' : ''}">${v ? esc(nice(v)) : '<span class="muted">—</span>'}</td>`;
-  return `<div class="cmp-wrap"><table class="cmp cmp-a">
+  return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp-a">
     <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
     <tbody>${keys.map((k) => `<tr><th scope="row"><b>${esc(lab(k))}</b></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}</tbody>
   </table><p class="cmp-hint">百分比：按你喜欢的人的要求算的接近程度。标色的格子和你不一样。</p></div>`;
 }
 
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
+// 理想型的理想型：和你同性别，只读，不能牵线；只和你逐条对照
+function renderTheirs(r, idx) {
+  const list = r.idealOfIdeal || [], a = list[idx];
+  if (!a) return go('#/results', 'back');
+  const t = T(), n = list.length;
+  paint(`<div class="detail-nav">
+      <button class="btn ghost sm" data-back="#/results">${ic('back')}返回</button>
+      <div class="pager"><a href="#/match/${idx - 1}/theirs" aria-label="上一位" aria-disabled="${idx === 0}">${ic('back')}</a><a href="#/match/${idx + 1}/theirs" aria-label="下一位" aria-disabled="${idx >= n - 1}">${ic('next')}</a></div>
+    </div>
+    <section class="profile-top rise">
+      <p class="grp-tag g-theirs">A · 理想型的理想型</p>
+      <h1>${nameTag(a)}</h1>
+      <p class="small muted" style="margin:2px 0 0">${esc([a.facts['年龄'], a.facts['常住城市']].filter(Boolean).join(' · '))} · 第 ${idx + 1} 位</p>
+    </section>
+    <p class="small muted" style="margin:14px 0 10px">按你喜欢的${t}们的要求，${a.name || '这位'}的接近程度是 ${pctQ(a.score)}，你是 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。和你同性别，只做对照，不能牵线。</p>
+    ${aCompareTable(r.myFacts || {}, [a], r.myPlaceA?.score)}
+    <div class="stack" style="margin-top:22px"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`);
+  bindBack();
+  bindScrollHint();
+}
+
 async function renderMatch(idx, tab = 'ideal') {
   const r = await loadResults();
+  if (tab === 'theirs') return renderTheirs(r, idx);
   const list = { ideal: r.idealMatches, seekers: r.seekers, mutual: r.mutual }[tab] || r.idealMatches;
   const raw = list[idx];
   if (!raw) return go('#/results', 'back');
@@ -1292,7 +1332,7 @@ async function renderMatch(idx, tab = 'ideal') {
       <div class="pager"><a href="#/match/${idx - 1}${sfx}" aria-label="上一位" aria-disabled="${idx === 0}">${ic('back')}</a><a href="#/match/${idx + 1}${sfx}" aria-label="下一位" aria-disabled="${idx >= n - 1}">${ic('next')}</a></div>
     </div>
     <section class="profile-top rise">
-      
+      <p class="grp-tag g-${tab === 'seekers' ? 'seekers' : 'ideal'}">${tab === 'seekers' ? 'D · 想找你这样的人' : 'B · 你的理想型'}</p>
       <h1>${nameTag(m)}</h1>
       <p class="small muted" style="margin:2px 0 0">${esc([m.facts['年龄'], m.facts['常住城市']].filter(Boolean).join(' · '))} · 第 ${idx + 1} 位</p>
       <div class="facts">${Object.entries(m.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 8).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
