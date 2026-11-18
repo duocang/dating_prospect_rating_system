@@ -51,7 +51,7 @@ button, a, label, [role="button"] { -webkit-tap-highlight-color: transparent; }
 /* 顶栏 */
 .top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; padding-top: max(12px, env(safe-area-inset-top)); background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); }
 .brand { display: flex; align-items: baseline; gap: 8px; }
-.brand b { font-family: var(--serif); font-size: 22px; letter-spacing: .14em; color: var(--brand); }
+.brand b { font-size: 22px; font-weight: 800; letter-spacing: .12em; color: var(--brand); }
 .brand span { font-size: 14px; color: var(--ink-2); letter-spacing: .08em; }
 .top-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; font-size: 15px; color: var(--ink-2); background: var(--surface); box-shadow: var(--shadow); cursor: pointer; transition: color .2s, background .2s; }
 .top-link .ic { width: 18px; height: 18px; }
