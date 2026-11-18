@@ -934,3 +934,4 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .cmp-a .me-col .al { color: var(--brand); font-weight: 700; }
 .cmp-a thead th { white-space: nowrap; min-width: 4.2em; } .cmp-a thead .al { display: block; } .cmp-a td { white-space: nowrap; }
 .near-head { flex-wrap: nowrap; } .near-head h3 { white-space: nowrap; } .near-head .seg-switch { flex: none; }
+.a-bars .d i { background: linear-gradient(90deg, var(--g-seekers) var(--w), var(--line) var(--w)); }

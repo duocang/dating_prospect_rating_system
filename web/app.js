@@ -1005,13 +1005,13 @@ const byIdeal = (reqs, items) => {
 };
 // 对照表（手机优先）：三人都符合的条件收成最后一行；其余每行一条，格子只放小图标，
 // 对上的是浅绿勾，没对上的可点，点了原地显示对方的实际情况
-function compareTable(reqs, people) {
+function compareTable(reqs, people, sfx = '') {
   const itemOf = (p, q) => (p.fit.items || []).find((x) => x.label === q.label);
   const allGood = reqs.filter((q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; }));
   const rows = reqs.filter((q) => !allGood.includes(q));
   const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
   return `<div class="cmp-wrap"><table class="cmp cmp2">
-    <thead><tr><th scope="col"></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
+    <thead><tr><th scope="col"></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
     <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b><span>${reqText(q)}</span></th>
       ${people.map((p) => {
         const it = itemOf(p, q);
@@ -1043,8 +1043,8 @@ const TABS = {
   theirs: { flow: () => [T(), '你'], text: () => `你喜欢的${T()}们，喜欢什么样的人。` },
 };
 // 两边都对得上的人，在卡片上加一枚“双向”小标，不再单独成组
-const mutualIds = (r) => new Set((r.mutual || []).map((m) => m.id));
-const twoWay = (r, m) => (mutualIds(r).has(m.id) ? '<span class="two-way">双向</span>' : '');
+const mutualIds = (r) => new Set((r.mutual || []).map((m) => m.alias));
+const twoWay = (r, m) => (mutualIds(r).has(m.alias) ? '<span class="two-way">双向</span>' : '');
 
 function tabList(r, tab) {
   const t = T();
@@ -1084,7 +1084,12 @@ function tabList(r, tab) {
     return cardsOr(r.mutual.map((m, i) => pcard(m, both(m, m.mine) + brokerBox(m), { i, quick: rankQ(i, m.mutualScore, m.rankRange), href: `#/match/${i}/mutual`, more: `看看${t}在找什么样的人` })).join(''),
       emptyCard('暂时没有两边都适合的人', `先看看“${REL.ideal()}”和“${REL.seekers()}”，或者把要求放宽一点。`));
   }
-  return cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
+  if (!r.seekers.length) return emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
+  const table = S.view === 'table', reqs = r.myIdeal || [];
+  const switcherD = `<div class="near-head"><h3>他们中最合适的 ${r.seekers.length} 位</h3>
+      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
+  if (table) return switcherD + compareTable(reqs, r.seekers, '/seekers');
+  return switcherD + cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
     emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
 
@@ -1144,6 +1149,25 @@ function positionCard(s, tab, r) {
       </div>
       <p class="a-sum-t">${gap > 0 ? `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你比他们看中的人低 ${gap} 分。` : `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你和他们看中的人不相上下。`}${where}。</p>
       ${miss}
+    </div>`;
+  }
+  if (tab === 'seekers') {
+    const list = r?.seekers || [];
+    if (!list.length) return '';
+    const t = T(), avg = (f) => Math.round(list.reduce((x, p) => x + (f(p)?.low || 0), 0) / list.length);
+    const theirs = avg((p) => p.fit?.total), mine = avg((p) => p.myFitToThem?.total);
+    const miss = new Map();
+    for (const p of list) for (const it of p.fit?.items || []) if (toneOf(it) !== 't-good') miss.set(it.label, (miss.get(it.label) || 0) + 1);
+    const top = [...miss.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const two = list.filter((p) => mutualIds(r).has(p.alias)).length;
+    return `<div class="pos-card a-sum">
+      <p class="a-sum-q">想找你这样的${t}们，合不合你的要求</p>
+      <div class="a-bars">
+        <div class="me"><span>你符合${t}们</span><i style="--w:${mine}%"></i><b>${mine}%</b></div>
+        <div class="d"><span>${t}们符合你</span><i style="--w:${theirs}%"></i><b>${theirs}%</b></div>
+      </div>
+      <p class="a-sum-t">这 ${list.length} 位${t}的要求你基本都符合；按你的理想型来看，${t}们平均 ${theirs}%。${two ? `其中 ${two} 位两边都对得上。` : ''}</p>
+      ${top.length ? `<div class="pos-miss"><span>${t}们最常没达到你的：</span>${top.map(([l, c]) => `<em>${esc(lab(l))}<small>${c}/${list.length} 位</small></em>`).join('')}</div>` : ''}
     </div>`;
   }
   const p = s.position?.[tab];
