@@ -389,12 +389,13 @@ async function renderHome() {
     }[st];
     paint(`<section class="hero">
       <h1 class="display rise">你喜欢的人，<em>喜欢谁</em></h1>
-      ${st === 'new' ? '<p class="hero-sub rise">约 5 分钟 · 免费 · 不用注册</p>' : ''}
+      <p class="hero-sub rise">${st === 'new' ? '约 5 分钟 · 免费 · 不用注册' : '点图上的 A、B、D 看看各是什么'}</p>
+      <ul class="z-legend rise"><li><b>B</b>你喜欢什么样的人</li><li><b>A</b>你喜欢的人，喜欢谁，你配不配</li><li><b>D</b>你这样的人，配谁</li></ul>
       <div class="relmap rise" id="relmap" style="--i:1"></div>
       <div class="stack rise" style="--i:2">${actions}</div>
       <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
     </section>`);
-    relMap(document.getElementById('relmap'), EXAMPLE, { esc, onFocus: st === 'done' ? (n) => { const t = { ideal: 'ideal', seekers: 'seekers', theirs: 'theirs' }[n.id]; if (t) { S.tab = t; go('#/results'); } } : null });
+    relMap(document.getElementById('relmap'), EXAMPLE, { esc });
     // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
@@ -1101,7 +1102,8 @@ function resultTree(r) {
   const who = (m) => [...String(m.alias).replace(/[^A-Za-z0-9一-龥]/g, '')][0]?.toUpperCase() || '?';
   const age = (m) => m.facts['年龄'] ? `${m.facts['年龄']}` : '';
   const person = (m, pre, i, extra) => ({ id: `${pre}${i}`, kind: 'person', short: [...(m.name || who(m))][0], label: m.name || age(m), seal: !!m.name, ...extra });
-  const group = (id, tab, list, note, kid) => ({ id, kind: 'group', tab, label: REL[tab](), short: String(list.length), note: list.length ? note : '暂时没有', kids: list.map(kid) });
+  const LETTER = { ideal: 'B', theirs: 'A', seekers: 'D' };
+  const group = (id, tab, list, note, kid) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab], note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）` : '暂时没有', kids: list.map(kid) });
   return {
     id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
     kids: [

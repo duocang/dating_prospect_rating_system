@@ -2,21 +2,21 @@
 // 首页用示例人物（EXAMPLE），结果页用真实结果拼出来的树。
 // 节点：{ id, kind: me|group|person|theirs, label, short?, fit?, note?, href?, tab?, kids? }
 export const EXAMPLE = {
-  id: 'me', kind: 'me', label: '你', note: '这是示例 · 填完就换成你的',
+  id: 'me', kind: 'me', label: '你', note: '这是示例：点 A、B、D 看看各是什么，填完就换成你的',
   kids: [
-    { id: 'ideal', kind: 'group', label: '你的理想型', short: '3', note: '符合你要求的人',
+    { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你喜欢什么样的人：最接近你要求的几位',
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', fit: '6/6', note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
         { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：互相适合' }] },
         { id: 'p3', kind: 'person', label: '南风', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p3i', kind: 'theirs', label: '他想找的', fit: '你 3/4', note: '你符合他 3 条' }] },
       ] },
-    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: '3', note: '你符合他们的要求',
+    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 你这样的人配谁：要求你正好都符合的几位',
       kids: [
         { id: 's1', kind: 'person', label: '青禾', fit: '5/5', note: '你符合他全部要求' },
         { id: 's2', kind: 'person', label: '白石', fit: '4/4', note: '你符合他全部要求' },
         { id: 's3', kind: 'person', label: '知秋', fit: '4/5', note: '你符合他 4 条' },
       ] },
-    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: '3', note: '你喜欢的人，喜欢谁',
+    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: 'A', note: 'A · 你喜欢的人，喜欢谁：再看看你排在第几',
       kids: [
         { id: 't1', kind: 'person', label: '若溪', fit: '3/3', note: '完全符合 3 位理想型人选的要求' },
         { id: 't2', kind: 'person', label: '初夏', fit: '2/3', note: '完全符合其中 2 位的要求' },
@@ -56,7 +56,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   const P = layout(tree, 0, 0, 0, null, 0, {});
   const open = new Set([tree.id]);
   let focus = tree.id;
-  el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
+  el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"><defs><marker id="rm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="rm-ah"/></marker></defs></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
   const stage = el.querySelector('.rm-stage'), svg = el.querySelector('svg'), note = el.querySelector('.rm-note'), viewEl = el.querySelector('.rm-view');
   for (const { n, x, y, parent, linkFrom } of Object.values(P)) {
     const d = SIZE[n.kind];
@@ -65,8 +65,17 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       ${n.kind === 'me' ? '' : `<span class="lb">${esc(n.label)}${n.seal ? '<i class="seal">代号</i>' : ''}</span>`}
       ${n.fit ? `<span class="fit">${esc(n.fit)}</span>` : ''}</button>`);
     if (parent) {
-      const p = P[linkFrom || parent], mx = (p.x + x) / 2 + (y - p.y) * 0.12, my = (p.y + y) / 2 - (x - p.x) * 0.12;
-      svg.insertAdjacentHTML('beforeend', `<path data-to="${esc(n.id)}" d="M${p.x} ${p.y} Q${mx} ${my} ${x} ${y}"/>`);
+      const p = P[linkFrom || parent];
+      // Z 字主线带箭头：你 → B，B → A，D → 你；箭头停在圆边上
+      const z = n.kind === 'group';
+      let [x1, y1, x2, y2] = n.id === 'seekers' ? [x, y, p.x, p.y] : [p.x, p.y, x, y];
+      if (z) {
+        const d = Math.hypot(x2 - x1, y2 - y1) || 1, ux = (x2 - x1) / d, uy = (y2 - y1) / d;
+        const r1 = SIZE[n.id === 'seekers' ? n.kind : P[linkFrom || parent].n.kind] / 2 + 4, r2 = SIZE[n.id === 'seekers' ? P[parent].n.kind : n.kind] / 2 + 6;
+        x1 += ux * r1; y1 += uy * r1; x2 -= ux * r2; y2 -= uy * r2;
+      }
+      const mx = (x1 + x2) / 2 + (y2 - y1) * (z ? 0.06 : 0.12), my = (y1 + y2) / 2 - (x2 - x1) * (z ? 0.06 : 0.12);
+      svg.insertAdjacentHTML('beforeend', `<path data-to="${esc(n.id)}" class="${z ? 'z' : ''}" ${z ? 'marker-end="url(#rm-arrow)"' : ''} d="M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}"/>`);
     }
   }
   // 拖动：镜头中心只能在当前看得见的圆的范围里移动，拖不到空白处
@@ -103,7 +112,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       b.classList.toggle('focus', id === focus);
       b.classList.toggle('dim', focus !== tree.id && visible(id) && !under(P, id, focus) && !under(P, focus, id));
     });
-    svg.querySelectorAll('path').forEach((l) => l.classList.toggle('show', visible(l.dataset.to)));
+    svg.querySelectorAll('path[data-to]').forEach((l) => l.classList.toggle('show', visible(l.dataset.to)));
     const W = viewEl.clientWidth, H = viewEl.clientHeight;
     const ids = [focus, P[focus].parent, ...(open.has(focus) ? (P[focus].n.kids || []).map((k) => k.id) : [])].filter(Boolean);
     if (focus === tree.id) ids.push(...(tree.kids || []).map((k) => k.id));
