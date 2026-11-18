@@ -2,21 +2,21 @@
 // 首页用示例人物（EXAMPLE），结果页用真实结果拼出来的树。
 // 节点：{ id, kind: me|group|person|theirs, label, short?, fit?, note?, href?, tab?, kids? }
 export const EXAMPLE = {
-  id: 'me', kind: 'me', label: '你', note: '这是示例：点 A、B、D 看看各是什么，填完就换成你的',
+  id: 'me', kind: 'me', label: '你', note: '这是示例，填完换成你的',
   kids: [
-    { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你喜欢什么样的人：最接近你要求的几位',
+    { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你喜欢的人',
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', fit: '6/6', note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
         { id: 'p2', kind: 'person', label: '远山', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：两边都对得上' }] },
         { id: 'p3', kind: 'person', label: '南风', fit: '5/6', note: '再点一下，看他想找谁', kids: [{ id: 'p3i', kind: 'theirs', label: '他想找的', fit: '你 3/4', note: '你符合他 3 条' }] },
       ] },
-    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 你这样的人配谁：要求你正好都符合的几位',
+    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 想找你这样的人',
       kids: [
         { id: 's1', kind: 'person', label: '青禾', fit: '5/5', note: '你符合他全部要求' },
         { id: 's2', kind: 'person', label: '白石', fit: '4/4', note: '你符合他全部要求' },
         { id: 's3', kind: 'person', label: '知秋', fit: '4/5', note: '你符合他 4 条' },
       ] },
-    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: 'A', note: 'A · 你喜欢的人，喜欢谁：再看看你排在第几',
+    { id: 'theirs', kind: 'group', label: '理想型的理想型', short: 'A', note: 'A · 你喜欢的人，喜欢谁',
       kids: [
         { id: 't1', kind: 'person', label: '若溪', fit: '3/3', note: '完全符合 3 位理想型人选的要求' },
         { id: 't2', kind: 'person', label: '初夏', fit: '2/3', note: '完全符合其中 2 位的要求' },

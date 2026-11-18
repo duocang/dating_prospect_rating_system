@@ -390,7 +390,7 @@ async function renderHome() {
     paint(`<section class="hero">
       <h1 class="display rise">你喜欢的人，<em>喜欢谁</em></h1>
       <p class="hero-sub rise">${st === 'new' ? '约 5 分钟 · 免费 · 不用注册' : '点图上的 A、B、D 看看各是什么'}</p>
-      <ul class="z-legend rise"><li><b>B</b>你喜欢什么样的人</li><li><b>A</b>你喜欢的人，喜欢谁，你配不配</li><li><b>D</b>你这样的人，配谁</li></ul>
+      <ul class="z-legend rise"><li><b>B</b>你喜欢什么样的人</li><li><b>A</b>你喜欢的人，喜欢谁</li><li><b>D</b>你这样的人，配谁</li></ul>
       <div class="relmap rise" id="relmap" style="--i:1"></div>
       <div class="stack rise" style="--i:2">${actions}</div>
       <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
@@ -1055,13 +1055,13 @@ function tabList(r, tab) {
     if (!people.length) return head + emptyCard('没有人达到你所有的“必须有”', '把一两条“必须有”改成“很在意”试试。', '#/ideal/review', '去改要求');
     // 正式环境里虚拟人选和真人在同一个池子：标题不写“真人”，另外说清其中几位是真人
     const real = people.filter((p) => !p.simulated).length;
-    const tie = r.summary.topTie > 1 ? `<p class="small muted near-note">有 ${r.summary.topTie} 位和第 1 名一样符合你的要求，所以是并列。</p>` : '';
+    const tie = r.summary.topTie > 1 ? `<p class="small muted near-note">${r.summary.topTie} 位一样符合，都算第 1。</p>` : '';
     const switcher = `<div class="near-head"><h3>最接近的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}</h3>
       <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${!!table}">对照着看</button></div></div>`;
     const body = tie + (table ? compareTable(reqs, people)
       : `<div class="cards">${people.map((m, i) => pcard(m,
         fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
-        { href: `#/match/${i}`, i, quick: twoWay(r, m) + rankQ(i, m.fit.total, m.rankRange), more: `看看${t}在找什么样的人` })).join('')}</div>`);
+        { href: `#/match/${i}`, i, quick: twoWay(r, m) + rankQ(i, m.fit.total, m.rankRange), more: `看${t}想找什么样的人` })).join('')}</div>`);
     return head + switcher + body;
   }
   if (tab === 'theirs') {
@@ -1070,11 +1070,11 @@ function tabList(r, tab) {
     if (!list.length) return emptyCard('暂时算不出来', `人选库里和你同为${S.me?.gender === 'female' ? '女生' : '男生'}的人还不够多。`);
     const table = S.view === 'table';
     const mine = r.myPlaceA?.score;
-    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位一样接近，所以是并列。</p>` : '';
+    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">${r.summary.topTieA} 位一样接近，都算第 1。</p>` : '';
     const switcher = `<div class="near-head"><h3>他们看中的 ${list.length} 位</h3>
       <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
     // 同一把尺子（你喜欢的人的要求）量两个人：TA 和你
-    const vs = (a) => mine ? `<div class="a-bars vs"><p>按你喜欢的${THEM()}的要求，接近程度：</p>
+    const vs = (a) => mine ? `<div class="a-bars vs"><p>用你喜欢的人的标准打分：</p>
       <div><span>${esc(a.name || 'TA')}</span><i style="--w:${Math.round(a.score.low)}%"></i><b>${Math.round(a.score.low)}%</b></div>
       <div class="me"><span>你</span><i style="--w:${Math.round(mine.low)}%"></i><b>${Math.round(mine.low)}%</b></div></div>` : '';
     const body = table ? aCompareTable(r.myFacts || {}, list, mine)
@@ -1086,10 +1086,10 @@ function tabList(r, tab) {
 
   if (!r.seekers.length) return emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
   const table = S.view === 'table', reqs = r.myIdeal || [];
-  const switcherD = `<div class="near-head"><h3>他们中最合适的 ${r.seekers.length} 位</h3>
+  const switcherD = `<div class="near-head"><h3>最合适的 ${r.seekers.length} 位</h3>
       <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
   if (table) return switcherD + compareTable(reqs, r.seekers, '/seekers');
-  return switcherD + cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看看${t}在找什么样的人` })).join(''),
+  return switcherD + cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看${t}想找什么样的人` })).join(''),
     emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
 }
 
@@ -1117,12 +1117,12 @@ function resultTree(r) {
   return {
     id: 'me', kind: 'me', label: '你', note: '点一个圆圈看看',
     kids: [
-      group('ideal', 'ideal', r.idealMatches, `你喜欢什么样的人：最接近你理想型的人`, (m, i) => {
+      group('ideal', 'ideal', r.idealMatches, `你喜欢的人`, (m, i) => {
         const a = met(m.fit.items), b = met(m.myFitToThem.items), n = m.myFitToThem.items.length;
         return person(m, 'i', i, { fit: `${a}/${m.fit.items.length}`, note: `符合你 ${a} 条 · 再点看${t}想找谁`, href: `#/match/${i}`,
           kids: [{ id: `it${i}`, kind: 'theirs', short: t, label: `${t}想找的`, fit: `你 ${b}/${n}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}` }] });
       }),
-      group('seekers', 'seekers', r.seekers, `你这样的人配谁：${t}们的要求你都对得上`, (m, i) => {
+      group('seekers', 'seekers', r.seekers, `想找你这样的人`, (m, i) => {
         const b = met(m.myFitToThem.items);
         return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
       }),
@@ -1138,16 +1138,16 @@ function positionCard(s, tab, r) {
     if (!a || !list.length) return '';
     const t = T(), avg = Math.round(list.reduce((x, p) => x + p.score.low, 0) / list.length), me = Math.round(a.score.low);
     const pct = Math.max(1, Math.round((a.rankRange[1] / a.of) * 100));
-    const where = a.eligible ? (pct <= 50 ? `在 ${a.of} 位和你同性别的人里，你大约排在前 ${pct}%` : `在 ${a.of} 位和你同性别的人里，你排在后半段`) : `${t}们的要求里，有些你还没达到，暂时排不进去`;
+    const where = a.eligible ? (pct <= 50 ? `你排在前 ${pct}%` : `你排在后一半`) : `有几条你还没达到，暂时排不上`;
     const gap = avg - me;
-    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>差距主要在：</span>${a.topMisses.map((m) => `<em>${esc(lab(m.label))}<small>${m.count}/${a.ofIdeals} 位在意</small></em>`).join('')}</div>` : '';
+    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>主要差在：</span>${a.topMisses.map((m) => `<em>${esc(lab(m.label))}<small>${m.count}/${a.ofIdeals} 位在意</small></em>`).join('')}</div>` : '';
     return `<div class="pos-card a-sum">
-      <p class="a-sum-q">你和${t}们看中的人，差在哪</p>
+      <p class="a-sum-q">你差在哪</p>
       <div class="a-bars">
         <div><span>${t}们看中的 ${list.length} 位</span><i style="--w:${avg}%"></i><b>${avg}%</b></div>
         <div class="me"><span>你</span><i style="--w:${me}%"></i><b>${me}%</b></div>
       </div>
-      <p class="a-sum-t">${gap > 0 ? `按你喜欢的这 ${a.ofIdeals} 位${THEM()}的要求，你比${t}们看中的人低 ${gap} 分。` : `按你喜欢的这 ${a.ofIdeals} 位${THEM()}的要求，你和${t}们看中的人不相上下。`}${where}。</p>
+      <p class="a-sum-t">${gap > 0 ? `你比${t}们看中的人低 ${gap} 分。` : `你和${t}们看中的人差不多。`}${where}。</p>
       ${miss}
     </div>`;
   }
@@ -1156,9 +1156,9 @@ function positionCard(s, tab, r) {
     if (!list.length) return '';
     const t = T(), them = THEM(), avg = (f) => Math.round(list.reduce((x, q) => x + (f(q)?.low || 0), 0) / list.length);
     const theirs = avg((q) => q.fit?.total), mine = avg((q) => q.myFitToThem?.total);
-    const miss = p?.topMisses?.length ? `<div class="pos-miss"><span>最常没对上你的：</span>${p.topMisses.map((m) => `<a class="miss-link" href="#/ideal/${esc(m.field)}" data-edit-req>${esc(lab(m.label))}<small>${m.count} 位</small>${ic('edit')}</a>`).join('')}</div><p class="pos-tip">点一下可以改这条要求</p>` : '';
+    const miss = p?.topMisses?.length ? `<div class="pos-miss"><span>最常卡在：</span>${p.topMisses.map((m) => `<a class="miss-link" href="#/ideal/${esc(m.field)}" data-edit-req>${esc(lab(m.label))}<small>${m.count} 位</small>${ic('edit')}</a>`).join('')}</div><p class="pos-tip">点一下可以改这条要求</p>` : '';
     return `<div class="pos-card a-sum">
-      <p class="a-sum-q">最接近你理想型的${t}们，合不合</p>
+      <p class="a-sum-q">${t}们合你的要求吗</p>
       <div class="a-bars">
         <div class="b"><span>${t}们符合你</span><i style="--w:${theirs}%"></i><b>${theirs}%</b></div>
         <div class="me"><span>你符合${t}们</span><i style="--w:${mine}%"></i><b>${mine}%</b></div>
@@ -1177,13 +1177,13 @@ function positionCard(s, tab, r) {
     const top = [...miss.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
     const two = list.filter((p) => mutualIds(r).has(p.alias)).length;
     return `<div class="pos-card a-sum">
-      <p class="a-sum-q">想找你这样的${t}们，合不合你的要求</p>
+      <p class="a-sum-q">${t}们合你的要求吗</p>
       <div class="a-bars">
         <div class="me"><span>你符合${t}们</span><i style="--w:${mine}%"></i><b>${mine}%</b></div>
         <div class="d"><span>${t}们符合你</span><i style="--w:${theirs}%"></i><b>${theirs}%</b></div>
       </div>
-      <p class="a-sum-t">这 ${list.length} 位${t}的要求你基本都符合；按你的理想型来看，${t}们平均 ${theirs}%。${two ? `其中 ${two} 位两边都对得上。` : ''}</p>
-      ${top.length ? `<div class="pos-miss"><span>${t}们最常没达到你的：</span>${top.map(([l, c]) => `<em>${esc(lab(l))}<small>${c}/${list.length} 位</small></em>`).join('')}</div>` : ''}
+      <p class="a-sum-t">${t}们想找的人，你基本都符合。${two ? `其中 ${two} 位两边都合。` : ''}</p>
+      ${top.length ? `<div class="pos-miss"><span>${t}们最常卡在：</span>${top.map(([l, c]) => `<em>${esc(lab(l))}<small>${c}/${list.length} 位</small></em>`).join('')}</div>` : ''}
     </div>`;
   }
   const p = s.position?.[tab];
@@ -1295,7 +1295,7 @@ function aCompareTable(myFacts, list, mine) {
   return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp-a">
     <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
     <tbody>${keys.map((k) => `<tr><th scope="row"><b>${esc(lab(k))}</b></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}</tbody>
-  </table><p class="cmp-hint">百分比：按你喜欢的人的要求算的接近程度。标色的格子和你不一样。</p></div>`;
+  </table><p class="cmp-hint">标色 = 和你不一样</p></div>`;
 }
 
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
@@ -1313,7 +1313,7 @@ function renderTheirs(r, idx) {
       <h1>${nameTag(a)}</h1>
       <p class="small muted" style="margin:2px 0 0">${esc([a.facts['年龄'], a.facts['常住城市']].filter(Boolean).join(' · '))} · 第 ${idx + 1} 位</p>
     </section>
-    <p class="small muted" style="margin:14px 0 10px">按你喜欢的${t}们的要求，${a.name || '这位'}的接近程度是 ${pctQ(a.score)}，你是 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。和你同性别，只做对照，不能牵线。</p>
+    <p class="small muted" style="margin:14px 0 10px">用你喜欢的人的标准打分：${esc(a.name || 'TA')} ${pctQ(a.score)}，你 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。只能对照，不能牵线。</p>
     ${aCompareTable(r.myFacts || {}, [a], r.myPlaceA?.score)}
     <div class="stack" style="margin-top:22px"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`);
   bindBack();
