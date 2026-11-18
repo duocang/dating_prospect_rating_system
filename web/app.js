@@ -364,7 +364,7 @@ function bindBack(before) {
   view.querySelectorAll('[data-back]').forEach((b) => (b.onclick = () => {
     before?.();
     if (S.backToReview) S.fromEdit = true; // 从“改一条”退回确认页，确认页的返回键保持原来的去处
-    S.backToReview = false; S.backToMeReview = false;
+    S.backToReview = false; S.backToMeReview = false; S.returnTo = null;
     go(b.dataset.back, 'back');
   }));
 }
@@ -601,7 +601,8 @@ function renderMeReview() {
     return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
   };
   const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看看结果'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
-  paint(`${simpleHead('#/', '我填的资料', '随时可以改')}
+  if (!/^#\/me\//.test(S.prev || '')) S.meReviewFrom = /^#\/(results|privacy|ideal\/review)/.test(S.prev || '') ? S.prev : '#/';
+  paint(`${simpleHead(S.meReviewFrom || '#/', '我填的资料', '随时可以改')}
     <h1 class="q">这是你填的资料</h1>
     <p class="qhint">点一行就能改。</p>
     <h2 class="sec-title">${ic('user')}你的情况</h2>
@@ -686,8 +687,9 @@ function iNav(key) {
   const seg = I1.includes(key) ? 2 : 3, list = SEGS[seg].list, i = list.indexOf(key);
   return {
     seg, i,
-    back: S.backToReview ? '#/ideal/review' : i > 0 ? `#/ideal/${list[i - 1]}` : seg === 2 ? '#/me/done' : '#/ideal/break',
+    back: S.returnTo || (S.backToReview ? '#/ideal/review' : i > 0 ? `#/ideal/${list[i - 1]}` : seg === 2 ? '#/me/done' : '#/ideal/break'),
     next() {
+      if (S.returnTo) { const r = S.returnTo; S.returnTo = null; S.backToReview = false; saveReqs(); return go(r, 'back'); }
       if (S.backToReview) { S.backToReview = false; S.fromEdit = true; return go('#/ideal/review'); }
       if (i < list.length - 1) return go(`#/ideal/${list[i + 1]}`);
       if (seg === 2) return go('#/ideal/break');
@@ -1236,7 +1238,7 @@ async function renderResults() {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
     panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab, r) : '') + tabList(r, tab); panel.dataset.g = tab;
-    panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.backToReview = true; }));
+    panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.returnTo = '#/results'; }));
     bindScrollHint(panel);
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
@@ -1678,14 +1680,14 @@ async function renderBroker() {
   const ov = await api('GET', '/api/me/broker');
   const t = T();
   if (!ov.loggedIn) {
-    const back = S.me.consent?.scoring ? '#/results' : '#/privacy';
+    const back = /^#\/(match|results|privacy)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
     paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
       <h1 class="q">牵线</h1><p class="qhint">${ic('lock')}先用手机号登录，换手机也能看到回复。</p><div id="lbox">${loginBlock()}</div>`);
     bindBack();
     bindLogin(document.getElementById('lbox'), () => { dir = 'none'; renderBroker(); });
     return;
   }
-  const back = /^#\/(match|results)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
+  const back = /^#\/(match|results|privacy)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
   paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
     <h1 class="q">牵线</h1>
     <p class="qhint">${ic('lock')}你的号码加密保存，别人看不到。</p>
@@ -1869,7 +1871,9 @@ function renderFoot() {
 function renderPrivacy() {
   const c = S.me.consent || {};
   const st = S.me.gender ? (S.me.requirements?.length && c.scoring ? 'done' : 'partial') : 'new';
-  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${st === 'done' ? '#/results' : '#/'}">${ic('back')}返回</button></div>
+  // 从哪来回哪去；从“我的资料”里点进去的子页面（牵线、改资料、登录、协议）回来时，不改原来的去处
+  if (!/^#\/(broker|me\/|ideal\/|login|terms|policy)/.test(S.prev || '')) S.privacyFrom = /^#\/(results|match)/.test(S.prev || '') ? S.prev : (S.prev ? '#/' : (st === 'done' ? '#/results' : '#/'));
+  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${S.privacyFrom || '#/'}">${ic('back')}返回</button></div>
     <h1 class="q">我的资料</h1>
     <p class="qhint">${ic('lock')}你的资料加密保存。</p>
     ${st !== 'done' ? `<a class="btn primary block" href="${resumeHash()}" style="margin-bottom:8px">${st === 'new' ? '开始填写' : '继续填写'} ${ic('arrow')}</a>` : ''}
