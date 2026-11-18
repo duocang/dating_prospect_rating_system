@@ -950,3 +950,4 @@ details.wbars[open] > summary .chev .ic { transform: rotate(90deg); }
 .grp-tag.g-ideal { background: color-mix(in srgb, var(--g-ideal) 12%, var(--surface)); color: var(--g-ideal); }
 .grp-tag.g-theirs { background: color-mix(in srgb, var(--g-theirs) 12%, var(--surface)); color: var(--g-theirs); }
 .grp-tag.g-seekers { background: color-mix(in srgb, var(--g-seekers) 14%, var(--surface)); color: var(--g-seekers); }
+.a-bars.vs { margin-top: 12px; } .a-bars.vs p { margin: 0; font-size: 12px; color: var(--ink-2); } .a-bars.vs > div { grid-template-columns: 4.5em 1fr 3em; }

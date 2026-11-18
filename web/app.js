@@ -1073,7 +1073,10 @@ function tabList(r, tab) {
     const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">有 ${r.summary.topTieA} 位一样接近，所以是并列。</p>` : '';
     const switcher = `<div class="near-head"><h3>他们看中的 ${list.length} 位</h3>
       <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
-    const vs = (a) => mine ? `<p class="vs-line"><span>${t}们眼里</span><b>${pctQ(a.score)}</b><span>你</span><b class="me">${pctQ(mine)}</b></p>` : '';
+    // 同一把尺子（你喜欢的人的要求）量两个人：TA 和你
+    const vs = (a) => mine ? `<div class="a-bars vs"><p>按你喜欢的${THEM()}的要求，接近程度：</p>
+      <div><span>${esc(a.name || 'TA')}</span><i style="--w:${Math.round(a.score.low)}%"></i><b>${Math.round(a.score.low)}%</b></div>
+      <div class="me"><span>你</span><i style="--w:${Math.round(mine.low)}%"></i><b>${Math.round(mine.low)}%</b></div></div>` : '';
     const body = table ? aCompareTable(r.myFacts || {}, list, mine)
       : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange), href: `#/match/${i}/theirs`, more: '和你逐条对照' })).join('')}</div>`;
     return switcher + tieA + body;
@@ -1137,14 +1140,14 @@ function positionCard(s, tab, r) {
     const pct = Math.max(1, Math.round((a.rankRange[1] / a.of) * 100));
     const where = a.eligible ? (pct <= 50 ? `在 ${a.of} 位和你同性别的人里，你大约排在前 ${pct}%` : `在 ${a.of} 位和你同性别的人里，你排在后半段`) : `${t}们的要求里，有些你还没达到，暂时排不进去`;
     const gap = avg - me;
-    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>差距主要在：</span>${a.topMisses.map((m) => `<em>${esc(lab(m.label))}<small>${m.count}/${a.ofIdeals} 位${t}在意</small></em>`).join('')}</div>` : '';
+    const miss = a.topMisses?.length ? `<div class="pos-miss"><span>差距主要在：</span>${a.topMisses.map((m) => `<em>${esc(lab(m.label))}<small>${m.count}/${a.ofIdeals} 位在意</small></em>`).join('')}</div>` : '';
     return `<div class="pos-card a-sum">
       <p class="a-sum-q">你和${t}们看中的人，差在哪</p>
       <div class="a-bars">
         <div><span>${t}们看中的 ${list.length} 位</span><i style="--w:${avg}%"></i><b>${avg}%</b></div>
         <div class="me"><span>你</span><i style="--w:${me}%"></i><b>${me}%</b></div>
       </div>
-      <p class="a-sum-t">${gap > 0 ? `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你比他们看中的人低 ${gap} 分。` : `按你喜欢的 ${a.ofIdeals} 位${t}的要求，你和他们看中的人不相上下。`}${where}。</p>
+      <p class="a-sum-t">${gap > 0 ? `按你喜欢的这 ${a.ofIdeals} 位${THEM()}的要求，你比${t}们看中的人低 ${gap} 分。` : `按你喜欢的这 ${a.ofIdeals} 位${THEM()}的要求，你和${t}们看中的人不相上下。`}${where}。</p>
       ${miss}
     </div>`;
   }
