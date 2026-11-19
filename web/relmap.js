@@ -94,7 +94,12 @@ function layout(n, x, y, dir, parent, depth, out) {
 const under = (P, id, root) => { for (let p = id; p; p = P[p].parent) if (p === root) return true; return false; };
 
 // maxH：总览时展台最高多少（默认 540）；hug：展台宽度贴着星球收窄（首页小图用）
+// 挂在 window 上的监听（拖动、窗口大小），每张图一组；画新图时，把已经离开页面的旧图那组一起撤掉，不越积越多
+const alive = new Set();
 export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = null, maxH = 540, hug = false } = {}) {
+  for (const x of alive) if (!x.el.isConnected) { x.ac.abort(); alive.delete(x); }
+  const ac = new AbortController(), sig = { signal: ac.signal };
+  alive.add({ el, ac });
   const P = layout(tree, 0, 0, 0, null, 0, {});
   const open = new Set([tree.id]);
   let focus = tree.id;
@@ -158,18 +163,19 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
     return [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   };
   let drag = null, moved = false;
-  viewEl.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; drag = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy }; moved = false; });
+  // 拖动范围在按下时算一次，拖动过程中不再反复遍历所有圆
+  viewEl.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; drag = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy, b: bounds() }; moved = false; });
   addEventListener('pointermove', (e) => {
     if (!drag || !el.isConnected) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     if (!moved && Math.hypot(dx, dy) < 6) return;
     if (!moved) { moved = true; stage.classList.add('dragging'); }
-    const [x0, x1, y0, y1] = bounds(), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const [x0, x1, y0, y1] = drag.b, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     cam.cx = clamp(drag.cx - dx / cam.sc, x0, x1);
     cam.cy = clamp(drag.cy - dy / cam.sc, y0, y1);
     place();
-  });
-  addEventListener('pointerup', () => { drag = null; stage.classList.remove('dragging'); });
+  }, sig);
+  addEventListener('pointerup', () => { drag = null; stage.classList.remove('dragging'); }, sig);
   // 拖完松手不算点击
   viewEl.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); moved = false; } }, true);
   const visible = (id) => { const p = P[id].parent; return p === null || (open.has(p) && visible(p)); };
@@ -226,7 +232,11 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   stage.addEventListener('click', (e) => { const b = e.target.closest('.rm-node'); if (b) select(b.dataset.id); });
   if (initial && P[initial]) { open.add(initial); focus = initial; }
   requestAnimationFrame(draw);
-  const onR = () => (el.isConnected ? draw() : removeEventListener('resize', onR));
-  addEventListener('resize', onR, { passive: true });
+  // 窗口大小变化：每帧最多重画一次；图已离开页面就撤掉全部监听
+  let rq = 0;
+  addEventListener('resize', () => {
+    if (!el.isConnected) return ac.abort();
+    if (!rq) rq = requestAnimationFrame(() => { rq = 0; draw(); });
+  }, { passive: true, ...sig });
   return { select, show: (id) => { if (P[id] && id !== focus) select(id); } };
 }

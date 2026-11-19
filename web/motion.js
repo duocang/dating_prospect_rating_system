@@ -40,6 +40,8 @@ function attach(box) {
 }
 const scan = (root = document) => root.querySelectorAll?.(SEL).forEach(attach);
 const view = document.getElementById('view');
-if (view) new MutationObserver(() => scan(view)).observe(view, { childList: true, subtree: true });
+// 页面内容变化很频繁（换页、换页签、画关系图），合并到下一帧只检查一次
+let queued = 0;
+if (view) new MutationObserver(() => { if (!queued) queued = requestAnimationFrame(() => { queued = 0; scan(view); }); }).observe(view, { childList: true, subtree: true });
 scan();
 addEventListener('resize', () => document.querySelectorAll('.has-thumb').forEach((b) => place(b, false)), { passive: true });

@@ -3,6 +3,8 @@
 const view = document.getElementById('view');
 const S = { view: 'cards', config: null, F: null, me: null, results: null, pDraft: null, iDraft: null, backToReview: false, backToMeReview: false, tab: 'ideal', saved: '' };
 let dir = 'fwd';
+// 每次换页编一个号；异步等数据的页面回来时号码已经不是最新，说明用户已经去了别处，就不再画（不把人拉回去）
+let routeGen = 0;
 import { relMap, EXAMPLE } from './relmap.js';
 
 // ---------- 基础工具 ----------
@@ -241,7 +243,16 @@ function resumeHash() {
 }
 
 // ---------- 通用界面片段 ----------
+// 换个人 / 退出登录 / 删除资料：清掉这个人的一切本地状态（跳过的题也算），界面偏好（主题、看法）保留
+function resetSession() {
+  store.del('vier.token'); store.del('vier.skipped');
+  Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null, tab: 'ideal' });
+}
+// 页面里用到的观察器（滑到时淡入、吸顶栏）：换页时统一断开，不留在旧页面上
+const observers = new Set();
+const watch = (io) => (observers.add(io), io);
 function paint(html, { wide = false } = {}) {
+  observers.forEach((o) => o.disconnect()); observers.clear();
   view.className = wide ? 'wide' : '';
   view.innerHTML = `<div class="screen ${dir === 'back' ? 'back' : ''}">${html}</div>`;
 }
@@ -313,6 +324,7 @@ function bindStepper(el, get, set) {
   let t1, t2;
   const stop = () => { clearTimeout(t1); clearInterval(t2); };
   const step = (d) => {
+    if (!el.isConnected) return stop(); // 按住时换了页：停止连续加减
     set(get() + d);
     const b = el.querySelector('[data-val]');
     b.textContent = get();
@@ -441,7 +453,7 @@ async function renderHome() {
           <button class="btn ${lose ? 'danger' : 'primary'} block" id="yes">${lose ? '不保留，从头开始' : '退出登录'}</button><button class="btn block" id="no">再想想</button></div>`);
         m.el.querySelector('#no').onclick = m.close;
         m.el.querySelector('a')?.addEventListener('click', m.close);
-        m.el.querySelector('#yes').onclick = () => { m.close(); store.del('vier.token'); Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null }); dir = 'none'; draw(); };
+        m.el.querySelector('#yes').onclick = () => { m.close(); resetSession(); dir = 'none'; draw(); };
       };
     }
   };
@@ -534,7 +546,7 @@ function revealOnScroll() {
   if (!('IntersectionObserver' in window) || reduceMotion()) { els.forEach((e) => e.classList.add('in')); return; }
   // 同一组里的几块依次出来，每块晚 90ms
   els.forEach((e) => { const sib = [...e.parentElement.children].filter((c) => c.classList.contains('reveal')); e.style.setProperty('--d', `${sib.indexOf(e) * 0.09}s`); });
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.15 });
+  const io = watch(new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.15 }));
   els.forEach((e) => io.observe(e));
 }
 
@@ -658,10 +670,11 @@ function renderMeQ(key) {
   let busy = false, timer = null;
   const cancel = () => { clearTimeout(timer); timer = null; };
   bindBack(cancel);
+  const here = location.hash; // 等待跳题期间用户点了别处（顶栏、我的资料），就不再跳
 
   const advance = (label) => {
     cancel();
-    if (busy) return; busy = true;
+    if (busy || location.hash !== here) return; busy = true;
     nav.next();
   };
   const skip = document.getElementById('skip');
@@ -863,8 +876,9 @@ function renderIdealQ(key) {
   let timer = null, busy = false;
   const cancel = () => { clearTimeout(timer); timer = null; };
   bindBack(() => { cancel(); if (e.imp === 'off' || entryValid(key, e)) saveReqs(); });
+  const here = location.hash;
   const advance = (label) => {
-    cancel(); if (busy) return; busy = true;
+    cancel(); if (busy || location.hash !== here) return; busy = true;
     saveReqs();
     nav.next();
   };
@@ -1070,9 +1084,10 @@ async function renderCalc() {
     <div class="calc-bar" aria-hidden="true"><i></i></div>
   </section>`);
   const t = view.querySelector('.calc-t'), bar = view.querySelector('.calc-bar i');
-  const job = loadResults();
+  const job = loadResults(), gen = routeGen;
   const per = reduceMotion() ? 0 : 450;
   for (let i = 0; i < steps.length; i++) {
+    if (gen !== routeGen) return;
     t.textContent = steps[i];
     bar.style.width = `${((i + 1) / steps.length) * 100}%`;
     await delay(per);
@@ -1356,12 +1371,15 @@ const tabLead = (r, tab) => tab === 'theirs' && (r.idealOfIdeal || []).length ? 
   : tab === 'seekers' && r.seekers.length ? `<p class="tab-lead"><b>${r.seekers.length} 位的要求，你正好符合</b></p>` : '';
 
 async function renderResults() {
+  const gen = routeGen;
   await saveChain;
+  if (gen !== routeGen) return;
   if (!S.me.gender) return go('#/me/gender');
   if (!S.me.requirements?.length) return go('#/ideal/age');
   if (!S.me.consent?.scoring) return go('#/consent');
   if (!S.results) await renderCalc();
   const r = await loadResults();
+  if (gen !== routeGen) return;
   if (S.tab === 'mutual') S.tab = 'ideal';
   const restoreY = /^#\/(match|ideal|me|privacy|broker)/.test(S.prev || '') && S.resY != null ? S.resY : null;
   const s = r.summary, plan = S.config.plans[r.plan];
@@ -1394,7 +1412,8 @@ async function renderResults() {
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
     panel.innerHTML = (r.summary.counterpartCount ? tabLead(r, tab) : '') + tabList(r, tab) + (r.summary.counterpartCount ? whyFold(tab, positionCard(r.summary, tab, r)) : ''); panel.dataset.g = tab;
     // 记下每一行、每一句的真实高度：收起 / 展开按这个距离走，快慢才均匀（不用一个统一的大数）
-    const measure = () => panel.querySelectorAll('.cmp tr.same .cx, .cmp-block .same-line').forEach((el) => el.style.setProperty('--h', `${el.scrollHeight}px`));
+    // 先一次读完所有高度，再一次写回（边读边写会让浏览器每一行都重新排版）
+    const measure = () => { const els = [...panel.querySelectorAll('.cmp tr.same .cx, .cmp-block .same-line')]; const hs = els.map((el) => el.scrollHeight); els.forEach((el, i) => el.style.setProperty('--h', `${hs[i]}px`)); };
     measure();
     // 开关不重画页面：只切换一个类名，开关的圆点滑过去，相同的行折叠或展开
     panel.querySelectorAll('[data-diff]').forEach((b) => (b.onclick = () => {
@@ -1417,7 +1436,7 @@ async function renderResults() {
   // 用页签栏正上方的一个“哨兵”判断：哨兵滑出屏幕顶 = 页签栏已经贴到顶上
   const bar = view.querySelector('.tabs-bar'), sentinel = view.querySelector('.tb-sentinel');
   if (bar && sentinel && 'IntersectionObserver' in window) {
-    const io = new IntersectionObserver(([e]) => { if (!bar.isConnected) return io.disconnect(); bar.classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 0); });
+    const io = watch(new IntersectionObserver(([e]) => bar.classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 0)));
     io.observe(sentinel);
   }
   // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
@@ -1435,7 +1454,7 @@ function checks(items, whoReq, whoVal) {
   const list = [...items].sort((a, b) => order[toneOf(a)] - order[toneOf(b)]);
   const good = list.filter((it) => toneOf(it) === 't-good'), rest = list.filter((it) => toneOf(it) !== 't-good');
   return `<div class="checks2">${rest.map((it) => {
-    const [tone, icon, word] = STATUS[it.status] || ['t-unk', 'help', nice(it.status)];
+    const [tone, icon, word] = STATUS[it.status] || ['t-unk', 'help', esc(nice(it.status))];
     return `<div class="ck ${tone}"><div class="ck-top"><span class="st">${ic(icon)}</span><b>${esc(lab(it.label))}</b>${it.must ? '<span class="badge imp-4">必须有</span>' : ''}<span class="res">${word}</span></div>
       <div class="ck-kv"><span class="k">${whoReq}</span><span>${esc(nice(it.requirement))}</span><span class="k">${whoVal}</span><span class="val">${it.value === null ? '没填' : esc(nice(it.value))}</span></div></div>`;
   }).join('')}
@@ -1519,7 +1538,9 @@ function renderTheirs(r, idx) {
 }
 
 async function renderMatch(idx, tab = 'ideal') {
+  const gen = routeGen;
   const r = await loadResults();
+  if (gen !== routeGen) return;
   S.tab = tab === 'seekers' || tab === 'theirs' ? tab : 'ideal';
   if (tab === 'theirs') return renderTheirs(r, idx);
   const list = { ideal: r.idealMatches, seekers: r.seekers, mutual: r.mutual }[tab] || r.idealMatches;
@@ -1605,20 +1626,21 @@ function openPayment(planId) {
     <p class="price"><small>¥</small>${(plan.priceFen / 100).toFixed(2)}</p>
     <ul class="perks"><li>${ic('check')}${REL.ideal()}、${REL.theirs()}、${REL.seekers()}，每组都从 ${free.matches} 位变成 ${plan.matches} 位</li><li>${ic('check')}一次付费，长期有效，不自动续费</li><li>${ic('check')}付完马上生效，不用重新填</li></ul>
     ${providers.length ? `<div class="stack" id="pay-pre"><button class="btn primary block" id="topay">去付款</button><button class="btn block" id="notnow">先不用</button></div>
-      <div id="pay-step" hidden><div class="pay-tabs" role="tablist">${providers.map((p, i) => `<button data-p="${p.id}" class="${i ? '' : 'on'}" role="tab">${esc(p.label)}</button>`).join('')}</div>
+      <div id="pay-step" hidden><div class="pay-tabs" role="tablist">${providers.map((p, i) => `<button data-p="${esc(p.id)}" class="${i ? '' : 'on'}" role="tab">${esc(p.label)}</button>`).join('')}</div>
       <div class="qr" id="qr"><span class="spin"></span></div><p class="pay-hint" id="pay-hint">正在生成二维码…</p></div>`
     : '<p class="err">暂时还不能在线支付。请稍后再试。</p>'}</div>`);
-  let timer = null, current = null, closed = false;
+  let timer = null, current = null, closed = false, reqN = 0;
   m.onclose = () => { closed = true; clearTimeout(timer); };
 
   async function start(pid) {
     clearTimeout(timer);
-    m.el.querySelectorAll('[data-p]').forEach((a) => a.classList.toggle('on', a.dataset.p === pid));
+    const my = ++reqN; // 快速切换付款方式时，晚回来的旧二维码不能盖掉新的
+    m.el.querySelectorAll('[data-p]').forEach((a) => { a.classList.toggle('on', a.dataset.p === pid); a.setAttribute('aria-selected', a.dataset.p === pid); });
     const box = m.el.querySelector('#qr'), hint = m.el.querySelector('#pay-hint');
     box.innerHTML = '<span class="spin"></span>'; hint.textContent = '正在生成二维码…';
     try {
       const o = await api('POST', '/api/me/orders', { plan: planId, provider: pid });
-      if (closed) return;
+      if (closed || my !== reqN) return;
       current = o.orderNo;
       const app = pid === 'alipay' ? '支付宝' : '微信';
       box.innerHTML = qrSvg(o.codeUrl);
@@ -1629,7 +1651,7 @@ function openPayment(planId) {
       const mp = m.el.querySelector('#mock-pay');
       if (mp) mp.onclick = () => { mp.classList.add('loading'); api('POST', `/api/me/orders/${o.orderNo}/mock-pay`).catch((e) => toast(e.message)); };
       poll(o.orderNo);
-    } catch (e) { box.innerHTML = ''; hint.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
+    } catch (e) { if (closed || my !== reqN) return; box.innerHTML = ''; hint.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
   }
 
   async function poll(orderNo, manual) {
@@ -1640,7 +1662,7 @@ function openPayment(planId) {
         m.el.querySelector('#pay').innerHTML = `<div class="milestone" style="padding-top:6px"><svg class="done-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52"/><path d="M38 61l15 15 30-32"/></svg><h2>付款成功</h2><p class="lead">你已经是 VIP 了，正在刷新结果…</p></div>`;
         S.me = await api('GET', '/api/me');
         await loadResults(true);
-        setTimeout(() => { m.close(); dir = 'none'; renderResults(); }, 1400);
+        setTimeout(() => { m.close(); if (/^#\/results/.test(location.hash)) { dir = 'none'; route(); } }, 1400);
         return;
       }
       if (s.status === 'expired') { m.el.querySelector('#pay-hint').textContent = '二维码过期了，请重新选。'; return; }
@@ -1676,7 +1698,7 @@ function bindLogin(root, onDone) {
       hint(r.devCode ? `测试环境不发短信，验证码是 <b>${esc(r.devCode)}</b>` : '验证码已发送，5 分钟内有效');
       if (r.devCode) $('lcode').value = r.devCode;
       wait = 60; $('lsend').disabled = true;
-      timer = setInterval(() => { wait--; $('lsend').textContent = wait ? `${wait} 秒后重发` : '获取验证码'; if (!wait) { clearInterval(timer); $('lsend').disabled = false; } }, 1000);
+      timer = setInterval(() => { if (!$('lsend')) return clearInterval(timer); wait--; $('lsend').textContent = wait ? `${wait} 秒后重发` : '获取验证码'; if (!wait) { clearInterval(timer); $('lsend').disabled = false; } }, 1000);
       $('lcode').focus();
     } catch (e) { hint(`<span class="err">${esc(e.message)}</span>`); }
   };
@@ -1713,7 +1735,7 @@ function renderLogin() {
   bindBack();
   if (!S.me.phone) bindLogin(document.getElementById('lbox'), () => go(back, 'back'));
   const lo = document.getElementById('logout');
-  if (lo) lo.onclick = () => { store.del('vier.token'); Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null }); go('#/', 'back'); };
+  if (lo) lo.onclick = () => { resetSession(); go('#/', 'back'); };
 }
 
 // ---------- 牵线（docs/CONTACT-BROKER.md）----------
@@ -1857,26 +1879,28 @@ function incomingCard(r, i) {
   if (r.status === 'pending') {
     return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>想认识你</span></div></div>
       ${minimalText(r.minimal)}
-      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" data-acc="${r.id}">${ic('check')}同意</button><button class="btn sm" data-dec="${r.id}">暂不同意</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>
+      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" data-acc="${esc(r.id)}">${ic('check')}同意</button><button class="btn sm" data-dec="${esc(r.id)}">暂不同意</button><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>
       <p class="small muted" style="margin:8px 0 0">同意后，你会拿到${t}的号码。不同意，${t}不会知道原因。</p></div>`;
   }
   return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>你已同意</span></div></div>
     ${minimalText(r.minimal)}
     ${r.contact ? `<div class="released"><span>${CONTACT_TYPES[r.contact.type]}</span><b>${esc(r.contact.value)}</b></div>
       <p class="small muted" style="margin:6px 0 0">先记下来。点“我已记下”后，号码会被删掉。</p>
-      <div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-seen="${r.id}">${ic('check')}我已记下</button><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`
-    : `<p class="small muted" style="margin:8px 0 0">号码已经隐藏。</p><div class="row" style="margin-top:8px"><button class="btn ghost sm" data-blk="${r.id}">屏蔽</button></div>`}</div>`;
+      <div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-seen="${esc(r.id)}">${ic('check')}我已记下</button><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>`
+    : `<p class="small muted" style="margin:8px 0 0">号码已经隐藏。</p><div class="row" style="margin-top:8px"><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>`}</div>`;
 }
 
 function outgoingRow(r) {
   const [tone, word] = r.blocked ? ['', '已屏蔽'] : OUT_TEXT[r.status] || ['', r.status];
-  const act = r.status === 'pending' ? `<button class="btn ghost sm" data-cancel="${r.id}">取消</button>`
-    : r.status === 'accepted' && !r.blocked ? `<button class="btn ghost sm" data-blk="${r.id}">屏蔽</button>` : '';
+  const act = r.status === 'pending' ? `<button class="btn ghost sm" data-cancel="${esc(r.id)}">取消</button>`
+    : r.status === 'accepted' && !r.blocked ? `<button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button>` : '';
   return `<div class="out-row"><div class="t"><b>${nameTag(r)}</b><span class="badge ${tone}">${word}</span></div>${act}</div>`;
 }
 
 async function renderBroker() {
+  const gen = routeGen;
   const ov = await api('GET', '/api/me/broker');
+  if (gen !== routeGen) return;
   const t = T();
   if (!ov.loggedIn) {
     const back = /^#\/(match|results|privacy)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
@@ -1970,7 +1994,9 @@ function adminUserRow(u, testMode) {
 
 async function renderAdmin() {
   let data;
+  const gen = routeGen;
   try { data = await adminApi('GET', '/api/admin/overview'); } catch (e) {
+    if (gen !== routeGen) return;
     paint(`<h1 class="q">管理后台</h1><p class="qhint">${ic('lock')}输入管理员口令（服务器的环境变量 ADMIN_TOKEN；测试环境没设时是 admin）</p>
       <input class="text-input" id="tok" type="password" autocomplete="off"><div class="stack" style="margin-top:12px"><button class="btn primary block" id="go">进入</button></div>${e.status === 401 && store.get('vier.admin') ? '<p class="err">口令不对</p>' : `<p class="err">${e.status === 401 ? '' : esc(e.message)}</p>`}`);
     document.getElementById('go').onclick = () => { store.set('vier.admin', document.getElementById('tok').value.trim()); dir = 'none'; renderAdmin(); };
@@ -1979,6 +2005,7 @@ async function renderAdmin() {
   const tab = S.adminTab || 'users';
   const q = (S.adminQ || '').trim();
   const users = data.users.filter((u) => !q || [u.id, u.city, u.loginPhone, u.contact?.value, u.occupation].join(' ').includes(q));
+  if (gen !== routeGen) return;
   const counts = { users: data.users.length, contact: data.users.filter((u) => u.contact).length, willing: data.users.filter((u) => u.willing).length, pending: data.requests.filter((r) => r.status === 'pending').length };
   paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
     ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚拟人选，这里可以替虚拟人回应。</p>` : ''}
@@ -1987,7 +2014,7 @@ async function renderAdmin() {
     ${tab === 'requests' ? (data.requests.length ? `<div class="cards">${data.requests.map((r) => { const [tone, word] = ADMIN_STATUS[r.status] || ['', r.status]; return `<div class="pcard">
         <div class="row wrap" style="justify-content:space-between"><span class="badge ${tone}">${word}</span><span class="small muted">${fmtTime(r.createdAt)}</span></div>
         <p class="small" style="margin:8px 0 0">发起：${who(r.from)}</p><p class="small" style="margin:4px 0 0">接收：${who(r.to)}</p>
-        ${data.testMode && r.status === 'pending' && r.to?.virtual ? `<div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-a="${r.id}/accept">替虚拟人同意</button><button class="btn sm" data-a="${r.id}/decline">替虚拟人拒绝</button></div>` : ''}</div>`; }).join('')}</div>` : '<p class="muted">还没有牵线记录。</p>')
+        ${data.testMode && r.status === 'pending' && r.to?.virtual ? `<div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-a="${esc(r.id)}/accept">替虚拟人同意</button><button class="btn sm" data-a="${esc(r.id)}/decline">替虚拟人拒绝</button></div>` : ''}</div>`; }).join('')}</div>` : '<p class="muted">还没有牵线记录。</p>')
     : `<input class="text-input" id="aq" type="search" placeholder="按城市、职业、号码后四位、用户 id 搜索" value="${esc(q)}">
       <div class="cards" style="margin-top:12px">${users.filter((u) => tab !== 'contact' || u.contact).map((u) => adminUserRow(u, data.testMode)).join('') || '<p class="muted">没有符合的用户。</p>'}</div>`}`, { wide: true });
 
@@ -2122,8 +2149,7 @@ function renderPrivacy() {
       ev.currentTarget.classList.add('loading');
       try {
         await api('DELETE', '/api/me');
-        store.del('vier.token'); store.del('vier.skipped');
-        Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null });
+        resetSession();
         m.close();
         paint(milestone('已经删除', '你的全部资料都已从服务器上删除。', '', `<a class="btn primary block" href="#/">回到首页</a>`));
       } catch (e) { toast(e.message); m.close(); }
@@ -2138,17 +2164,19 @@ async function route() {
   S.prev = S.cur; S.cur = location.hash; // 记住从哪一页来，确认页的返回键要用
   const h = location.hash.replace(/^#/, '') || '/';
   const [, a = '', b = ''] = h.split('/');
+  const gen = ++routeGen;
   try {
     if (!S.config) {
       S.config = await api('GET', '/api/config');
       S.F = Object.fromEntries(S.config.fields.map((f) => [f.key, f]));
       renderFoot();
+      if (gen !== routeGen) return;
     }
     if (a === '') return await renderHome();
     if (a === 'intro') return renderIntro();
     if (a === 'admin') return await renderAdmin();
     if (a === 'terms' || a === 'policy') return renderLegal(a);
-    if (!S.me) await ensureSession();
+    if (!S.me) { await ensureSession(); if (gen !== routeGen) return; }
     if (a === 'me') {
       if (!b) return go('#/me/gender');
       if (b === 'break') return renderMeBreak();
@@ -2174,9 +2202,11 @@ async function route() {
       <div class="stack"><button class="btn primary block" id="retry">再试一次</button><a class="btn block" href="#/">回到首页</a></div></section>`);
     document.getElementById('retry').onclick = () => route();
   } finally {
-    if (dir !== 'none') window.scrollTo(0, 0);
-    dir = 'fwd';
-    requestAnimationFrame(placeToast);
+    if (gen === routeGen) {
+      if (dir !== 'none') window.scrollTo(0, 0);
+      dir = 'fwd';
+      requestAnimationFrame(placeToast);
+    }
   }
 }
 // 选项很多（如 100 个城市）时，列表上方有搜索框，按名字筛选
