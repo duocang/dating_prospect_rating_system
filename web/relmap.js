@@ -58,16 +58,17 @@ function ribbon(c, k = 1, add = 0) {
 }
 // 星球边上的光：从接触点沿边缘向两侧各走约 40°，越远越暗（原图里亮度在 15°~20° 内降一半）
 function rimArcs(key, pt, id, tag) {
-  const star = STAR[key], [cx, cy] = L2P(star), R = star[2] * ZK, a0 = Math.atan2(pt[1] - cy, pt[0] - cx), span = 0.7;
+  const star = STAR[key], [cx, cy] = L2P(star), R = star[2] * ZK, a0 = Math.atan2(pt[1] - cy, pt[0] - cx), span = 1;
   const cold = COLD.has(key); // A、B 是蓝色星球：边缘用冷光；“你”和 D 保持暖光
-  return [-1, 1].map((sgn, j) => {
+  // 一组弧放进一个 <g>：这颗星球被选中、放大时，弧跟着一起放大，始终贴在边上
+  return `<g class="rim" data-star="${key}" style="transform-origin:${cx.toFixed(1)}px ${cy.toFixed(1)}px">${[-1, 1].map((sgn, j) => {
     const a1 = a0 + sgn * span, ex = cx + Math.cos(a1) * R, ey = cy + Math.sin(a1) * R, sx = cx + Math.cos(a0) * R, sy = cy + Math.sin(a0) * R;
     const gid = `rm-rim-${id}-${tag}${j}`;
     const d = `M${sx.toFixed(1)} ${sy.toFixed(1)} A ${R.toFixed(1)} ${R.toFixed(1)} 0 0 ${sgn > 0 ? 1 : 0} ${ex.toFixed(1)} ${ey.toFixed(1)}`;
     return `<linearGradient id="${gid}" gradientUnits="userSpaceOnUse" x1="${sx.toFixed(1)}" y1="${sy.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}"><stop offset="0" stop-color="${cold ? '#EDF7FF' : '#FFF3E0'}" stop-opacity="1"/><stop offset=".45" stop-color="${cold ? '#92C6FF' : '#FFD9A6'}" stop-opacity=".45"/><stop offset="1" stop-color="${cold ? '#92C6FF' : '#FFD9A6'}" stop-opacity="0"/></linearGradient>
       <path data-to="${id}" class="rim-glow" style="stroke:url(#${gid})" d="${d}"/><path data-to="${id}" class="rim-core" style="stroke:url(#${gid})" d="${d}"/>
-      <path data-to="${id}" class="rim-flow${cold ? ' cold' : ''}" style="animation-delay:${(j * 0.9 + (tag === 'b' ? 1.8 : 0)).toFixed(1)}s" d="${d}"/>`;
-  }).join('');
+      <path data-to="${id}" class="rim-flow${cold ? ' cold' : ''}" pathLength="100" style="animation-delay:${(j * 0.9 + (tag === 'b' ? 1.8 : 0)).toFixed(1)}s" d="${d}"/>`;
+  }).join('')}</g>`;
 }
 function layout(n, x, y, dir, parent, depth, out) {
   out[n.id] = { n, x, y, parent };
@@ -180,6 +181,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       b.classList.toggle('dim', focus !== tree.id && !(P[focus].n.kind === 'group' && !(P[focus].n.kids || []).length) && visible(id) && !under(P, id, focus) && !under(P, focus, id));
     });
     svg.querySelectorAll('[data-to]').forEach((l) => l.classList.toggle('show', visible(l.dataset.to)));
+    svg.querySelectorAll('.rim').forEach((g) => g.classList.toggle('big', g.dataset.star === focus));
     let W = hug ? el.parentElement.clientWidth : viewEl.clientWidth, H = viewEl.clientHeight;
     const ids = [focus, P[focus].parent, ...(open.has(focus) ? (P[focus].n.kids || []).map((k) => k.id) : [])].filter(Boolean);
     // 点的是没有下一层的组：镜头不动，整张 Z 字图都留在画面里，只高亮这一组
