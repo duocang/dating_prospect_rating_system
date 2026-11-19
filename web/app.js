@@ -493,9 +493,8 @@ function paintIntroHome() {
   const orb = planetOrb;
   const check = ic('check');
   paint(`<section class="hero ap-hero">
-      <p class="ap-eyebrow rise">VIER</p>
-      <h1 class="display rise" style="--i:1">你喜欢的人，<br>喜欢谁。</h1>
-      <p class="ap-sub rise" style="--i:2">说说你自己，再说说你想找的人。<br>我们帮你找出<b>双方条件都合适</b>的人。</p>
+      <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
+      <p class="ap-sub rise" style="--i:1">说说你，和你想找的人。看看谁和你<b>两边都合适</b>。</p>
       <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button></div>
       <div class="relmap rise eclipse" id="relmap" style="--i:2"></div>
     </section>
