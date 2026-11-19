@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIER · 蓝色星球预览</title>
+<style>
+  body { margin: 0; padding: 32px 20px 60px; background: #000; color: #F5F5F7; font-family: -apple-system, "PingFang SC", sans-serif; }
+  h1 { margin: 0 0 6px; font-size: 34px; text-align: center; }
+  .sub { margin: 0 0 28px; color: #A1A1A6; font-size: 17px; text-align: center; }
+  .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); max-width: 1440px; margin: 0 auto; }
+  figure { margin: 0; border-radius: 28px; overflow: hidden; background: #000; box-shadow: inset 0 0 0 1px #2C2C2E; }
+  iframe { display: block; width: 100%; height: 600px; border: 0; }
+  figcaption { padding: 14px 20px 18px; }
+  figcaption b { display: block; font-size: 20px; }
+  figcaption span { color: #A1A1A6; font-size: 15px; }
+</style>
+</head>
+<body>
+  <h1>蓝色星球</h1>
+  <p class="sub">星球用“渐变映射”整体换成蓝色，纹理和高光不动；光丝、边缘光、流动的光点一起换成冷光。</p>
+  <h2 style="margin:0 0 6px;font-size:28px;text-align:center">A 冰月 + B 极光</h2>
+  <p class="sub">A、B 按你选的定下来；“你”和 D 配三种，看哪种最搭。</p>
+  <div class="grid" style="margin-bottom:56px">
+    <figure><iframe src="blue-frame.html?v=m1" title="混搭一"></iframe><figcaption><b>混搭一 · 你=星海、D=星海</b><span>冰白发亮的“你”，深群青的 D：四颗深浅拉得最开</span></figcaption></figure>
+    <figure><iframe src="blue-frame.html?v=m2" title="混搭二"></iframe><figcaption><b>混搭二 · 你=冰月、D=冰月</b><span>“你”和 D 都是冰蓝：整体最干净，B 的青色最跳</span></figcaption></figure>
+    <figure><iframe src="blue-frame.html?v=m3" title="混搭三"></iframe><figcaption><b>混搭三 · 你=极光、D=极光</b><span>蓝紫的“你”、紫色的 D：颜色最多、最梦幻</span></figcaption></figure>
+  </div>
+  <h2 style="margin:0 0 20px;font-size:28px;text-align:center">之前的三套</h2>
+  <div class="grid">
+    <figure><iframe src="blue-frame.html?v=orig" title="现在"></iframe><figcaption><b>现在 · 暖金</b><span>对照用</span></figcaption></figure>
+    <figure><iframe src="blue-frame.html?v=ice" title="冰月"></iframe><figcaption><b>一 · 冰月</b><span>四颗同一种冰蓝，最统一、最冷静</span></figcaption></figure>
+    <figure><iframe src="blue-frame.html?v=sea" title="星海"></iframe><figcaption><b>二 · 星海</b><span>都是蓝，但深浅不同：银蓝月面、湛蓝气态星、冰白的“你”、深群青的 D</span></figcaption></figure>
+    <figure><iframe src="blue-frame.html?v=aur" title="极光"></iframe><figcaption><b>三 · 极光</b><span>蓝里带青和紫：青色气态星、蓝紫的“你”、紫色的 D，最梦幻</span></figcaption></figure>
+  </div>
+</body>
+</html>

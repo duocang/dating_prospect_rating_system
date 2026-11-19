@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../web/styles.css">
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  body { padding: 0; }
+  .relmap { margin: 0; border-radius: 0; }
+  /* 光的颜色：--hl 光晕、--cr 亮芯、--rm 边缘光中段 */
+  .v-ice { --hl: 140, 195, 255; --cr: 236, 246, 255; --rm: #9CCBFF; --rt: #EEF7FF; }
+  .v-sea { --hl: 92, 160, 255; --cr: 230, 242, 255; --rm: #7FB4FF; --rt: #EAF4FF; }
+  .v-aur { --hl: 138, 150, 255; --cr: 238, 240, 255; --rm: #A9B2FF; --rt: #F1F2FF; }
+  [class*="v-"]:not(.v-orig) .rm-lines .z-halo { fill: rgba(var(--hl), .5); }
+  [class*="v-"]:not(.v-orig) .rm-lines .z-body { fill: rgba(var(--cr), .95); filter: blur(.5px) drop-shadow(0 0 2px rgba(var(--hl), .9)); }
+  [class*="v-"]:not(.v-orig) .rm-lines path.z { stroke: rgba(var(--cr), .95); }
+  [class*="v-"]:not(.v-orig) .rm-lines path.spark { stroke: rgb(var(--cr)); filter: drop-shadow(0 0 4px rgba(var(--hl), .95)); }
+  [class*="v-"]:not(.v-orig) .rm-lines .rim-flow { stroke: rgb(var(--cr)); filter: drop-shadow(0 0 3px rgba(var(--hl), .95)); }
+  [class*="v-"]:not(.v-orig) .rm-lines linearGradient stop:nth-child(1) { stop-color: var(--rt); }
+  [class*="v-"]:not(.v-orig) .rm-lines linearGradient stop:nth-child(n+2) { stop-color: var(--rm); }
+  [class*="v-"]:not(.v-orig) .rm-node.k-me .dot, [class*="v-"]:not(.v-orig) .rm-node.k-group[data-id] .dot { box-shadow: 0 0 4px rgba(var(--hl), .4), 0 0 14px rgba(var(--hl), .26), 0 0 30px rgba(var(--hl), .14); }
+  [class*="v-"]:not(.v-orig) .rm-node .lb b { color: rgb(var(--cr)); }
+  /* 星球贴图 */
+  .v-ice .rm-node { --planet: url(/design/preview/blue/ice-b.jpg); } .v-ice .rm-node.k-me { --planet: url(/design/preview/blue/ice-c.jpg); }
+  .v-ice .rm-node.g-theirs, .v-ice .rm-node.k-theirs { --planet: url(/design/preview/blue/ice-a.jpg); } .v-ice .rm-node.g-ideal { --planet: url(/design/preview/blue/ice-b.jpg); } .v-ice .rm-node.g-seekers { --planet: url(/design/preview/blue/ice-d.jpg); }
+  .v-sea .rm-node { --planet: url(/design/preview/blue/sea-b.jpg); } .v-sea .rm-node.k-me { --planet: url(/design/preview/blue/sea-c.jpg); }
+  .v-sea .rm-node.g-theirs, .v-sea .rm-node.k-theirs { --planet: url(/design/preview/blue/sea-a.jpg); } .v-sea .rm-node.g-ideal { --planet: url(/design/preview/blue/sea-b.jpg); } .v-sea .rm-node.g-seekers { --planet: url(/design/preview/blue/sea-d.jpg); }
+  .v-aur .rm-node { --planet: url(/design/preview/blue/aur-b.jpg); } .v-aur .rm-node.k-me { --planet: url(/design/preview/blue/aur-c.jpg); }
+  .v-aur .rm-node.g-theirs, .v-aur .rm-node.k-theirs { --planet: url(/design/preview/blue/aur-a.jpg); } .v-aur .rm-node.g-ideal { --planet: url(/design/preview/blue/aur-b.jpg); } .v-aur .rm-node.g-seekers { --planet: url(/design/preview/blue/aur-d.jpg); }
+  .v-orig .rm-node { --planet: url(/web/brand/planet-b.jpg); } .v-orig .rm-node.k-me { --planet: url(/web/brand/planet-c.jpg); }
+  .v-orig .rm-node.g-theirs, .v-orig .rm-node.k-theirs { --planet: url(/web/brand/planet-a.jpg); } .v-orig .rm-node.g-ideal { --planet: url(/web/brand/planet-b.jpg); } .v-orig .rm-node.g-seekers { --planet: url(/web/brand/planet-d.jpg); }
+  /* 混搭：A 用冰月、B 用极光；“你”和 D 三种配法 */
+  .v-m1, .v-m2, .v-m3 { --hl: 120, 190, 255; --cr: 234, 246, 255; --rm: #92C6FF; --rt: #EDF7FF; }
+  .v-m1 .rm-node, .v-m2 .rm-node, .v-m3 .rm-node { --planet: url(/design/preview/blue/aur-b.jpg); }
+  .v-m1 .rm-node.g-theirs, .v-m1 .rm-node.k-theirs, .v-m2 .rm-node.g-theirs, .v-m2 .rm-node.k-theirs, .v-m3 .rm-node.g-theirs, .v-m3 .rm-node.k-theirs { --planet: url(/design/preview/blue/ice-a.jpg); }
+  .v-m1 .rm-node.g-ideal, .v-m2 .rm-node.g-ideal, .v-m3 .rm-node.g-ideal { --planet: url(/design/preview/blue/aur-b.jpg); }
+  .v-m1 .rm-node.k-me { --planet: url(/design/preview/blue/sea-c.jpg); } .v-m1 .rm-node.g-seekers { --planet: url(/design/preview/blue/sea-d.jpg); }
+  .v-m2 .rm-node.k-me { --planet: url(/design/preview/blue/ice-c.jpg); } .v-m2 .rm-node.g-seekers { --planet: url(/design/preview/blue/ice-d.jpg); }
+  .v-m3 .rm-node.k-me { --planet: url(/design/preview/blue/aur-c.jpg); } .v-m3 .rm-node.g-seekers { --planet: url(/design/preview/blue/aur-d.jpg); }
+</style>
+</head>
+<body>
+<div class="relmap" id="m"></div>
+<script type="module">
+  import { relMap, EXAMPLE } from '../../web/relmap.js';
+  const v = new URLSearchParams(location.search).get('v') || 'orig';
+  const el = document.getElementById('m');
+  el.className = `relmap v-${v}`;
+  relMap(el, { ...EXAMPLE, kids: EXAMPLE.kids.map((k) => ({ ...k, kids: [] })) });
+</script>
+</body>
+</html>

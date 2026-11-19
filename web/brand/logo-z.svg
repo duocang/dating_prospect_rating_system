@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="VIER" xmlns:c2pa="http://c2pa.org/manifest">
   <defs>
-    <radialGradient id="p1" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FFF8EC"/><stop offset="1" stop-color="#CDBBA2"/></radialGradient>
-    <radialGradient id="p2" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#FBF1E1"/><stop offset="1" stop-color="#C9A97E"/></radialGradient>
+    <radialGradient id="p1" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#F5F9FF"/><stop offset="1" stop-color="#8098B8"/></radialGradient>
+    <radialGradient id="p2" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#E6FCFF"/><stop offset="1" stop-color="#2BA3BF"/></radialGradient>
     <radialGradient id="p3" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#F6F1EA"/><stop offset="1" stop-color="#B9AC9C"/></radialGradient>
     <radialGradient id="p4" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#F2C6A6"/><stop offset="1" stop-color="#A9583D"/></radialGradient>
   </defs>

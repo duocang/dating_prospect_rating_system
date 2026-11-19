@@ -12,7 +12,8 @@ const store = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* 隐私模式下忽略 */ } },
   del: (k) => { try { localStorage.removeItem(k); } catch { /* */ } },
 };
-S.view = store.get('vier.view') === 'table' ? 'table' : 'cards'; // 结果页“一个个看 / 对照着看”的偏好
+S.view = store.get('vier.view') === 'table' ? 'table' : 'cards';
+S.diffOnly = store.get('vier.diff') !== '0'; // 对照表默认只看不一样的那几行 // 结果页“一个个看 / 对照着看”的偏好
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const go = (h, d = 'fwd') => { dir = d; if (location.hash === h) route(); else location.hash = h; };
@@ -384,17 +385,50 @@ async function renderHome() {
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
-      done: `${brokerNotice()}<a class="btn primary block" href="#/results">${ic('list')}看我的 Z 字图</a>
+      done: `${brokerNotice()}<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
-    paint(`<section class="hero">
-      <h1 class="display rise">你喜欢的人，<em>喜欢谁</em></h1>
-      ${st === 'new' ? '<p class="hero-sub rise">约 5 分钟 · 免费 · 不用注册</p>' : ''}
+    if (st === 'new') { paintIntroHome(); relMap(document.getElementById('relmap'), EXAMPLE, { esc }); return; }
+    if (st === 'done') {
+      paint(`<section class="hero home-back">
+        <div class="home-stage">
+          <p class="ap-eyebrow rise">欢迎回来</p>
+          <h1 class="display rise" style="--i:1">你的结果</h1>
+          <div class="relmap rise" id="relmap" style="--i:2"></div>
+        </div>
+        <div class="home-rows rise" style="--i:3" id="home-rows" aria-busy="true"><p class="small muted">正在整理…</p></div>
+        <div class="stack rise" style="--i:4">${actions}</div>
+      </section>`);
+      const box = document.getElementById('home-rows'), mapEl = document.getElementById('relmap');
+      // 首页的星球图只画三组（不展开到人）；点 A、B、D 直接进结果页的那一组
+      const onlyGroups = (t) => ({ ...t, note: '点 A、B、D，看这一组的人', kids: (t.kids || []).map((k) => ({ ...k, kids: [] })) });
+      const openTab = (n) => { if (n.tab) { S.tab = n.tab; go('#/results'); } };
+      // 手机一屏放下整页、又不留空：先排好三行和按钮，剩下多少高度都给星球图
+      const fitMap = (tree) => {
+        const end = document.getElementById('restart') || view.querySelector('.home-back .stack');
+        let y = end.offsetHeight; for (let e = end; e; e = e.offsetParent) y += e.offsetTop; // 用排版位置，不受进场动画的位移影响
+        const used = y - mapEl.offsetHeight;
+        const room = Math.round(window.innerHeight - used - 16);
+        relMap(mapEl, tree, { esc, onFocus: openTab, hug: true, maxH: Math.max(150, Math.min(440, room)) });
+      };
+      loadResults().then((r) => {
+        if (!box.isConnected) return;
+        box.innerHTML = homeRows(r); box.removeAttribute('aria-busy');
+        fitMap(onlyGroups(resultTree(r)));
+        box.querySelectorAll('[data-tab]').forEach((a) => (a.onclick = () => { S.tab = a.dataset.tab; }));
+      }).catch((e) => {
+        // 结果没加载出来（比如网络断了）：星球图用示例的三组，三行概况换成一句提示，不留空白
+        if (!box.isConnected) return;
+        console.warn('首页结果加载失败', e);
+        box.innerHTML = `<div class="note-card">${ic('info')}<span>结果暂时没加载出来。点下面“看全部结果”再试一次。</span></div>`; box.removeAttribute('aria-busy');
+        fitMap(onlyGroups(EXAMPLE));
+      });
+    } else paint(`<section class="hero">
+      <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
       <div class="relmap rise" id="relmap" style="--i:1"></div>
       <div class="stack rise" style="--i:2">${actions}</div>
-      <p class="fine">${ic('lock')} 自动保存 · 别人看不到你的收入和家庭</p>
     </section>`);
-    relMap(document.getElementById('relmap'), EXAMPLE, { esc });
+    if (st !== 'done') relMap(document.getElementById('relmap'), EXAMPLE, { esc });
     // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
@@ -416,6 +450,92 @@ async function renderHome() {
   if (!S.me && store.get('vier.token')) {
     try { await ensureSession(); if ((location.hash.replace(/^#/, '') || '/') === '/' && state() !== 'new') { dir = 'none'; draw(); } } catch { /* 忽略 */ }
   }
+}
+
+// 小星球：A、B 用蓝色星球，D 保持原色
+const planetOrb = (k) => `<span class="ap-orb o-${k}" aria-hidden="true"><i style="background-image:url(/brand/${k === 'a' || k === 'b' ? 'blue' : 'planet'}-${k}.jpg)"></i></span>`;
+
+// A 组里“你排第几”的一句话，结果页和首页共用
+function placeA(r) {
+  const a = r.myPlaceA;
+  if (!a || !(r.idealOfIdeal || []).length) return '暂时算不出来';
+  if (!a.eligible) return '有几条你还没达到，暂时排不上';
+  const pct = Math.max(1, Math.round((a.rankRange[1] / a.of) * 100));
+  return pct <= 50 ? `你排在前 ${pct}%` : '你排在后一半';
+}
+// 回头客首页：一上来就是自己的三组概况，点哪一行进哪一组（像苹果官网对老用户先给“你的东西”）
+function homeRows(r) {
+  const s = r.summary, all = s.position?.ideal?.allMet || 0, n = r.idealMatches.length, two = (r.mutual || []).length;
+  if (!s.counterpartCount) return `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。</span></div>`;
+  const b = n ? (all ? `有 ${all} 位完全符合你的要求${two ? `，其中 ${two} 位两边都合适` : ''}` : `还没人完全符合，最接近的有 ${n} 位`) : '暂时没有，放宽一两条要求试试';
+  const d = r.seekers.length ? `${r.seekers.length} 位的要求，你正好符合` : '暂时没有';
+  const row = (k, tab, title, text) => `<a class="ap-row home-row" href="#/results" data-tab="${tab}">${planetOrb(k)}<div><h3><b>${k.toUpperCase()}</b>${title}</h3><p>${text}</p></div><span class="chev">${ic('next')}</span></a>`;
+  return row('b', 'ideal', REL.ideal(), b) + row('a', 'theirs', REL.theirs(), placeA(r)) + row('d', 'seekers', REL.seekers(), d);
+}
+
+// 第一次来的人：一段一段往下滑的首页，每段只讲一件事，滑到时淡入（苹果官网式）
+function paintIntroHome() {
+  const start = store.get('vier.intro') ? '#/me/gender' : '#/intro';
+  const orb = planetOrb;
+  const check = ic('check');
+  paint(`<section class="hero ap-hero">
+      <p class="ap-eyebrow rise">VIER</p>
+      <h1 class="display rise" style="--i:1">你喜欢的人，<br>喜欢谁。</h1>
+      <p class="ap-sub rise" style="--i:2">说说你自己，再说说你想找的人。<br>我们帮你找出<b>双方条件都合适</b>的人。</p>
+      <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button></div>
+      <div class="relmap rise eclipse" id="relmap" style="--i:2"></div>
+    </section>
+    <section class="ap-sec" id="ap-how">
+      <h2 class="ap-h2 reveal">三步，看清谁适合你。</h2>
+      <p class="ap-sub reveal">点一点就能选，不想说的可以跳过。</p>
+      <div class="ap-grid3">
+        <div class="ap-tile reveal"><div class="n">第一步</div><h3>说说你自己</h3><p>年龄、身高、在哪工作。大约 2 分钟。</p></div>
+        <div class="ap-tile reveal"><div class="n">第二步</div><h3>说说你想找的人</h3><p>每条要求，告诉我们你有多在意。</p></div>
+        <div class="ap-tile reveal"><div class="n">第三步</div><h3>看谁适合你</h3><p>谁符合你几条，你又符合谁几条。</p></div>
+      </div>
+    </section>
+    <section class="ap-sec">
+      <h2 class="ap-h2 reveal">不只是你喜欢谁。</h2>
+      <p class="ap-sub reveal">还有他们喜欢谁，以及谁正好在找你。</p>
+      <div class="ap-rows">
+        <div class="ap-row reveal">${orb('b')}<div><h3><b>B</b>你的理想型</h3><p>最符合你要求的人，以及他们符合你几条。</p></div></div>
+        <div class="ap-row reveal">${orb('a')}<div><h3><b>A</b>理想型的理想型</h3><p>你的理想型自己想找什么样的人，你在里面排第几。</p></div></div>
+        <div class="ap-row reveal">${orb('d')}<div><h3><b>D</b>想找你这样的人</h3><p>你正好符合他们的要求。只是条件对得上，不代表已经喜欢你。</p></div></div>
+      </div>
+    </section>
+    <section class="ap-sec">
+      <h2 class="ap-h2 reveal">简单到不用想。</h2>
+      <div class="ap-grid3">
+        <div class="ap-fact reveal"><b>5 分钟</b><span>点选为主，不用打字</span></div>
+        <div class="ap-fact reveal"><b>免费</b><span>填完就能看结果</span></div>
+        <div class="ap-fact reveal"><b>不用注册</b><span>每题自动保存，随时回来接着填</span></div>
+      </div>
+    </section>
+    <section class="ap-sec">
+      <span class="ap-lock reveal">${ic('lock')}</span>
+      <h2 class="ap-h2 reveal">你的资料，<br>只用来帮你找人。</h2>
+      <ul class="ap-plist">
+        <li class="reveal">${check}加密保存，只在我们的服务器里计算。</li>
+        <li class="reveal">${check}别人看不到你的名字、收入细节和家里情况。</li>
+        <li class="reveal">${check}随时可以下载或永久删除全部资料。</li>
+      </ul>
+    </section>
+    <section class="ap-sec ap-last">
+      <h2 class="ap-h2 reveal">现在开始。</h2>
+      <p class="ap-sub reveal">大约 5 分钟，看看谁适合你。</p>
+      <div class="ap-ctas reveal"><a class="btn primary" href="${start}">开始填写</a><a class="ap-more" href="#/login">已经填过？用手机号登录 ${ic('next')}</a></div>
+    </section>`, { wide: true });
+  view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' })));
+  revealOnScroll();
+}
+// 滑到时淡入：用 IntersectionObserver；浏览器不支持或减少动态效果时直接显示
+function revealOnScroll() {
+  const els = view.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window) || reduceMotion()) { els.forEach((e) => e.classList.add('in')); return; }
+  // 同一组里的几块依次出来，每块晚 90ms
+  els.forEach((e) => { const sib = [...e.parentElement.children].filter((c) => c.classList.contains('reveal')); e.style.setProperty('--d', `${sib.indexOf(e) * 0.09}s`); });
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.15 });
+  els.forEach((e) => io.observe(e));
 }
 
 // ---------- 新手引导 ----------
@@ -888,7 +1008,11 @@ function renderConsent() {
   const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0', willing: '0' };
   paint(`${simpleHead('#/ideal/review', '最后一步', '你的资料，你做主')}
     <h1 class="q">最后，问你几件事</h1>
-    <div class="note-card" style="margin-top:6px">${ic('lock')}<span>只用来帮你找人，不给任何人看。随时可以删。</span></div>
+    <div class="privacy-label">
+      <div><span class="ico">${ic('user')}</span><p><b>收集什么</b>你填的情况和要求。登录了才有手机号。</p></div>
+      <div><span class="ico">${ic('heart')}</span><p><b>拿来做什么</b>只用来算谁和你合适。匿名统计要你同意才算。</p></div>
+      <div><span class="ico">${ic('eyeOff')}</span><p><b>谁能看到</b>别人看不到你的名字、存款和家里情况。随时可以下载或永久删除。</p></div>
+    </div>
     <h2 class="sec-title">1. 让别人也能找到你吗？</h2>
     ${choice('pool', st.pool, '别人的结果里也可能出现你', '别人搜不到你')}
     ${SEE_CARD()}
@@ -1008,21 +1132,30 @@ const byIdeal = (reqs, items) => {
 // 对上的是浅绿勾，没对上的可点，点了原地显示对方的实际情况
 function compareTable(reqs, people, sfx = '') {
   const itemOf = (p, q) => (p.fit.items || []).find((x) => x.label === q.label);
-  const allGood = [];
-  const rows = reqs;
-  const reqText = (q) => esc(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限')));
-  return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp2">
+  // 每一行都画出来；大家都符合的行标成 same。“只看不一样的”打开时，这些行像苹果对比页那样折叠收起，下面的行跟着滑上来
+  const same = (q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; });
+  const allGood = reqs.filter(same);
+  const reqText = (q) => esc(shortRange(nice(String(q.text).replace(/^至少 ?高中及以下$/, '不限'))));
+  const cx = (html) => `<div class="cx">${html}</div>`;
+  return `<div class="cmp-block ${S.diffOnly ? 'diff-on' : ''}"><div class="cmp-tools">${SCROLL_HINT}</div><div class="cmp-wrap"><table class="cmp cmp2">
     <thead><tr><th scope="col"></th><th scope="col" class="ideal-col"><span class="al">你的理想型</span></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
-    <tbody>${rows.map((q) => `<tr><th scope="row"><b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b></th><td class="ideal-col">${reqText(q)}</td>
+    <tbody>${reqs.map((q) => `<tr class="${same(q) ? 'same' : ''}"><th scope="row">${cx(`<b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b>`)}</th><td class="ideal-col">${cx(reqText(q))}</td>
       ${people.map((p) => {
         const it = itemOf(p, q);
         const [tone, icon, word] = it ? (STATUS[it.status] || ['t-unk', 'help', '没填']) : ['t-unk', 'help', '没填'];
-        if (it && tone !== 't-good') return `<td class="${tone}"><button type="button" class="cell-tap" aria-expanded="false" aria-label="${word}"><span class="st">${ic(icon)}</span><span class="v">${it.value === null ? '不公开' : esc(nice(it.value))}</span></button></td>`;
-        return `<td class="${tone}"><span class="st" aria-label="${word}">${ic(icon)}</span></td>`;
+        if (it && tone !== 't-good') return `<td class="${tone}">${cx(`<button type="button" class="cell-tap" aria-expanded="false" aria-label="${word}"><span class="st">${ic(icon)}</span><span class="v">${it.value === null ? '不公开' : esc(shortRange(nice(it.value)))}</span></button>`)}</td>`;
+        return `<td class="${tone}">${cx(`<span class="st" aria-label="${word}">${ic(icon)}</span>`)}</td>`;
       }).join('')}</tr>`).join('')}
-    ${allGood.length ? `<tr class="all-good"><td colspan="${people.length + 2}">${ic('check')}<span><b>都符合</b>${allGood.map((q) => esc(lab(q.label))).join('、')}</span></td></tr>` : ''}</tbody>
-  </table>${rows.some((q) => people.some((p) => { const it = itemOf(p, q); return it && toneOf(it) !== 't-good'; })) ? '</div><p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : '</div>'}`;
+</tbody>
+  </table></div>${CMP_NAV()}${sameLine('都符合', allGood.map((q) => lab(q.label)))}${reqs.some((q) => people.some((p) => { const it = itemOf(p, q); return it && toneOf(it) !== 't-good'; })) ? '<p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : ''}</div>`;
 }
+
+// 表格里的范围写短：“27 岁 到 33 岁”→“27–33 岁”，“15 万 到 20 万”→“15–20 万”，一格放得下
+const shortRange = (t) => String(t).replace(/(\d+(?:\.\d+)?)\s*([^\d\s到]+)\s*到\s*(\d+(?:\.\d+)?)\s*\2/g, '$1–$3 $2');
+// 表格下面的“都符合 / 和你一样”：放在可左右滑的表格外面，一直看得见，太长就换行
+const sameLine = (title, labels) => (labels.length ? `<p class="same-line">${ic('check')}<span><b>${title}</b>${labels.map(esc).join('、')}</span></p>` : '');
+// 表格上方一行工具条：左边“只看不一样的”开关（像系统设置里的开关），右边“左右滑动看更多”
+const diffBtn = () => `<button type="button" class="diff-toggle" role="switch" aria-checked="${S.diffOnly}" data-diff><span>只看不一样的</span><i class="mini-switch" aria-hidden="true"></i></button>`;
 
 function pcard(c, inner, { href = '', i = 0, head = '', more = '', quick = '' } = {}) {
   const sub = [c.facts['年龄'], c.facts['常住城市']].filter(Boolean).map(esc).join(' · ');
@@ -1041,11 +1174,15 @@ const TABS = {
   ideal: { flow: () => ['你', T()], text: () => `先看你心中的${T()}，再看最接近的真人。` },
   seekers: { flow: () => [T(), '你'], text: () => `你正好符合${T()}的要求。只是条件对得上，不代表${T()}已经对你有意思。` },
   mutual: { flow: () => ['你', T(), true], text: () => `${T()}符合你的要求，你也符合${T()}的要求。` },
-  theirs: { flow: () => [T(), '你'], text: () => `你喜欢的${T()}们，喜欢什么样的人。` },
+  theirs: { flow: () => [T(), '你'], text: () => '你的理想型，想找什么样的人。' },
 };
 // 两边都对得上的人，在卡片上加一枚“双向”小标，不再单独成组
 const mutualIds = (r) => new Set((r.mutual || []).map((m) => m.alias));
 const twoWay = (r, m) => (mutualIds(r).has(m.alias) ? '<span class="two-way">双向</span>' : '');
+
+// 名单区的头（苹果式）：标题，紧跟一句说明，下面一行工具——左边“一个个看 / 对照着看”，右边“只看不一样的”（对照时才有）
+const viewSwitch = (table) => `<div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${!!table}">对照着看</button></div>`;
+const secHead = (title, note, table) => `<div class="sec-head"><h3>${title}</h3>${note ? `<p class="sec-note">${note}</p>` : ''}<div class="sec-tools">${viewSwitch(table)}${table ? diffBtn() : ''}</div></div>`;
 
 function tabList(r, tab) {
   const t = T();
@@ -1056,10 +1193,9 @@ function tabList(r, tab) {
     if (!people.length) return head + emptyCard('没有人达到你所有的“必须有”', '把一两条“必须有”改成“很在意”试试。', '#/ideal/review', '去改要求');
     // 正式环境里虚拟人选和真人在同一个池子：标题不写“真人”，另外说清其中几位是真人
     const real = people.filter((p) => !p.simulated).length;
-    const tie = r.summary.topTie > 1 ? `<p class="small muted near-note">${r.summary.topTie} 位一样符合，都算第 1。</p>` : '';
-    const switcher = `<div class="near-head"><h3>最接近的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}</h3>
-      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${!!table}">对照着看</button></div></div>`;
-    const body = tie + (table ? compareTable(reqs, people)
+    const tie = r.summary.topTie > 1 ? `${r.summary.topTie} 位一样符合，都算第 1。` : '';
+    const switcher = secHead(`最接近的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}`, tie, table);
+    const body = (table ? compareTable(reqs, people)
       : `<div class="cards">${people.map((m, i) => pcard(m,
         fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
         { href: `#/match/${i}`, i, quick: twoWay(r, m) + rankQ(i, m.fit.total, m.rankRange), more: `看${t}想找什么样的人` })).join('')}</div>`);
@@ -1071,24 +1207,22 @@ function tabList(r, tab) {
     if (!list.length) return emptyCard('暂时算不出来', `人选库里和你同为${S.me?.gender === 'female' ? '女生' : '男生'}的人还不够多。`);
     const table = S.view === 'table';
     const mine = r.myPlaceA?.score;
-    const tieA = r.summary.topTieA > 1 ? `<p class="small muted near-note">${r.summary.topTieA} 位一样接近，都算第 1。</p>` : '';
-    const switcher = `<div class="near-head"><h3>他们看中的 ${list.length} 位</h3>
-      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
-    // 同一把尺子（你喜欢的人的要求）量两个人：TA 和你
-    const vs = (a) => mine ? `<div class="a-bars vs"><p>用你喜欢的人的标准打分：</p>
+    const tieA = r.summary.topTieA > 1 ? `${r.summary.topTieA} 位一样接近，都算第 1。` : '';
+    const switcher = secHead(`理想型看中的 ${list.length} 位`, tieA, table);
+    // 同一把尺子（你的理想型的要求）量两个人：TA 和你
+    const vs = (a) => mine ? `<div class="a-bars vs"><p>用你的理想型的标准打分：</p>
       <div><span>${esc(a.name || 'TA')}</span><i style="--w:${Math.round(a.score.low)}%"></i><b>${Math.round(a.score.low)}%</b></div>
       <div class="me"><span>你</span><i style="--w:${Math.round(mine.low)}%"></i><b>${Math.round(mine.low)}%</b></div></div>` : '';
     const body = table ? aCompareTable(r.myFacts || {}, list, mine)
       : `<div class="cards">${list.map((a, i) => pcard(a, vs(a), { i, quick: rankQ(i, a.score, a.rankRange), href: `#/match/${i}/theirs`, more: '和你逐条对照' })).join('')}</div>`;
-    return switcher + tieA + body;
+    return switcher + body;
   }
   // 三组卡片统一：两条进度条，顺序固定为“他符合你 / 你符合他”，颜色跟所在组一致
   const both = (m, mine) => fitLine('你', t, m.fit?.items) + fitLine(t, '你', mine?.items);
 
   if (!r.seekers.length) return emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
   const table = S.view === 'table', reqs = r.myIdeal || [];
-  const switcherD = `<div class="near-head"><h3>最合适的 ${r.seekers.length} 位</h3>
-      <div class="seg-switch" role="tablist"><button data-view="cards" class="${table ? '' : 'on'}" role="tab" aria-selected="${!table}">一个个看</button><button data-view="table" class="${table ? 'on' : ''}" role="tab" aria-selected="${table}">对照着看</button></div></div>`;
+  const switcherD = secHead(`最合适的 ${r.seekers.length} 位`, '', table);
   if (table) return switcherD + compareTable(reqs, r.seekers, '/seekers');
   return switcherD + cardsOr(r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看${t}想找什么样的人` })).join(''),
     emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。'));
@@ -1118,7 +1252,7 @@ function resultTree(r) {
   return {
     id: 'me', kind: 'me', label: '你', note: '点 A、B、D 切换下面的内容',
     kids: [
-      group('ideal', 'ideal', r.idealMatches, `你喜欢的人`, (m, i) => {
+      group('ideal', 'ideal', r.idealMatches, `你的理想型`, (m, i) => {
         const a = met(m.fit.items), b = met(m.myFitToThem.items), n = m.myFitToThem.items.length;
         return person(m, 'i', i, { fit: `${a}/${m.fit.items.length}`, note: `符合你 ${a} 条 · 再点看${t}想找谁`, href: `#/match/${i}`,
           kids: [{ id: `it${i}`, kind: 'theirs', short: t, label: `${t}想找的`, fit: `你 ${b}/${n}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}` }] });
@@ -1127,7 +1261,7 @@ function resultTree(r) {
         const b = met(m.myFitToThem.items);
         return person(m, 's', i, { fit: `${b}/${m.myFitToThem.items.length}`, note: `你符合${t} ${b} 条`, href: `#/match/${i}/seekers` });
       }),
-      group('theirs', 'theirs', r.idealOfIdeal || [], `你喜欢的人，喜欢谁`, (m, i) => person(m, 'a', i, { fit: `${Math.round(m.score.low)}%`, note: `按你喜欢的${t}们的要求，接近程度 ${Math.round(m.score.low)}%` })),
+      group('theirs', 'theirs', r.idealOfIdeal || [], `理想型的理想型`, (m, i) => person(m, 'a', i, { fit: `${Math.round(m.score.low)}%`, note: `按你的理想型的要求，接近程度 ${Math.round(m.score.low)}%` })),
     ],
   };
 }
@@ -1145,10 +1279,10 @@ function positionCard(s, tab, r) {
     return `<div class="pos-card a-sum">
       <p class="a-sum-q">你差在哪</p>
       <div class="a-bars">
-        <div><span>${t}们看中的 ${list.length} 位</span><i style="--w:${avg}%"></i><b>${avg}%</b></div>
+        <div><span>理想型看中的 ${list.length} 位</span><i style="--w:${avg}%"></i><b>${avg}%</b></div>
         <div class="me"><span>你</span><i style="--w:${me}%"></i><b>${me}%</b></div>
       </div>
-      <p class="a-sum-t">${gap > 0 ? `你比${t}们看中的人低 ${gap} 分。` : `你和${t}们看中的人差不多。`}${where}。</p>
+      <p class="a-sum-t">${gap > 0 ? `你比理想型看中的人低 ${gap} 分。` : `你和理想型看中的人差不多。`}${where}。</p>
       ${miss}
     </div>`;
   }
@@ -1205,6 +1339,22 @@ function positionCard(s, tab, r) {
   </div>`;
 }
 
+// 结果页最上面的一句结论（苹果式：先说结论，细节点开才看）
+function verdict(r) {
+  const s = r.summary, all = s.position?.ideal?.allMet || 0, two = (r.mutual || []).length, n = r.idealMatches.length, t = T();
+  if (!s.counterpartCount) return ['人还不多', '过几天再来看看。'];
+  if (two) return [`有 ${two} 位和你两边都合适`, `${t}们符合你的要求，你也符合${t}们的。下面先看最接近的 ${n} 位。`];
+  if (all) return [`有 ${all} 位完全符合你的要求`, `下面先看最接近的 ${n} 位。`];
+  if (n) return [`最接近你要求的 ${n} 位`, '还没人完全符合。点下面“为什么是这几位”，看差在哪。'];
+  return ['还没人达到你的“必须有”', '把一两条“必须有”改成“很在意”试试。'];
+}
+// 每组的统计和“卡在哪”收起来，点开才看
+const WHY = { ideal: '为什么是这几位', theirs: '你和他们差在哪', seekers: '他们为什么找你' };
+const whyFold = (tab, html) => (html ? `<details class="more why-fold"><summary>${WHY[tab]}</summary>${html}</details>` : '');
+// A、D 两组在名单上面先给一句话结论
+const tabLead = (r, tab) => tab === 'theirs' && (r.idealOfIdeal || []).length ? `<p class="tab-lead"><b>${placeA(r)}</b>（和理想型看中的人比）</p>`
+  : tab === 'seekers' && r.seekers.length ? `<p class="tab-lead"><b>${r.seekers.length} 位的要求，你正好符合</b></p>` : '';
+
 async function renderResults() {
   await saveChain;
   if (!S.me.gender) return go('#/me/gender');
@@ -1218,36 +1368,60 @@ async function renderResults() {
   const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
   const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
 
+  const [vt, vs] = verdict(r);
   paint(`<section class="res-head">
-      <h1 class="display rise">你喜欢的人，喜欢谁</h1>
+      <p class="ap-eyebrow rise">你的结果</p>
+      <h1 class="display rise">${vt}</h1>
+      <p class="res-sub rise">${vs}</p>
       ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
     ${brokerNotice()}
-    ${few ? `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。<br></span></div>` : ''}
-    <div class="tabs" role="tablist">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div>
+    <div class="tb-sentinel" aria-hidden="true"></div><div class="tabs-bar"><div class="tb-title" aria-hidden="true"><b>你的结果</b><span>${vt}</span></div><div class="tabs" role="tablist">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div></div>
     <div id="tabpanel"></div>
     ${r.plan === 'vip'
     ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
-    : payOn ? `<button class="vip-line" id="upgrade">${ic('crown')}<span>每组看 ${S.config.plans.vip.matches} 位</span><b>¥${(S.config.plans.vip.priceFen / 100).toFixed(2)}</b></button>` : ''}
-    <div class="row-2"><a class="btn sm" href="#/ideal/review">${ic('edit')}改要求</a><a class="btn sm" href="#/me/review">${ic('user')}改资料</a></div>
+    : payOn ? `<button class="vip-line" id="upgrade">${ic('crown')}<span>每组多看 ${S.config.plans.vip.matches - S.config.plans.free.matches} 位<small>一次付费，长期有效</small></span><b>¥${(S.config.plans.vip.priceFen / 100).toFixed(2)}</b></button>` : ''}
+    <div class="list-card edit-links">
+      <a href="#/ideal/review"><span class="ico">${ic('edit')}</span><span class="t">改我的要求<span>${S.me.requirements?.length || 0} 条，改完马上重新算</span></span>${ic('next')}</a>
+      <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">改我填的资料<span>年龄、学历、家庭等</span></span>${ic('next')}</a>
+    </div>
     <p class="disclaimer">只比较条件，不代表一个人好不好。</p>`, { wide: true });
 
   const panel = document.getElementById('tabpanel');
-  const show = (tab, scroll) => {
+  // anim：用户切换页签或“一个个看 / 对照着看”时，新内容淡入上移（苹果切换分段控件时内容的过渡）
+  const show = (tab, scroll, anim) => {
     S.tab = tab;
     view.querySelectorAll('.tabs [data-tab]').forEach((b) => { b.classList.toggle('on', b.dataset.tab === tab); b.setAttribute('aria-selected', b.dataset.tab === tab); });
-    panel.innerHTML = (r.summary.counterpartCount ? positionCard(r.summary, tab, r) : '') + tabList(r, tab); panel.dataset.g = tab;
+    panel.innerHTML = (r.summary.counterpartCount ? tabLead(r, tab) : '') + tabList(r, tab) + (r.summary.counterpartCount ? whyFold(tab, positionCard(r.summary, tab, r)) : ''); panel.dataset.g = tab;
+    // 记下每一行、每一句的真实高度：收起 / 展开按这个距离走，快慢才均匀（不用一个统一的大数）
+    const measure = () => panel.querySelectorAll('.cmp tr.same .cx, .cmp-block .same-line').forEach((el) => el.style.setProperty('--h', `${el.scrollHeight}px`));
+    measure();
+    // 开关不重画页面：只切换一个类名，开关的圆点滑过去，相同的行折叠或展开
+    panel.querySelectorAll('[data-diff]').forEach((b) => (b.onclick = () => {
+      measure();
+      S.diffOnly = !S.diffOnly; store.set('vier.diff', S.diffOnly ? '1' : '0');
+      panel.querySelectorAll('[data-diff]').forEach((x) => x.setAttribute('aria-checked', S.diffOnly));
+      panel.querySelectorAll('.cmp-block').forEach((k) => k.classList.toggle('diff-on', S.diffOnly));
+    }));
     panel.querySelectorAll('[data-edit-req]').forEach((a) => (a.onclick = () => { S.returnTo = '#/results'; }));
     bindScrollHint(panel);
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
-    panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { S.view = b.dataset.view; store.set('vier.view', S.view); show(tab); }));
+    panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { if (S.view === b.dataset.view) return; S.view = b.dataset.view; store.set('vier.view', S.view); show(tab, false, true); }));
+    if (anim && !reduceMotion()) { panel.classList.remove('swap-in'); void panel.offsetWidth; panel.classList.add('swap-in'); }
     bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);
     if (scroll) view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   };
-  view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => show(b.dataset.tab, b.tagName.toLowerCase() === 'g')));
+  view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { if (b.dataset.tab !== S.tab) show(b.dataset.tab, b.tagName.toLowerCase() === 'g', true); }));
   show(S.tab);
+  // 大标题滑出屏幕后，吸顶栏里才出现“你的结果 + 一句结论”（苹果商品页往下滑后顶部的商品名 + 价格）
+  // 用页签栏正上方的一个“哨兵”判断：哨兵滑出屏幕顶 = 页签栏已经贴到顶上
+  const bar = view.querySelector('.tabs-bar'), sentinel = view.querySelector('.tb-sentinel');
+  if (bar && sentinel && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(([e]) => { if (!bar.isConnected) return io.disconnect(); bar.classList.toggle('stuck', !e.isIntersecting && e.boundingClientRect.top < 0); });
+    io.observe(sentinel);
+  }
   // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
-  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab, true); } });
+  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab, true, true); } });
   view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => map?.show(b.dataset.tab)));
   const up = document.getElementById('upgrade');
   if (up) up.onclick = () => openPayment('vip');
@@ -1276,29 +1450,50 @@ function ring(label, t) {
 
 // 表格比屏幕宽时：右边缘渐隐 + 一行“左右滑动看更多”，滑过一次就不再提示
 const SCROLL_HINT = '<p class="scroll-hint" hidden>左右滑动看更多 →</p>';
+// 表格比屏幕宽时，下方右侧一对圆形左右箭头（苹果商品轮播的做法）：一次挪一个人，到头时那一侧变浅
+const CMP_NAV = () => `<div class="cmp-nav" hidden><button type="button" class="cmp-prev" aria-label="往左看" disabled>${ic('back')}</button><button type="button" class="cmp-next" aria-label="往右看，看更多人">${ic('next')}</button></div>`;
 function bindScrollHint(root = document) {
   root.querySelectorAll('.cmp-wrap').forEach((w) => {
-    const hint = w.previousElementSibling?.classList.contains('scroll-hint') ? w.previousElementSibling : null;
+    const prev = w.previousElementSibling;
+    const hint = prev?.classList.contains('scroll-hint') ? prev : prev?.querySelector(':scope > .scroll-hint') || null;
     const upd = () => {
       const more = w.scrollWidth - w.clientWidth - w.scrollLeft > 4;
       w.classList.toggle('more-r', more);
       w.classList.toggle('more-l', w.scrollLeft > 4);
     };
     const wide = w.scrollWidth > w.clientWidth + 4;
-    if (hint) hint.hidden = !wide || store.get('vier.scrolled') === '1';
-    w.addEventListener('scroll', () => { upd(); if (hint && !hint.hidden) { hint.hidden = true; store.set('vier.scrolled', '1'); } }, { passive: true });
-    upd();
+    if (hint) hint.hidden = true; // 有了左右箭头，不再显示“左右滑动看更多”这行字
+    const nav = w.nextElementSibling?.classList.contains('cmp-nav') ? w.nextElementSibling : null;
+    const prevB = nav?.querySelector('.cmp-prev'), nextB = nav?.querySelector('.cmp-next');
+    if (nav) nav.hidden = !wide;
+    const navUpd = () => {
+      if (!nav) return;
+      prevB.disabled = w.scrollLeft <= 4;
+      nextB.disabled = w.scrollWidth - w.clientWidth - w.scrollLeft <= 4;
+    };
+    // 一步 = 一个人那一列的宽度
+    const step = () => w.querySelector('thead th:last-child')?.getBoundingClientRect().width || w.clientWidth / 2;
+    if (nav) {
+      prevB.onclick = () => w.scrollBy({ left: -step(), behavior: reduceMotion() ? 'auto' : 'smooth' });
+      nextB.onclick = () => w.scrollBy({ left: step(), behavior: reduceMotion() ? 'auto' : 'smooth' });
+    }
+    w.addEventListener('scroll', () => { upd(); navUpd(); }, { passive: true });
+    upd(); navUpd();
   });
 }
 
 // 你和理想型的理想型逐条对照：每行一个条件，第一列是你；和你不一样的格子标出来
-function aCompareTable(myFacts, list, mine) {
-  const keys = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
-  const cell = (v, diff) => `<td class="${diff ? 't-diff' : ''}">${v ? esc(nice(v)) : '<span class="muted">—</span>'}</td>`;
-  return `${SCROLL_HINT}<div class="cmp-wrap"><table class="cmp cmp-a">
+function aCompareTable(myFacts, list, mine, full = false) {
+  const all = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
+  // 和结果页其他对照表一样：所有行都画出来，和你一样的行标成 same，由开关折叠；详情页（full）只有一个人，不折叠
+  const differs = (k) => list.some((a) => a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k]);
+  const sameKeys = full ? [] : all.filter((k) => !differs(k));
+  const cell = (v, diff) => `<td class="${diff ? 't-diff' : ''}"><div class="cx">${v ? esc(shortRange(nice(v))) : '<span class="muted">—</span>'}</div></td>`;
+  return `<div class="cmp-block ${S.diffOnly && !full ? 'diff-on' : ''}"><div class="cmp-tools">${SCROLL_HINT}</div><div class="cmp-wrap"><table class="cmp cmp-a">
     <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
-    <tbody>${keys.map((k) => `<tr><th scope="row"><b>${esc(lab(k))}</b></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}</tbody>
-  </table></div><p class="cmp-hint">橙色字 = 和你不一样</p>`;
+    <tbody>${all.map((k) => `<tr class="${!full && !differs(k) ? 'same' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(k))}</b></div></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}
+</tbody>
+  </table></div>${CMP_NAV()}${sameLine('和你一样', sameKeys.map((k) => lab(k)))}<p class="cmp-hint">橙色字 = 和你不一样</p></div>`;
 }
 
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
@@ -1316,8 +1511,8 @@ function renderTheirs(r, idx) {
       <h1>${nameTag(a)}</h1>
       <p class="small muted" style="margin:2px 0 0">${esc([a.facts['年龄'], a.facts['常住城市']].filter(Boolean).join(' · '))} · 第 ${idx + 1} 位</p>
     </section>
-    <p class="small muted" style="margin:14px 0 10px">用你喜欢的人的标准打分：${esc(a.name || 'TA')} ${pctQ(a.score)}，你 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。只能对照，不能牵线。</p>
-    ${aCompareTable(r.myFacts || {}, [a], r.myPlaceA?.score)}
+    <p class="small muted" style="margin:14px 0 10px">用你的理想型的标准打分：${esc(a.name || 'TA')} ${pctQ(a.score)}，你 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。只能对照，不能牵线。</p>
+    ${aCompareTable(r.myFacts || {}, [a], r.myPlaceA?.score, true)}
     <div class="stack" style="margin-top:22px"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`);
   bindBack();
   bindScrollHint();
@@ -1406,11 +1601,12 @@ function qrSvg(text) {
 function openPayment(planId) {
   const plan = S.config.plans[planId], free = S.config.plans.free;
   const providers = S.config.payments?.providers || [];
-  const m = sheet(`<div id="pay"><h2>升级 ${esc(plan.label)}</h2>
+  const m = sheet(`<div id="pay"><h2>每组多看 ${plan.matches - free.matches} 位</h2>
     <p class="price"><small>¥</small>${(plan.priceFen / 100).toFixed(2)}</p>
-    <ul class="perks"><li>${ic('check')}每组从 ${free.matches} 位增加到 ${plan.matches} 位</li><li>${ic('check')}一次付费，长期有效，不自动续费</li></ul>
-    ${providers.length ? `<div class="pay-tabs" role="tablist">${providers.map((p, i) => `<button data-p="${p.id}" class="${i ? '' : 'on'}" role="tab">${esc(p.label)}</button>`).join('')}</div>
-      <div class="qr" id="qr"><span class="spin"></span></div><p class="pay-hint" id="pay-hint">正在生成二维码…</p>`
+    <ul class="perks"><li>${ic('check')}${REL.ideal()}、${REL.theirs()}、${REL.seekers()}，每组都从 ${free.matches} 位变成 ${plan.matches} 位</li><li>${ic('check')}一次付费，长期有效，不自动续费</li><li>${ic('check')}付完马上生效，不用重新填</li></ul>
+    ${providers.length ? `<div class="stack" id="pay-pre"><button class="btn primary block" id="topay">去付款</button><button class="btn block" id="notnow">先不用</button></div>
+      <div id="pay-step" hidden><div class="pay-tabs" role="tablist">${providers.map((p, i) => `<button data-p="${p.id}" class="${i ? '' : 'on'}" role="tab">${esc(p.label)}</button>`).join('')}</div>
+      <div class="qr" id="qr"><span class="spin"></span></div><p class="pay-hint" id="pay-hint">正在生成二维码…</p></div>`
     : '<p class="err">暂时还不能在线支付。请稍后再试。</p>'}</div>`);
   let timer = null, current = null, closed = false;
   m.onclose = () => { closed = true; clearTimeout(timer); };
@@ -1454,7 +1650,11 @@ function openPayment(planId) {
   }
 
   m.el.querySelectorAll('[data-p]').forEach((a) => (a.onclick = () => start(a.dataset.p)));
-  if (providers.length) start(providers[0].id);
+  // 先看清买的是什么，点“去付款”才生成订单和二维码
+  if (providers.length) {
+    m.el.querySelector('#notnow').onclick = m.close;
+    m.el.querySelector('#topay').onclick = () => { m.el.querySelector('#pay-pre').hidden = true; m.el.querySelector('#pay-step').hidden = false; start(providers[0].id); };
+  }
 }
 
 // ---------- 手机号登录 ----------
