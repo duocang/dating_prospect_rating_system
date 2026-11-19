@@ -1,9 +1,8 @@
 /* 黑白两套：在 <head> 里同步加载，先定好颜色再画页面，避免闪一下。
-   点顶栏按钮切换并记住；没选过就跟着系统走 */
+   点顶栏按钮切换并记住；没选过一律用深色 */
 (function () {
   var KEY = 'vier-theme', root = document.documentElement;
   function saved() { try { var t = localStorage.getItem(KEY); return t === 'light' || t === 'dark' ? t : null; } catch (e) { return null; } }
-  var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
   function apply(t) {
     root.dataset.theme = t;
     var meta = document.querySelector('meta[name=theme-color]');
@@ -11,8 +10,7 @@
     var btn = document.getElementById('theme-btn');
     if (btn) btn.setAttribute('aria-label', t === 'light' ? '换成深色' : '换成浅色');
   }
-  apply(saved() || (mq && mq.matches ? 'light' : 'dark'));
-  if (mq && mq.addEventListener) mq.addEventListener('change', function (e) { if (!saved()) apply(e.matches ? 'light' : 'dark'); });
+  apply(saved() || 'dark');
   document.addEventListener('DOMContentLoaded', function () {
     var btn = document.getElementById('theme-btn');
     if (!btn) return;

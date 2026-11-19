@@ -536,6 +536,15 @@ details.pcard.fold .pcard-name span { font-size: var(--t-sub); color: var(--unk)
 .fitline .why { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; font-size: var(--t-sub); color: var(--ink-2); }
 .fitline .why .miss { color: var(--bad); }
 .fitline .why .unk { color: var(--unk); }
+.fitline > summary { list-style: none; cursor: pointer; }
+.fitline > summary::-webkit-details-marker { display: none; }
+.fitline > summary p > span { display: inline-flex; align-items: center; gap: 10px; }
+.fitline .fl-more { display: inline-flex; align-items: center; gap: 1px; font-style: normal; font-weight: 600; color: var(--brand); }
+.fitline .fl-more i { font-style: normal; }
+.fitline .fl-more i + i, .fitline[open] .fl-more i:first-child { display: none; }
+.fitline[open] .fl-more i + i { display: inline; }
+.fitline .chev .ic { width: 13px; height: 13px; }
+.fitline .checks2 { margin-top: 10px; }
 #tabpanel > .ideal-fold:first-child { margin-top: 0; }
 .pcard-head .quick { margin-left: auto; font-size: var(--t-sub); font-weight: 700; white-space: nowrap; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; }
 .pcard-head .quick .rk { font-size: var(--t-sub); color: var(--unk); font-weight: 600; }
@@ -741,12 +750,12 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 
 /* ===== 关系图：星球、光丝、镜头 ===== */
 .relmap { margin: 8px 0 0; overflow: hidden; }
-.rm-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform .75s var(--ease); }
+.rm-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform 1s cubic-bezier(.65, 0, .25, 1); }
 .rm-lines { position: absolute; left: 0; top: 0; overflow: visible; }
-.rm-lines path.show { opacity: 1; }
+.rm-lines path.show { opacity: 1; transition-delay: var(--in, 0s); }
 .rm-lines path.show.dim { opacity: .22; }
-.rm-node { position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); padding: 0; border: 0; background: none; cursor: pointer; opacity: 0; transform: scale(.4); pointer-events: none; transition: opacity .4s, transform .5s var(--ease); }
-.rm-node.show { opacity: 1; transform: scale(1); pointer-events: auto; }
+.rm-node { position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); padding: 0; border: 0; background: none; cursor: pointer; opacity: 0; transform: translate(var(--fx, 0px), var(--fy, 0px)) scale(.4); pointer-events: none; transition: opacity .4s var(--ease), transform .8s cubic-bezier(.2, .8, .2, 1); }
+.rm-node.show { opacity: 1; transform: none; pointer-events: auto; transition-delay: var(--in, 0s); }
 .rm-node.dim { opacity: .35; }
 .rm-node .dot { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; font-size: var(--t-body); transition: box-shadow .2s, transform .2s var(--ease); }
 .rm-node.k-me .dot { font-size: var(--t-2); }
@@ -766,23 +775,27 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .rm-node.focus .dot::before { transform: scale(1.1); filter: brightness(1.12); }
 .rm-node.k-person .dot::before { transform: rotate(var(--rot, 0deg)); filter: hue-rotate(var(--hue, 0deg)); }
 .rm-node.k-person.focus .dot::before { transform: rotate(var(--rot, 0deg)) scale(1.1); filter: hue-rotate(var(--hue, 0deg)) brightness(1.12); }
-.rm-node .lb-hub, .rm-node.as-hub .lb:not(.lb-hub) { display: none; }
-.rm-node.as-hub .lb-hub { display: block; }
-.rm-node.as-hub { --planet: var(--hub-planet); }
+.rm-node.show.at-hub { transform: translate(var(--mx), var(--my)); transition: opacity .4s var(--ease), transform 1s cubic-bezier(.65, 0, .25, 1); }
+.rm-node.split:not(.show) { transform: scale(1.15); transition: opacity .6s var(--ease) .2s, transform .9s var(--ease); }
 .rm-node.lb-up .lb { top: auto; bottom: calc(100% + 8px / var(--sc, 1)); }
 .rm-node.k-person .lb .fit { color: var(--gold); box-shadow: none; background: none; padding: 0; }
 .rm-node:active .dot::before { transform: scale(.94); }
-.rm-note { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; margin: 4px 0 0; text-align: center; color: var(--ink-2); }
-.rm-lines path.spark { stroke: #FFF7EA; stroke-width: 2.6; stroke-dasharray: 6 600; stroke-dashoffset: 602; filter: drop-shadow(0 0 4px rgba(255, 226, 184, .95)); animation: rm-flow 4.2s linear infinite; }
-.rm-lines path { fill: none; opacity: 0; transition: opacity .5s; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 4px rgba(255, 210, 150, .75)) drop-shadow(0 0 1px rgba(255, 245, 230, .9)); stroke: rgba(255, 236, 208, .95); }
-.rm-lines .z-halo { stroke: none; filter: blur(5px); }
-.rm-lines .z-body { stroke: none; filter: blur(.5px) drop-shadow(0 0 2px rgba(255, 220, 170, .9)); }
+.rm-note { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 12px; min-height: 48px; margin: 4px 0 0; text-align: center; color: var(--ink-2); }
+.rm-more { border: 0; background: none; padding: 10px 4px; min-height: 44px; font: inherit; color: var(--brand); cursor: pointer; white-space: nowrap; }
+.tabs .tl { margin-left: 1px; font-weight: 700; font-size: .76em; opacity: .7; }
+.tabs-bar .tabs button { padding: 0 1px; gap: 3px; font-size: clamp(12px, 3.5vw, 17px); }
+.tabs button.ping { animation: tab-ping 1.1s var(--ease); }
+@keyframes tab-ping { 0% { background: color-mix(in srgb, currentColor 16%, transparent); } 100% { background: transparent; } }
+.rm-lines path.spark { stroke: #FFF7EA; stroke-width: 2.6; stroke-dasharray: 6 600; stroke-dashoffset: 602; filter: var(--f-spark); animation: rm-flow 4.2s linear infinite; }
+.rm-lines path { fill: none; opacity: 0; transition: opacity .5s; stroke-width: 1.5; stroke-linecap: round; filter: var(--f-line); stroke: rgba(255, 236, 208, .95); }
+.rm-lines .z-halo { stroke: none; filter: var(--f-halo); }
+.rm-lines .z-body { stroke: none; filter: var(--f-body); }
 .rm-lines path.z { stroke-width: 1.1; filter: none; }
-.rm-lines .rim-glow { fill: none; stroke-width: 9; stroke-linecap: round; filter: blur(4px); }
+.rm-lines .rim-glow { fill: none; stroke-width: 9; stroke-linecap: round; filter: var(--f-rim); }
 .rm-lines .rim-core { fill: none; stroke-width: 2.2; stroke-linecap: round; filter: none; }
 .rm-lines .rim { transition: transform .4s var(--ease); }
 .rm-lines .rim.big { transform: scale(1.1); }
-.rm-lines .rim-flow { fill: none; stroke: #FFF8EE; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 14 200; filter: drop-shadow(0 0 3px rgba(255, 224, 176, .95)); animation: rim-flow 3.6s ease-out infinite; }
+.rm-lines .rim-flow { fill: none; stroke: #FFF8EE; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 14 200; filter: var(--f-flow); animation: rim-flow 3.6s ease-out infinite; }
 .rm-lines .rim-flow:not(.show) { display: none; }
 .rm-view { position: relative; overflow: hidden; touch-action: auto; cursor: grab; user-select: none; height: clamp(380px, 112vw, 540px); }
 .rm-node .lb { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; text-shadow: 0 1px 6px #000; top: calc(100% + 8px / var(--sc, 1)); font-size: calc(var(--t-callout) / var(--sc, 1)); font-weight: 600; line-height: 1.3; color: var(--ink); letter-spacing: .02em; }
@@ -791,10 +804,14 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .rm-node .lb .fit { position: static; transform: none; display: inline-block; margin-left: .4em; padding: 0 .45em; vertical-align: .08em; font-size: 1em; font-weight: 500; line-height: 1.5; }
 .rm-node .lb b { margin-right: .35em; font-family: var(--sans); font-size: 1em; font-weight: 700; }
 .rm-node.k-group.g-ideal[data-id] .dot, .rm-node.k-group.g-theirs[data-id] .dot { box-shadow: 0 0 4px rgba(150, 205, 255, .4), 0 0 14px rgba(120, 190, 255, .26), 0 0 30px rgba(110, 180, 255, .14); }
-.rm-lines .rim-flow.cold { stroke: #F0F8FF; filter: drop-shadow(0 0 3px rgba(130, 195, 255, .95)); }
-.relmap.eclipse .rm-node .dot::before { filter: brightness(0) !important; }
-.relmap.eclipse .rm-node .dot { box-shadow: 0 0 0 1px rgba(255, 255, 255, .06), 0 0 6px rgba(255, 236, 210, .28), 0 0 18px rgba(255, 220, 180, .16), 0 0 36px rgba(255, 210, 170, .08) !important; }
-.relmap.eclipse .rm-node.g-ideal .dot, .relmap.eclipse .rm-node.g-theirs .dot { box-shadow: 0 0 0 1px rgba(255, 255, 255, .06), 0 0 6px rgba(170, 215, 255, .32), 0 0 18px rgba(130, 195, 255, .18), 0 0 36px rgba(110, 180, 255, .09) !important; }
+.rm-lines .rim-flow.cold { stroke: #F0F8FF; filter: var(--f-flowc); }
+.relmap.still .rm-view, .relmap.still .rm-node { cursor: default; }
+/* 日食图里被选中的星球不放大：外圈光环不跟着变，放大的边缘光会和它错开一圈 */
+.relmap.eclipse .rm-lines .rim.big { transform: none; }
+.relmap.eclipse .rm-node.focus .dot::before { transform: none; filter: brightness(0) !important; }
+.relmap.eclipse .rm-node .dot::before { filter: brightness(0) !important; scale: .9; }
+.relmap.eclipse .rm-node .dot { box-shadow: inset 0 0 0 1px rgba(255, 244, 228, .5), inset 0 0 7px rgba(255, 226, 190, .55), 0 0 0 1px rgba(255, 255, 255, .06), 0 0 6px rgba(255, 236, 210, .28), 0 0 18px rgba(255, 220, 180, .16), 0 0 36px rgba(255, 210, 170, .08) !important; }
+.relmap.eclipse .rm-node.g-ideal .dot, .relmap.eclipse .rm-node.g-theirs .dot { box-shadow: inset 0 0 0 1px rgba(236, 246, 255, .5), inset 0 0 7px rgba(150, 205, 255, .55), 0 0 0 1px rgba(255, 255, 255, .06), 0 0 6px rgba(170, 215, 255, .32), 0 0 18px rgba(130, 195, 255, .18), 0 0 36px rgba(110, 180, 255, .09) !important; }
 [data-theme="light"] .ap-hero, [data-theme="light"] .res-head, [data-theme="light"] .relmap { --eyebrow: #FF8A3D; --bg: #000000; --surface: #1C1C1E; --surface-2: #2C2C2E; --ink: #F5F5F7; --ink-2: #A1A1A6; --line: #38383A; --brand-ink: #000000; --gold: #D2A796; --good: #A9CFB6; --bad: #E39A92; --unk: #9A9AA0; --g-ideal: #7FD3E6; --g-seekers: #D2A796; --g-theirs: #C2D2E6; color: var(--ink); background: #000; --brand: #2997FF; }
 
 /* ===== 人选详情：逐条对照、圆环、牵线 ===== */
@@ -940,6 +957,20 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .screen { animation: in-fwd .38s var(--ease) both; animation-duration: .5s; animation-timing-function: var(--ease-out); }
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
 ::view-transition-new(root) { animation: theme-wipe .7s var(--ease-a); }
+/* 从星图点一个人进详情：那颗星球飞到详情页顶上，其余部分柔和地换过去（不用换主题时的圆形铺开） */
+html.vt-pick::view-transition-new(root) { animation: vt-fade-in .45s var(--ease) both; }
+html.vt-pick::view-transition-old(root) { animation: vt-fade-out .3s var(--ease) both; }
+html.vt-pick::view-transition-group(pick) { animation-duration: .6s; animation-timing-function: cubic-bezier(.65, 0, .25, 1); }
+html.vt-pick .screen { animation: none; }
+@keyframes vt-fade-in { from { opacity: 0; transform: translateY(12px); } }
+@keyframes vt-fade-out { to { opacity: 0; } }
+.spec { margin: 18px 0 0; padding: 4px 18px; border-radius: var(--card-r); background: var(--surface); }
+.spec div { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: var(--t-callout); }
+.spec div:last-child { border-bottom: 0; }
+.spec dt { color: var(--ink-2); flex: none; }
+.spec dd { margin: 0; color: var(--ink); text-align: right; }
+.pick-orb { position: relative; display: block; width: 76px; height: 76px; margin: 4px auto 14px; border-radius: 50%; view-transition-name: pick; box-shadow: 0 0 6px rgba(255, 236, 210, .25), 0 0 22px rgba(255, 220, 180, .14); }
+.pick-orb::before { content: ""; position: absolute; inset: -25%; background: var(--planet) center / 100% 100% no-repeat; -webkit-mask: radial-gradient(closest-side, #000 65.5%, transparent 67%); mask: radial-gradient(closest-side, #000 65.5%, transparent 67%); transform: rotate(var(--rot, 0deg)); filter: hue-rotate(var(--hue, 0deg)); }
 @keyframes theme-wipe { from { clip-path: circle(0 at var(--vt-x, 100%) var(--vt-y, 0)); } to { clip-path: circle(var(--vt-r, 150vmax) at var(--vt-x, 100%) var(--vt-y, 0)); } }
 @keyframes swap-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {

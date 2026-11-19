@@ -2,9 +2,9 @@
 // 首页用示例人物（EXAMPLE），结果页用真实结果拼出来的树。
 // 节点：{ id, kind: me|group|person|theirs, label, short?, fit?, note?, href?, tab?, kids? }
 export const EXAMPLE = {
-  id: 'me', kind: 'me', label: '你',
+  id: 'me', kind: 'me', label: '你', short: 'C',
   kids: [
-    { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你的理想型', hub: { label: '你', planet: 'planet-c', note: '离你越近，越符合你的要求' },
+    { id: 'ideal', kind: 'group', label: '你的理想型', short: 'B', note: 'B · 你的理想型', hub: { label: '你', planet: 'planet-c', at: 'me', note: '离你越近，越符合你的要求' },
       kids: [
         { id: 'p1', kind: 'person', label: '晴川', pct: 98, note: '再点一下，看他想找谁', kids: [{ id: 'p1i', kind: 'theirs', label: '他想找的', fit: '你 4/5', note: '你符合他 4 条，差 1 条' }] },
         { id: 'p2', kind: 'person', label: '远山', pct: 91, note: '再点一下，看他想找谁', kids: [{ id: 'p2i', kind: 'theirs', label: '他想找的', fit: '你 5/5', note: '你也全符合：两边都对得上' }] },
@@ -12,7 +12,7 @@ export const EXAMPLE = {
         { id: 'p4', kind: 'person', label: '映雪', pct: 76, note: '符合你 76% 的要求' },
         { id: 'p5', kind: 'person', label: '星野', pct: 69, note: '符合你 69% 的要求' },
       ] },
-    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 想找你这样的人', hub: { label: '你', planet: 'planet-c', note: '离你越近，你越符合他们的要求' },
+    { id: 'seekers', kind: 'group', label: '想找你这样的人', short: 'D', note: 'D · 想找你这样的人', hub: { label: '你', planet: 'planet-c', at: 'me', note: '离你越近，你越符合他们的要求' },
       kids: [
         { id: 's1', kind: 'person', label: '青禾', pct: 100, note: '你符合他全部要求' },
         { id: 's2', kind: 'person', label: '白石', pct: 92, note: '你符合他大部分要求' },
@@ -30,7 +30,8 @@ export const EXAMPLE = {
 const SIZE = { me: 84, group: 70, person: 50, theirs: 50 };
 // Z 字完全照 logo：A 理想型的理想型（左上）、B 你的理想型（右，稍低）、C 你（左，再低）、D 想找你这样的人（右下）
 // 下面的数字都是从 logo 原图（1254×1254）里量出来的：四颗星的圆心和半径、三条光丝的贝塞尔曲线
-const LOGO_C = 627, ZK = 0.42;
+let filterN = 0; // 每张图的滤镜 id 各不相同
+const LOGO_C = 627, ZK = 0.42, BODY = 1; // BODY：四颗主星比 logo 原比例略小一点，留出光丝
 const STAR = { theirs: [362.2, 276.6, 107.9], ideal: [859.9, 472.5, 111.5], me: [399.3, 756, 109.2], seekers: [855.8, 948.2, 114.2] };
 // 换成蓝色的星球（A 冰月、B 极光）：它们的边缘光、光丝那一头用冷光
 const COLD = new Set(['theirs', 'ideal']);
@@ -61,7 +62,7 @@ function ribbon(c, k = 1, add = 0) {
 // 星球边上的光：从接触点沿边缘向两侧各走约 40°，越远越暗（原图里亮度在 15°~20° 内降一半）
 function rimArcs(key, pt, id, tag) {
   const star = STAR[key], [cx, cy] = L2P(star);
-  return rimAt(key, cx, cy, star[2] * ZK, COLD.has(key), pt, id, tag); // A、B 是蓝色星球：边缘用冷光；“你”和 D 保持暖光
+  return rimAt(key, cx, cy, star[2] * ZK * BODY, COLD.has(key), pt, id, tag); // A、B 是蓝色星球：边缘用冷光；“你”和 D 保持暖光
 }
 function rimAt(key, cx, cy, R, cold, pt, id, tag, span = 1) {
   const a0 = Math.atan2(pt[1] - cy, pt[0] - cx);
@@ -77,7 +78,7 @@ function rimAt(key, cx, cy, R, cold, pt, id, tag, span = 1) {
 }
 // 轨道按名次排：最合适的在最里圈，往外一圈一个分数档；同分同一圈。实际分数写在名字旁边
 // （名单里的人分数常常挤在 95~100，按分数直接换算半径会叠成一圈）
-const ORBIT0 = 138, ORBIT_GAP = 30;
+const ORBIT0 = 132, ORBIT_GAP = 42;
 // 每个人一颗自己的星球：贴图、色相、转角都由 id 算出来，同一个人永远是同一颗；不和所在组、轨道中心撞同一张图
 const TEX = ['blue-a', 'blue-b', 'planet-a', 'planet-b', 'planet-d'];
 const GROUP_TEX = { theirs: ['blue-a', 'blue-b'], ideal: ['blue-b'], seekers: ['planet-d'] }; // A 组的轨道中心是 B 的星球，也避开
@@ -86,7 +87,7 @@ function planetPick(id, group) {
   const h = hashOf(id), pool = TEX.filter((t) => !(GROUP_TEX[group] || []).includes(t));
   return { tex: pool[h % pool.length], hue: ((h >>> 8) % 70) - 35, rot: (h >>> 16) % 360 };
 }
-function planetOf(id, group) {
+export function planetOf(id, group) {
   const { tex, hue, rot } = planetPick(id, group);
   return `--planet:url(/brand/${tex}.jpg);--hue:${hue}deg;--rot:${rot}deg`;
 }
@@ -97,26 +98,26 @@ function layout(n, x, y, dir, parent, depth, out) {
   out[n.id] = { n, x, y, parent };
   const k = n.kids || [];
   if (depth === 0) { // 根“你”是 logo 里左边第二颗星，三组按 logo 的位置和大小放
-    [x, y] = L2P(STAR.me); Object.assign(out[n.id], { x, y, d: STAR.me[2] * 2 * ZK });
+    [x, y] = L2P(STAR.me); Object.assign(out[n.id], { x, y, d: STAR.me[2] * 2 * ZK * BODY });
     k.forEach((c) => {
       const st = STAR[c.id] || [LOGO_C, LOGO_C, 0];
       const [cx, cy] = L2P(st);
       layout(c, cx, cy, Math.atan2(cy, cx), n.id, 1, out);
-      if (st[2]) out[c.id].d = st[2] * 2 * ZK;
+      if (st[2]) out[c.id].d = st[2] * 2 * ZK * BODY;
       if (c.id === 'theirs' && k.some((o) => o.id === 'ideal')) out[c.id].linkFrom = 'ideal'; // B → A
     });
     return out;
   }
   // 每个人都带“合适程度”（pct）时，围着中心散开、各连一条光丝：越合适离中心越近（同分同远）
-  // 方向按名次均匀错开，竖向拉长一点，把手机上竖长的展台铺满
+  // 方向按名次均匀错开；不做竖向拉伸，免得上下的人看着比左右的远，读错远近
   if (k.length && k.every((c) => typeof c.pct === 'number')) {
     out[n.id].orbits = true;
     const tiers = [...new Set(k.map((c) => c.pct))].sort((a, b) => b - a), lo = tiers[tiers.length - 1], hi = tiers[0];
     k.forEach((c, i) => {
       const R = ORBIT0 + tiers.indexOf(c.pct) * ORBIT_GAP, a = -Math.PI / 2 + (i / k.length) * Math.PI * 2 + (i % 2 ? 0.22 : -0.1);
-      layout(c, x + Math.cos(a) * R, y + Math.sin(a) * R * 1.3, a, n.id, depth + 1, out);
+      layout(c, x + Math.cos(a) * R, y + Math.sin(a) * R, a, n.id, depth + 1, out);
       out[c.id].orbit = R;
-      out[c.id].d = Math.round(40 + 24 * (hi > lo ? (c.pct - lo) / (hi - lo) : 1)); // 越合适，星球越大（组内 40~64）
+      out[c.id].d = Math.round(34 + 38 * (hi > lo ? (c.pct - lo) / (hi - lo) : 1)); // 越合适，星球越大（组内 34~72）
       out[c.id].up = Math.sin(a) < -0.3; // 上半圈的人：名字写在星球上面，朝外，不压中间的组星
     });
     return out;
@@ -131,10 +132,10 @@ function layout(n, x, y, dir, parent, depth, out) {
 }
 const under = (P, id, root) => { for (let p = id; p; p = P[p].parent) if (p === root) return true; return false; };
 
-// maxH：总览时展台最高多少（默认 540）；hug：展台宽度贴着星球收窄（首页小图用）
+// maxH：总览时展台最高多少（默认 540）；still：只看不能点；hug：展台宽度贴着星球收窄（首页小图用）
 // 挂在 window 上的监听（拖动、窗口大小），每张图一组；画新图时，把已经离开页面的旧图那组一起撤掉，不越积越多
 const alive = new Set();
-export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = null, maxH = 540, hug = false } = {}) {
+export function relMap(el, tree, { esc = (s) => s, onFocus = null, onList = null, onOpen = null, initial = null, maxH = 540, hug = false, still = false } = {}) {
   for (const x of alive) if (!x.el.isConnected) { x.ac.abort(); alive.delete(x); }
   const ac = new AbortController(), sig = { signal: ac.signal };
   alive.add({ el, ac });
@@ -143,6 +144,8 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   let focus = tree.id;
   el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
   const stage = el.querySelector('.rm-stage'), svg = el.querySelector('svg'), note = el.querySelector('.rm-note'), viewEl = el.querySelector('.rm-view');
+  // still：只是展示（第一次来的首页），点、拖、键盘都不响应
+  if (still) { viewEl.inert = true; el.classList.add('still'); }
   // 每个圆属于哪一组（A/B/D），星球按组上色
   let sparkN = 0;
   const groupOf = (id) => { let g = id; while (P[g]?.parent && P[g].parent !== tree.id) g = P[g].parent; return g; };
@@ -173,9 +176,9 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   };
   for (const { n, x, y, parent, linkFrom, d: dz, up } of Object.values(P)) {
     const d = dz || SIZE[n.kind], fit = n.fit || (typeof n.pct === 'number' ? `${n.pct}%` : '');
-    stage.insertAdjacentHTML('beforeend', `<button type="button" class="rm-node k-${n.kind} g-${esc(groupOf(n.id))}${up ? ' lb-up' : ''}" data-id="${esc(n.id)}" style="left:${x}px;top:${y}px;--d:${d}px${n.kind === 'person' ? `;${planetOf(n.id, groupOf(n.id))}` : ''}${n.hub ? `;--hub-planet:url(/brand/${esc(n.hub.planet)}.jpg)` : ''}">
+    stage.insertAdjacentHTML('beforeend', `<button type="button" class="rm-node k-${n.kind} g-${esc(groupOf(n.id))}${up ? ' lb-up' : ''}" data-id="${esc(n.id)}" style="left:${x}px;top:${y}px;--d:${d}px${parent && P[parent].orbits ? `;--fx:${(P[parent].x - x).toFixed(1)}px;--fy:${(P[parent].y - y).toFixed(1)}px` : ''}${n.kind === 'person' ? `;${planetOf(n.id, groupOf(n.id))}` : ''}">
       <span class="dot" aria-hidden="true"></span>
-      <span class="lb">${n.short ? `<b>${esc(n.short)}</b>` : ''}${esc(n.label)}${n.seal ? '<i class="seal">代号</i>' : ''}${fit ? `<span class="fit">${esc(fit)}</span>` : ''}</span>${n.hub ? `<span class="lb lb-hub">${esc(n.hub.label)}</span>` : ''}</button>`);
+      <span class="lb">${n.short ? `<b>${esc(n.short)}</b>` : ''}${esc(n.label)}${n.seal ? '<i class="seal">代号</i>' : ''}${fit ? `<span class="fit">${esc(fit)}</span>` : ''}</span></button>`);
     if (parent && P[parent].orbits) svg.insertAdjacentHTML('beforeend', personThread(P[parent], P[n.id], n.id === 'seekers' || groupOf(n.id) === 'seekers'));
     else if (parent) {
       const p = P[linkFrom || parent];
@@ -185,7 +188,10 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       let d, coreStyle = '';
       if (z && ZLINE[n.id]) {
         // 照 logo 原图的光丝：外面一层宽而柔的光晕，里面是喇叭形的光带（两端宽、中间细），正中一根细亮线
-        const cs = ZLINE[n.id].map(L2P), [a, b, c, e] = cs, id = esc(n.id), [s0, s1] = ZEND[n.id];
+        const [s0, s1] = ZEND[n.id], id = esc(n.id);
+        // 星球缩了 BODY，光丝两端跟着往圆心收，仍然贴在边上
+        const pull = (pt, key) => { const [cx, cy] = STAR[key]; return L2P([cx + (pt[0] - cx) * BODY, cy + (pt[1] - cy) * BODY]); };
+        const src = ZLINE[n.id], cs = [pull(src[0], s0), L2P(src[1]), L2P(src[2]), pull(src[3], s1)], [a, b, c, e] = cs;
         d = `M${a[0]} ${a[1]} C ${b[0]} ${b[1]}, ${c[0]} ${c[1]}, ${e[0]} ${e[1]}`;
         // 光丝颜色跟着两头的星球走：暖星（你、D）一端是暖光，冷星（A、B）一端是冷光，中间顺着光丝慢慢过渡
         const grad = (tag, warm, cold, op) => {
@@ -195,7 +201,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
         const mixed = COLD.has(s0) !== COLD.has(s1);
         svg.insertAdjacentHTML('beforeend', `${grad('zh', '#FFD29A', '#78BEFF', 0.5)}${grad('zb', '#FFF4E2', '#EAF6FF', 0.95)}${grad('zc', '#FFFBF4', '#F2F9FF', 0.95)}
           <path data-to="${id}" class="z-halo" style="fill:url(#rm-zh-${id})" d="${ribbon(cs, 1.35, 10)}"/>
-          <path data-to="${id}" class="z-body" style="fill:url(#rm-zb-${id})${mixed ? ';filter:blur(.5px) drop-shadow(0 0 2px rgba(236, 232, 240, .75))' : ''}" d="${ribbon(cs, 0.42, 0.6)}"/>
+          <path data-to="${id}" class="z-body" style="fill:url(#rm-zb-${id})${mixed ? ';filter:var(--f-bodym)' : ''}" d="${ribbon(cs, 0.42, 0.6)}"/>
           ${rimArcs(s0, a, id, 'a')}${rimArcs(s1, e, id, 'b')}`);
         coreStyle = ` style="stroke:url(#rm-zc-${id})"`;
       } else {
@@ -206,6 +212,27 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       // Z 字主线上加一个沿着关系方向流动的光点（你 → B → A，D → 你）
       if (z) svg.insertAdjacentHTML('beforeend', `<path data-to="${esc(n.id)}" class="spark" style="animation-delay:${(sparkN++ * 1.4).toFixed(1)}s" d="${d}"/>`);
     }
+  }
+  // 光晕、柔边用 SVG 自己的 <filter>：iOS（Safari、微信）不认 SVG 里元素上的 CSS blur()/drop-shadow()，
+  // 会把光晕画成一整块实心光带。滤镜范围只框住这张图，免得手机上每条光丝开一块大缓冲
+  {
+    const all = Object.values(P), pad = 80;
+    const fx = Math.min(...all.map((p) => p.x - (p.d || 84))) - pad, fy = Math.min(...all.map((p) => p.y - (p.d || 84))) - pad;
+    const fw = Math.max(...all.map((p) => p.x + (p.d || 84))) + pad - fx, fh = Math.max(...all.map((p) => p.y + (p.d || 84))) + pad - fy;
+    const uid = ++filterN, box = `filterUnits="userSpaceOnUse" x="${fx.toFixed(0)}" y="${fy.toFixed(0)}" width="${fw.toFixed(0)}" height="${fh.toFixed(0)}" color-interpolation-filters="sRGB"`;
+    const shadow = (sd, c, o) => `<feDropShadow dx="0" dy="0" stdDeviation="${sd}" flood-color="${c}" flood-opacity="${o}"/>`;
+    const F = {
+      halo: '<feGaussianBlur stdDeviation="5"/>',
+      body: `<feGaussianBlur stdDeviation=".5"/>${shadow(1, '#FFDCAA', 0.9)}`,
+      bodym: `<feGaussianBlur stdDeviation=".5"/>${shadow(1, '#ECE8F0', 0.75)}`,
+      rim: '<feGaussianBlur stdDeviation="4"/>',
+      line: `${shadow(2, '#FFD296', 0.75)}${shadow(0.5, '#FFF5E6', 0.9)}`,
+      spark: shadow(2, '#FFE2B8', 0.95),
+      flow: shadow(1.5, '#FFE0B0', 0.95),
+      flowc: shadow(1.5, '#82C3FF', 0.95),
+    };
+    svg.insertAdjacentHTML('afterbegin', `<defs>${Object.entries(F).map(([k, v]) => `<filter id="rm-f-${k}-${uid}" ${box}>${v}</filter>`).join('')}</defs>`);
+    for (const k in F) svg.style.setProperty(`--f-${k}`, `url(#rm-f-${k}-${uid})`);
   }
   // 拖动：镜头中心只能在当前看得见的圆的范围里移动，拖不到空白处
   let cam = { cx: 0, cy: 0, sc: 1 };
@@ -236,22 +263,37 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   // 拖完松手不算点击
   viewEl.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); moved = false; } }, true);
   const visible = (id) => { const p = P[id].parent; return p === null || (open.has(p) && visible(p)); };
+  let inT = 0, drawn = false;
   const draw = () => {
     // 打开一组的轨道时，只留这一组：其他星球和 Z 字光丝都先收起来，轨道单独占满画面
     // 点了轨道上的某个人：轨道照样整圈留着，只高亮这个人
     const hub = P[focus].orbits && open.has(focus) ? focus : P[P[focus].parent]?.orbits ? P[focus].parent : null;
     const orbitView = !!hub;
-    const away = (id) => orbitView && id !== hub && !under(P, id, hub);
+    // 中心是“拿谁来比”：那颗星球（你，或 A 组里的理想型）走到这一组的位置上站着，这一组散成一个个人
+    const stand = hub && P[P[hub].n.hub?.at] ? P[hub].n.hub.at : null;
+    const away = (id) => orbitView && id !== hub && id !== stand && !under(P, id, hub);
+    // 进场编排：先收起别的，再按名次一个个从中心流出去（每个人和他的光丝各自晚一点点）
+    const order = orbitView ? P[hub].n.kids.map((k) => k.id) : [];
+    const stagger = (id, t) => {
+      stage.querySelector(`.rm-node[data-id="${CSS.escape(id)}"]`)?.style.setProperty('--in', `${t}s`);
+      svg.querySelectorAll(`[data-to="${CSS.escape(id)}"]`).forEach((l) => l.style.setProperty("--in", `${t + 0.4}s`));
+    };
     stage.querySelectorAll('.rm-node').forEach((b) => {
-      const id = b.dataset.id;
-      b.classList.toggle('show', visible(id) && !away(id));
+      const id = b.dataset.id, was = b.classList.contains('show');
+      b.classList.toggle('show', visible(id) && !away(id) && !(stand && id === hub));
+      b.classList.toggle('split', !!stand && id === hub);
+      b.classList.toggle('at-hub', id === stand);
+      if (id === stand) { b.style.setProperty('--mx', `${P[hub].x - P[id].x}px`); b.style.setProperty('--my', `${P[hub].y - P[id].y}px`); }
+      if (!was && b.classList.contains('show') && drawn) { const i = order.indexOf(id); stagger(id, i < 0 ? 0.2 : 0.38 + i * 0.07); }
       b.classList.toggle('focus', id === focus);
       // 轨道中心代表“拿谁来比”：B、D 组比的是你，中心换成你的星球；A 组比的是你的理想型
-      b.classList.toggle('as-hub', id === hub && !!P[id].n.hub);
-      b.classList.toggle('dim', focus !== tree.id && !(P[focus].n.kind === 'group' && !(P[focus].n.kids || []).length) && visible(id) && !away(id) && !under(P, id, focus) && !under(P, focus, id));
+      b.classList.toggle('dim', focus !== tree.id && !(P[focus].n.kind === 'group' && !(P[focus].n.kids || []).length) && id !== stand && visible(id) && !away(id) && !under(P, id, focus) && !under(P, focus, id));
     });
-    svg.querySelectorAll('[data-to]').forEach((l) => { const to = l.dataset.to; l.classList.toggle('show', visible(to) && !away(to) && to !== hub); l.classList.toggle('dim', !!stage.querySelector(`.rm-node.dim[data-id="${CSS.escape(to)}"]`)); });
+    svg.querySelectorAll('[data-to]').forEach((l) => { const to = l.dataset.to; l.classList.toggle('show', visible(to) && !away(to) && to !== hub && to !== stand); l.classList.toggle('dim', !!stage.querySelector(`.rm-node.dim[data-id="${CSS.escape(to)}"]`)); });
     svg.querySelectorAll('.rim').forEach((g) => g.classList.toggle('big', g.dataset.star === focus));
+    // 进场完了把延迟清掉，之后点人、变暗都即时响应
+    clearTimeout(inT); inT = setTimeout(() => el.querySelectorAll('[style*="--in"]').forEach((e) => e.style.removeProperty('--in')), 1600);
+    drawn = true;
     let W = hug ? el.parentElement.clientWidth : viewEl.clientWidth, H = viewEl.clientHeight;
     const ids = orbitView ? [hub, ...P[hub].n.kids.map((k) => k.id), ...(focus !== hub && open.has(focus) ? (P[focus].n.kids || []).map((k) => k.id) : [])]
       : [focus, P[focus].parent, ...(open.has(focus) ? (P[focus].n.kids || []).map((k) => k.id) : [])].filter(Boolean);
@@ -280,7 +322,8 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
     cam = { cx: (l + r) / 2 / sc, cy: (y0 + y1) / 2 + LABEL_H / 2 / sc, sc };
     place();
     const f = P[focus].n, said = focus === hub && f.hub?.note ? `${f.short ? `${f.short} · ` : ''}${f.hub.note}` : f.note;
-    note.innerHTML = `<span>${esc(said || '')}</span>${f.href ? `<a class="btn primary sm" href="${esc(f.href)}">看详细</a>` : ''}`;
+    const more = focus === hub && f.count && onList ? `<button type="button" class="rm-more">${f.count > (f.kids || []).length ? `看全部 ${f.count} 位` : '看名单'}<span aria-hidden="true"> ↓</span></button>` : '';
+    note.innerHTML = `<span>${esc(said || '')}</span>${f.href ? `<a class="btn primary sm" href="${esc(f.href)}">看详细</a>` : more}`;
     onFocus?.(f);
   };
   const select = (id) => {
@@ -293,9 +336,19 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
       if (n.kids?.length) open.add(id);
       focus = id;
     }
+    // 离开一组的轨道（比如点了中心的“你”回总览），这一组的人跟着收起，不留在总览图上
+    for (const o of [...open]) if (P[o].orbits && o !== focus && !under(P, focus, o)) for (const k of Object.keys(P)) if (under(P, k, o)) open.delete(k);
     draw();
   };
-  stage.addEventListener('click', (e) => { const b = e.target.closest('.rm-node'); if (b) select(b.dataset.id); });
+  stage.addEventListener('click', (e) => {
+    const b = e.target.closest('.rm-node');
+    if (!b) return;
+    // 一个具体的人（没有下一层）：点了直接去他的详情，不在图上多停一步
+    const n = P[b.dataset.id].n;
+    if (n.kind === 'person' && n.href && !(n.kids || []).length) { if (onOpen) onOpen(n, b); else location.hash = n.href; return; }
+    select(b.dataset.id);
+  });
+  note.addEventListener('click', (e) => { if (e.target.closest('.rm-more')) onList?.(P[focus].n); });
   if (initial && P[initial]) { open.add(initial); focus = initial; }
   requestAnimationFrame(draw);
   // 窗口大小变化：每帧最多重画一次；图已离开页面就撤掉全部监听

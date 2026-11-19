@@ -5,7 +5,7 @@ const S = { view: 'cards', config: null, F: null, me: null, results: null, pDraf
 let dir = 'fwd';
 // 每次换页编一个号；异步等数据的页面回来时号码已经不是最新，说明用户已经去了别处，就不再画（不把人拉回去）
 let routeGen = 0;
-import { relMap, EXAMPLE } from './relmap.js';
+import { relMap, EXAMPLE, planetOf } from './relmap.js';
 
 // ---------- 基础工具 ----------
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -405,7 +405,7 @@ async function renderHome() {
       done: `${brokerNotice()}<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
-    if (st === 'new') { paintIntroHome(); relMap(document.getElementById('relmap'), EXAMPLE, { esc }); return; }
+    if (st === 'new') { paintIntroHome(); relMap(document.getElementById('relmap'), EXAMPLE, { esc, still: true }); return; }
     if (st === 'done') {
       paint(`<section class="hero home-back">
         <div class="home-stage">
@@ -1116,14 +1116,17 @@ function tally(items) {
   return { met: n['t-good'], near: n['t-warn'], no: n['t-bad'], unk: n['t-unk'], total: (items || []).length };
 }
 // 例：“他的 6 条要求，你符合 4 条（1 条差一点，1 条没填）”
-function fitLine(owner, subject, items) {
+function fitLine(owner, subject, items, plain = false) {
   if (!items?.length) return '';
   const t = tally(items);
   const names = (tone) => items.filter((it) => toneOf(it) === tone).map((it) => esc(lab(it.label))).join('、');
   const miss = [t.no && `<span class="miss">没对上：${names('t-bad')}</span>`, t.near && `<span class="near">差一点：${names('t-warn')}</span>`, t.unk && `<span class="unk">没填：${names('t-unk')}</span>`].filter(Boolean).join('');
   const pct = Math.round((t.met / t.total) * 100);
-  return `<div class="fitline"><p><span>${subject === '你' ? `你符合${owner}` : `${subject}符合你`}</span><b>${t.met}<small>/${t.total}</small></b></p>
-    <i class="bar"><b style="width:${pct}%"></b></i>${miss ? `<div class="why">${miss}</div>` : ''}</div>`;
+  // 点开看逐条：每条要求是什么、对方实际是什么（和详情页同一套）
+  const head = `<p><span>${subject === '你' ? `你符合${owner}` : `${subject}符合你`}${plain ? '' : `<em class="fl-more"><i>明细</i><i>收起</i><span class="chev">${ic('next')}</span></em>`}</span><b>${t.met}<small>/${t.total}</small></b></p>
+    <i class="bar"><b style="width:${pct}%"></b></i>${miss ? `<div class="why">${miss}</div>` : ''}`;
+  if (plain) return `<div class="fitline">${head}</div>`; // 详情页下面另有逐条，不重复
+  return `<details class="fitline"><summary>${head}</summary>${checks(items, `${owner}要`, `${subject}是`)}</details>`;
 }
 
 // 我自己（用户本人）的人称：女生是“她”，男生是“他”
@@ -1258,18 +1261,18 @@ function resultTree(r) {
     return { id: `${tab}-${i}`, kind: 'person', label: name, pct, href: `#/match/${i}${sfx}`, note: `${name} · ${line(pct)}` };
   });
   // hub：轨道中心代表拿谁来比——B、D 比的是你，A 比的是你的理想型
-  const ME = { label: '你', planet: 'planet-c' };
+  const ME = { label: '你', planet: 'planet-c', at: 'me' }; // at：中心由哪颗星球走过来站着
   const HUB = {
     ideal: { ...ME, note: '离你越近，越符合你的要求' },
     seekers: { ...ME, note: `离你越近，你越符合${t}们的要求` },
-    theirs: { label: '你的理想型', planet: 'blue-b', note: '越近，越符合你理想型的要求' },
+    theirs: { label: '你的理想型', planet: 'blue-b', at: 'ideal', note: '越近，越符合你理想型的要求' },
   };
-  const group = (id, tab, list, note, kids) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab],
+  const group = (id, tab, list, note, kids) => ({ id, kind: 'group', tab, count: list.length, label: REL[tab](), short: LETTER[tab],
     note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）` : '暂时没有', kids,
     hub: list.length ? { ...HUB[tab], note: HUB[tab].note + (list.length > TOP ? `（图上是前 ${TOP} 位）` : '') } : null });
   const theirs = r.idealOfIdeal || [];
   return {
-    id: 'me', kind: 'me', label: '你', note: '点 A、B、D 切换下面的内容',
+    id: 'me', kind: 'me', label: '你', short: 'C', note: '点 A、B、D 切换下面的内容',
     kids: [
       group('ideal', 'ideal', r.idealMatches, '你的理想型', people('ideal', r.idealMatches, (m) => m.fit?.total, '', (p) => `符合你的要求 ${p}%`)),
       group('seekers', 'seekers', r.seekers, '想找你这样的人', people('seekers', r.seekers, (m) => m.myFitToThem?.total, '/seekers', (p) => `你符合${t}的要求 ${p}%`)),
@@ -1379,7 +1382,7 @@ async function renderResults() {
       ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
     ${brokerNotice()}
-    <div class="tb-sentinel" aria-hidden="true"></div><div class="tabs-bar"><div class="tb-title" aria-hidden="true"><b>你的结果</b><span>${vt}</span></div><div class="tabs" role="tablist" aria-label="三组人">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" id="tab-${k}" aria-controls="tabpanel" tabindex="${S.tab === k ? 0 : -1}" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}</button>`).join('')}</div></div>
+    <div class="tb-sentinel" aria-hidden="true"></div><div class="tabs-bar"><div class="tb-title" aria-hidden="true"><b>你的结果</b><span>${vt}</span></div><div class="tabs" role="tablist" aria-label="三组人">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" id="tab-${k}" aria-controls="tabpanel" tabindex="${S.tab === k ? 0 : -1}" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}<b class="tl">${{ ideal: 'B', theirs: 'A', seekers: 'D' }[k]}</b></button>`).join('')}</div></div>
     <div id="tabpanel" role="tabpanel"></div>
     ${r.plan === 'vip'
     ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
@@ -1434,7 +1437,30 @@ async function renderResults() {
     io.observe(sentinel);
   }
   // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
-  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab, true, true); } });
+  const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc,
+    // 点星球只换下面的名单、不滚走：让人看完星图展开；页签轻轻亮一下，提示下面也跟着换了
+    onFocus: (n) => {
+      if (!n.tab || n.tab === S.tab) return;
+      show(n.tab, false, true);
+      const b = view.querySelector(`.tabs [data-tab="${n.tab}"]`);
+      if (b && !reduceMotion()) { b.classList.remove('ping'); void b.offsetWidth; b.classList.add('ping'); }
+    },
+    // 星图下方“看全部 N 位”：想看名单时才滚过去
+    onList: () => view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' }),
+    // 点一个人的星球：这颗星球飞到详情页顶上（浏览器支持视图过渡时），页面其余部分淡入淡出
+    onOpen: (n, b) => {
+      const dot = b.querySelector('.dot');
+      if (!document.startViewTransition || reduceMotion() || !dot) return go(n.href);
+      dot.style.viewTransitionName = 'pick';
+      const root = document.documentElement;
+      root.classList.add('vt-pick');
+      const vt = document.startViewTransition(async () => {
+        dot.style.viewTransitionName = ''; dir = 'fwd'; history.pushState(null, '', n.href); await route();
+        // 过渡本身就是进场：关掉这一页自己的进场动画，否则过渡结束后会再播一遍（闪一下）
+        document.querySelectorAll('.screen, .profile-top.rise').forEach((e) => { e.style.animation = 'none'; });
+      });
+      vt.finished.finally(() => root.classList.remove('vt-pick'));
+    } });
   view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => { touched = true; map?.show(b.dataset.tab); }));
   // 先看一眼 A、B、你、D 的全景，再自动把镜头移到当前页签那一组的轨道；已经点过图或页签就不抢；从详情页回来、或减少动态效果时直接到轨道
   let touched = false;
@@ -1476,22 +1502,32 @@ function bindScrollHint(root = document) {
       w.classList.toggle('more-r', more);
       w.classList.toggle('more-l', w.scrollLeft > 4);
     };
-    const wide = w.scrollWidth > w.clientWidth + 4;
     const nav = w.nextElementSibling?.classList.contains('cmp-nav') ? w.nextElementSibling : null;
     const prevB = nav?.querySelector('.cmp-prev'), nextB = nav?.querySelector('.cmp-next');
-    if (nav) nav.hidden = !wide;
     const navUpd = () => {
       if (!nav) return;
+      // 放不下才出现左右箭头；窗口变宽变窄、字体载入后宽度会变，每次都重新判断
+      nav.hidden = w.scrollWidth <= w.clientWidth + 4;
       prevB.disabled = w.scrollLeft <= 4;
       nextB.disabled = w.scrollWidth - w.clientWidth - w.scrollLeft <= 4;
     };
     // 一步 = 一个人那一列的宽度
     const step = () => w.querySelector('thead th:last-child')?.getBoundingClientRect().width || w.clientWidth / 2;
     if (nav) {
-      prevB.onclick = () => w.scrollBy({ left: -step(), behavior: reduceMotion() ? 'auto' : 'smooth' });
-      nextB.onclick = () => w.scrollBy({ left: step(), behavior: reduceMotion() ? 'auto' : 'smooth' });
+      // 离头 / 尾不到半列时直接到底，不留一条缝让箭头还亮着
+      const go = (d) => {
+        const max = w.scrollWidth - w.clientWidth, s = step();
+        let to = w.scrollLeft + d * s;
+        if (to > max - s / 2) to = max;
+        if (to < s / 2) to = 0;
+        w.scrollTo({ left: to, behavior: reduceMotion() ? 'auto' : 'smooth' });
+      };
+      prevB.onclick = () => go(-1);
+      nextB.onclick = () => go(1);
     }
     w.addEventListener('scroll', () => { upd(); navUpd(); }, { passive: true });
+    if (window.ResizeObserver) { const ro = new ResizeObserver(() => { upd(); navUpd(); }); observers.add(ro); ro.observe(w); const t = w.querySelector('table'); if (t) ro.observe(t); }
+    document.fonts?.ready.then(() => { upd(); navUpd(); });
     upd(); navUpd();
   });
 }
@@ -1523,6 +1559,7 @@ function renderTheirs(r, idx) {
   const t = T(), n = list.length;
   paint(`${detailNav(idx, n, '/theirs')}
     <section class="profile-top rise">
+      <span class="pick-orb" aria-hidden="true" style="${planetOf(`theirs-${idx}`, 'theirs')}"></span>
       <p class="grp-tag g-theirs">A · 理想型的理想型</p>
       <h1>${nameTag(a)}</h1>
       <p class="small muted" style="margin:2px 0 0">${subLine(a)} · 第 ${idx + 1} 位</p>
@@ -1534,6 +1571,11 @@ function renderTheirs(r, idx) {
   bindScrollHint();
 }
 
+// 详情页的资料：全部列出、带名称（年收入、性格这些不再被截掉；“可协商”这类值单看看不懂是哪一项）
+const specList = (facts) => {
+  const rows = Object.entries(facts || {}).filter(([k]) => k !== '年龄' && k !== '常住城市');
+  return rows.length ? `<dl class="spec rise" style="--i:1">${rows.map(([k, v]) => `<div><dt>${esc(lab(k))}</dt><dd>${esc(shortRange(nice(v)))}</dd></div>`).join('')}</dl>` : '';
+};
 async function renderMatch(idx, tab = 'ideal') {
   const gen = routeGen;
   const r = await loadResults();
@@ -1549,14 +1591,15 @@ async function renderMatch(idx, tab = 'ideal') {
   const top = m.myPlace ? m.myPlace.rankRange[1] : null;
   paint(`${detailNav(idx, n, sfx)}
     <section class="profile-top rise">
+      <span class="pick-orb" aria-hidden="true" style="${planetOf(`${tab === 'seekers' ? 'seekers' : 'ideal'}-${idx}`, tab === 'seekers' ? 'seekers' : 'ideal')}"></span>
       <p class="grp-tag g-${tab === 'seekers' ? 'seekers' : 'ideal'}">${tab === 'seekers' ? 'D · 想找你这样的人' : 'B · 你的理想型'}</p>
       <h1>${nameTag(m)}</h1>
       <p class="small muted" style="margin:2px 0 0">${subLine(m)} · 第 ${idx + 1} 位</p>
-      <div class="facts">${Object.entries(m.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 8).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
     </section>
+    ${specList(m.facts)}
     <div class="summary-card rise" style="--i:1">
-      ${fitLine('你', t, m.fit.items)}
-      ${fitLine(t, '你', m.myFitToThem.items)}
+      ${fitLine('你', t, m.fit.items, true)}
+      ${fitLine(t, '你', m.myFitToThem.items, true)}
     </div>
     ${brokerBox(m, { full: true })}
 
