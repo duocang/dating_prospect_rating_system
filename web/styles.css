@@ -744,6 +744,7 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .rm-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; transition: transform .75s var(--ease); }
 .rm-lines { position: absolute; left: 0; top: 0; overflow: visible; }
 .rm-lines path.show { opacity: 1; }
+.rm-lines path.show.dim { opacity: .22; }
 .rm-node { position: absolute; width: var(--d); height: var(--d); margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2); padding: 0; border: 0; background: none; cursor: pointer; opacity: 0; transform: scale(.4); pointer-events: none; transition: opacity .4s, transform .5s var(--ease); }
 .rm-node.show { opacity: 1; transform: scale(1); pointer-events: auto; }
 .rm-node.dim { opacity: .35; }
@@ -763,6 +764,13 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .rm-node.k-me .dot, .rm-node.k-group[data-id] .dot { box-shadow: 0 0 4px rgba(255, 226, 186, .35), 0 0 14px rgba(255, 210, 160, .22), 0 0 30px rgba(255, 200, 150, .12); }
 .rm-node.focus .dot, .rm-node.k-group[data-id].focus .dot { box-shadow: none; transform: none; }
 .rm-node.focus .dot::before { transform: scale(1.1); filter: brightness(1.12); }
+.rm-node.k-person .dot::before { transform: rotate(var(--rot, 0deg)); filter: hue-rotate(var(--hue, 0deg)); }
+.rm-node.k-person.focus .dot::before { transform: rotate(var(--rot, 0deg)) scale(1.1); filter: hue-rotate(var(--hue, 0deg)) brightness(1.12); }
+.rm-node .lb-hub, .rm-node.as-hub .lb:not(.lb-hub) { display: none; }
+.rm-node.as-hub .lb-hub { display: block; }
+.rm-node.as-hub { --planet: var(--hub-planet); }
+.rm-node.lb-up .lb { top: auto; bottom: calc(100% + 8px / var(--sc, 1)); }
+.rm-node.k-person .lb .fit { color: var(--gold); box-shadow: none; background: none; padding: 0; }
 .rm-node:active .dot::before { transform: scale(.94); }
 .rm-note { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; margin: 4px 0 0; text-align: center; color: var(--ink-2); }
 .rm-lines path.spark { stroke: #FFF7EA; stroke-width: 2.6; stroke-dasharray: 6 600; stroke-dashoffset: 602; filter: drop-shadow(0 0 4px rgba(255, 226, 184, .95)); animation: rm-flow 4.2s linear infinite; }

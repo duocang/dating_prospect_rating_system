@@ -484,7 +484,7 @@ function homeRows(r) {
   const s = r.summary, all = s.position?.ideal?.allMet || 0, n = r.idealMatches.length, two = (r.mutual || []).length;
   if (!s.counterpartCount) return `<div class="note-card">${ic('users')}<span>人还不多，过几天再来看看。</span></div>`;
   const b = n ? (all ? `有 ${all} 位完全符合你的要求${two ? `，其中 ${two} 位两边都合适` : ''}` : `还没人完全符合，最接近的有 ${n} 位`) : '暂时没有，放宽一两条要求试试';
-  const d = r.seekers.length ? `${r.seekers.length} 位的要求，你正好符合` : '暂时没有';
+  const d = r.seekers.length ? `${r.summary.iFitCount ?? r.seekers.length} 位的“必须有”，你都满足` : '暂时没有';
   const row = (k, tab, title, text) => `<a class="ap-row home-row" href="#/results" data-tab="${tab}">${planetOrb(k)}<div><h3><b>${k.toUpperCase()}</b>${title}</h3><p>${text}</p></div><span class="chev">${ic('next')}</span></a>`;
   return row('b', 'ideal', REL.ideal(), b) + row('a', 'theirs', REL.theirs(), placeA(r)) + row('d', 'seekers', REL.seekers(), d);
 }
@@ -1205,7 +1205,7 @@ function tabList(r, tab) {
     // 正式环境里虚拟人选和真人在同一个池子：标题不写“真人”，另外说清其中几位是真人
     const real = people.filter((p) => !p.simulated).length;
     const tie = r.summary.topTie > 1 ? `${r.summary.topTie} 位一样符合，都算第 1。` : '';
-    const switcher = secHead(`最接近的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}`, tie, table);
+    const switcher = secHead(`最符合你要求的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}`, tie, table);
     const body = (table ? compareTable(reqs, people)
       : `<div class="cards">${people.map((m, i) => pcard(m,
         fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
@@ -1231,7 +1231,7 @@ function tabList(r, tab) {
 
   if (!r.seekers.length) return emptyCard('暂时没有', '人选库里还没有人的要求正好对上你。');
   const table = S.view === 'table', reqs = r.myIdeal || [];
-  const switcherD = secHead(`最合适的 ${r.seekers.length} 位`, '', table);
+  const switcherD = secHead(`你最符合${T()}们要求的 ${r.seekers.length} 位`, '', table);
   if (table) return switcherD + compareTable(reqs, r.seekers, '/seekers');
   return switcherD + `<div class="cards">${r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看${t}想找什么样的人` })).join('')}</div>`;
 }
@@ -1251,13 +1251,29 @@ function emptyCard(title, text, href, btn) {
 // 结果页关系图：你 → 三组 → 每位人选；“他适合你”的人再展开“他想找的”
 function resultTree(r) {
   const LETTER = { ideal: 'B', theirs: 'A', seekers: 'D' };
-  const group = (id, tab, list, note) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab], note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）↓` : '暂时没有', kids: [] });
+  // 图上每组只放最合适的前几位，排在轨道上：越合适离中心越近；完整名单在下面
+  const TOP = 6, t = T();
+  const people = (tab, list, score, sfx, line) => list.slice(0, TOP).map((m, i) => {
+    const pct = Math.round(score(m)?.low || 0), name = m.name || m.alias;
+    return { id: `${tab}-${i}`, kind: 'person', label: name, pct, href: `#/match/${i}${sfx}`, note: `${name} · ${line(pct)}` };
+  });
+  // hub：轨道中心代表拿谁来比——B、D 比的是你，A 比的是你的理想型
+  const ME = { label: '你', planet: 'planet-c' };
+  const HUB = {
+    ideal: { ...ME, note: '离你越近，越符合你的要求' },
+    seekers: { ...ME, note: `离你越近，你越符合${t}们的要求` },
+    theirs: { label: '你的理想型', planet: 'blue-b', note: '越近，越符合你理想型的要求' },
+  };
+  const group = (id, tab, list, note, kids) => ({ id, kind: 'group', tab, label: REL[tab](), short: LETTER[tab],
+    note: list.length ? `${LETTER[tab]} · ${note}（${list.length} 位）` : '暂时没有', kids,
+    hub: list.length ? { ...HUB[tab], note: HUB[tab].note + (list.length > TOP ? `（图上是前 ${TOP} 位）` : '') } : null });
+  const theirs = r.idealOfIdeal || [];
   return {
     id: 'me', kind: 'me', label: '你', note: '点 A、B、D 切换下面的内容',
     kids: [
-      group('ideal', 'ideal', r.idealMatches, '你的理想型'),
-      group('seekers', 'seekers', r.seekers, '想找你这样的人'),
-      group('theirs', 'theirs', r.idealOfIdeal || [], '理想型的理想型'),
+      group('ideal', 'ideal', r.idealMatches, '你的理想型', people('ideal', r.idealMatches, (m) => m.fit?.total, '', (p) => `符合你的要求 ${p}%`)),
+      group('seekers', 'seekers', r.seekers, '想找你这样的人', people('seekers', r.seekers, (m) => m.myFitToThem?.total, '/seekers', (p) => `你符合${t}的要求 ${p}%`)),
+      group('theirs', 'theirs', theirs, '理想型的理想型', people('theirs', theirs, (m) => m.score, '/theirs', (p) => `符合你理想型的要求 ${p}%`)),
     ],
   };
 }
@@ -1274,7 +1290,7 @@ function positionCard(tab, r) {
     return `<div class="pos-card a-sum">
       <p class="a-sum-q">你差在哪</p>
       <div class="a-bars">${bars([['', `理想型看中的 ${list.length} 位`, avg], ['me', '你', me]])}</div>
-      <p class="a-sum-t">${gap > 0 ? `你比理想型看中的人低 ${gap} 分。` : `你和理想型看中的人差不多。`}${placeA(r)}。</p>
+      <p class="a-sum-t">${gap > 0 ? `按理想型的要求，你比他们看中的人低 ${gap} 个百分点。` : `按理想型的要求，你和他们看中的人差不多。`}</p>
       ${miss}
     </div>`;
   }
@@ -1299,10 +1315,10 @@ function positionCard(tab, r) {
     const top = [...miss.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
     const two = list.filter((p) => mutualIds(r).has(p.alias)).length;
     return `<div class="pos-card a-sum">
-      <p class="a-sum-q">${t}们合你的要求吗</p>
+      <p class="a-sum-q">你合${t}们的要求吗</p>
       <div class="a-bars">${bars([['me', `你符合${t}们`, mine], ['d', `${t}们符合你`, theirs]])}</div>
-      <p class="a-sum-t">${t}们想找的人，你基本都符合。${two ? `其中 ${two} 位两边都合。` : ''}</p>
-      ${top.length ? `<div class="pos-miss"><span>${t}们最常卡在：</span>${top.map(([l, c]) => `<em>${esc(lab(l))}<small>${c}/${list.length} 位</small></em>`).join('')}</div>` : ''}
+      <p class="a-sum-t">${t}们想找的人，你${mine >= 80 ? '基本都符合' : '符合一部分'}。${two ? `其中 ${two} 位两边都合适，标着“双向”。` : ''}</p>
+      ${top.length ? `<div class="pos-miss"><span>反过来，${t}们最常没达到你的：</span>${top.map(([l, c]) => `<em>${esc(lab(l))}<small>${c}/${list.length} 位</small></em>`).join('')}</div>` : ''}
     </div>`;
   }
   const p = s.position?.[tab];
@@ -1325,10 +1341,10 @@ function positionCard(tab, r) {
 
 // 结果页最上面的一句结论（苹果式：先说结论，细节点开才看）
 function verdict(r) {
-  const s = r.summary, all = s.position?.ideal?.allMet || 0, two = (r.mutual || []).length, n = r.idealMatches.length, t = T();
+  const s = r.summary, all = s.position?.ideal?.allMet || 0, two = s.mutualCount ?? (r.mutual || []).length, n = r.idealMatches.length, t = T();
   if (!s.counterpartCount) return ['人还不多', '过几天再来看看。'];
-  if (two) return [`有 ${two} 位和你两边都合适`, `${t}们符合你的要求，你也符合${t}们的。下面先看最接近的 ${n} 位。`];
-  if (all) return [`有 ${all} 位完全符合你的要求`, `下面先看最接近的 ${n} 位。`];
+  if (two) return [`有 ${two} 位和你两边都合适`, `你们都满足对方的“必须有”，名单里标着“双向”。下面是最符合你要求的 ${n} 位。`];
+  if (all) return [`有 ${all} 位完全符合你的要求`, `下面是最符合你要求的 ${n} 位。`];
   if (n) return [`最接近你要求的 ${n} 位`, '还没人完全符合。点下面“为什么是这几位”，看差在哪。'];
   return ['还没人达到你的“必须有”', '把一两条“必须有”改成“很在意”试试。'];
 }
@@ -1336,8 +1352,8 @@ function verdict(r) {
 const WHY = { ideal: '为什么是这几位', theirs: '你和他们差在哪', seekers: '他们为什么找你' };
 const whyFold = (tab, html) => (html ? `<details class="more why-fold"><summary>${WHY[tab]}</summary>${html}</details>` : '');
 // A、D 两组在名单上面先给一句话结论
-const tabLead = (r, tab) => tab === 'theirs' && (r.idealOfIdeal || []).length ? `<p class="tab-lead"><b>${placeA(r)}</b>（和理想型看中的人比）</p>`
-  : tab === 'seekers' && r.seekers.length ? `<p class="tab-lead"><b>${r.seekers.length} 位的要求，你正好符合</b></p>` : '';
+const tabLead = (r, tab) => tab === 'theirs' && (r.idealOfIdeal || []).length ? `<p class="tab-lead">按你理想型的要求：<b>${placeA(r)}</b></p>`
+  : tab === 'seekers' && r.seekers.length ? `<p class="tab-lead"><b>${r.summary.iFitCount ?? r.seekers.length} 位的“必须有”，你都满足</b></p>` : '';
 
 async function renderResults() {
   const gen = routeGen;
@@ -1419,7 +1435,13 @@ async function renderResults() {
   }
   // 图上的三个圆和下面三个页签是同一件事：点哪边，另一边跟着走
   const map = few ? null : relMap(document.getElementById('relmap'), resultTree(r), { esc, onFocus: (n) => { if (n.tab && n.tab !== S.tab) show(n.tab, true, true); } });
-  view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => map?.show(b.dataset.tab)));
+  view.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => { touched = true; map?.show(b.dataset.tab); }));
+  // 先看一眼 A、B、你、D 的全景，再自动把镜头移到当前页签那一组的轨道；已经点过图或页签就不抢；从详情页回来、或减少动态效果时直接到轨道
+  let touched = false;
+  const mapEl = document.getElementById('relmap');
+  mapEl?.addEventListener('pointerdown', () => { touched = true; }, { once: true });
+  const toTab = () => { if (!touched && mapEl?.isConnected) map?.show(S.tab); };
+  if (map) { if (restoreY != null || matchMedia('(prefers-reduced-motion: reduce)').matches) toTab(); else setTimeout(toTab, 1500); }
   const up = document.getElementById('upgrade');
   if (up) up.onclick = () => openPayment('vip');
   if (restoreY != null) { dir = 'none'; requestAnimationFrame(() => window.scrollTo(0, restoreY)); }
