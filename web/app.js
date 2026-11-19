@@ -440,9 +440,11 @@ async function renderHome() {
         box.innerHTML = `<div class="note-card">${ic('info')}<span>结果暂时没加载出来。点下面“看全部结果”再试一次。</span></div>`; box.removeAttribute('aria-busy');
         fitMap(onlyGroups(EXAMPLE));
       });
-    } else paint(`<section class="hero">
-      <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
-      <div class="relmap rise" id="relmap" style="--i:1"></div>
+    } else paint(`<section class="hero home-mid">
+      <div class="home-stage">
+        <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
+        <div class="relmap rise" id="relmap" style="--i:1"></div>
+      </div>
       <div class="stack rise" style="--i:2">${actions}</div>
     </section>`);
     if (st !== 'done') relMap(document.getElementById('relmap'), EXAMPLE, { esc });

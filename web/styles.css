@@ -317,7 +317,9 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .home-back .rm-node .lb, .home-back .rm-note { display: none; }
 .home-back #restart { color: var(--brand); box-shadow: none; background: none; }
 .hero .btn, .home-back .btn, .ap-ctas .btn { border-radius: 999px; }
-.home-back { padding-top: 0; }
+.home-back, .home-mid { padding-top: 0; }
+.home-mid .home-stage { padding-bottom: 20px; }
+.home-mid .stack { margin-top: 20px; }
 .home-stage { margin: -8px calc(50% - 50vw) 0; padding: 22px 16px 14px; background: #000; text-align: center; }
 .home-stage .ap-eyebrow { margin: 0 0 4px; color: #A1A1A6; }
 .home-stage .display { color: #F5F5F7; }
