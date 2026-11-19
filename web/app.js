@@ -367,14 +367,16 @@ function bindStepper(el, get, set) {
 }
 
 const DONE_RING = '<svg class="done-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52"/><path d="M38 61l15 15 30-32"/></svg>';
-function milestone(title, text, note, actions) {
-  return `<section class="milestone">
+// 段落之间的小结页：和题目页一样——顶上是返回 + 进度（这一段已满），按钮固定在底部
+function milestone(title, text, note, actions, { back = '', seg = -1 } = {}) {
+  return `${seg >= 0 ? qHead(back, seg, SEGS[seg].list.length - 1) : ''}
+  <section class="milestone">
     ${DONE_RING}
     <h1 class="display rise">${title}</h1>
     <p class="lead rise" style="--i:1">${text}</p>
     ${note ? `<div class="note-card rise" style="--i:2">${ic('lock')}<span>${note}</span></div>` : ''}
-    <div class="stack rise" style="--i:3">${actions}</div>
-  </section>`;
+  </section>
+  <div class="qfoot col">${actions}</div>`;
 }
 
 // 返回时取消“改完回到确认页”的标记，免得之后点“下一题”又被拉回确认页
@@ -564,8 +566,8 @@ function renderIntro() {
     <div class="slides" id="slides">${slides.map(([i, h, p]) => `<div class="slide"><div class="art">${ic(i)}</div><h2>${h}</h2><p>${p}</p></div>`).join('')}</div>
     <div class="dots" aria-hidden="true">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
     <p class="fine">${ic('lock')} 自动保存，随时退出。</p>
-    <div class="stack"><button class="btn primary block" id="nx">下一页 ${ic('arrow')}</button><button class="btn ghost" id="skip">跳过介绍</button></div>
-  </section>`);
+  </section>
+  <div class="qfoot col"><button class="btn primary block" id="nx">下一页 ${ic('arrow')}</button><button class="btn ghost" id="skip">跳过介绍</button></div>`);
   const box = document.getElementById('slides'), dots = view.querySelectorAll('.dots i'), nx = document.getElementById('nx');
   let cur = 0, target = -1; // target：按钮触发的滚动目标，滚到之前不被中间位置打断
   const done = () => { store.set('vier.intro', '1'); go('#/me/gender'); };
@@ -711,9 +713,8 @@ function renderMeBreak() {
   paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，都可以不填。填了更准。',
     '这些都选填。别人看不到具体数字，只知道符不符合。',
     `<button class="btn primary block" id="more">继续填（9 题，大约 1 分钟）</button>
-     <button class="btn block" id="skip">这 9 题都跳过，去说说想找的人</button>
-     <button class="btn ghost" data-back="#/me/lifestyle">${ic('back')} 返回上一题</button>`));
-  bindBack();
+     <button class="btn block" id="skip">这 9 题都跳过，去说说想找的人</button>`, { back: '#/me/lifestyle', seg: 0 }));
+  bindBack(); growBar();
   document.getElementById('more').onclick = () => go('#/me/incomeAnnual');
   document.getElementById('skip').onclick = () => go(S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age');
 }
@@ -721,9 +722,8 @@ function renderMeBreak() {
 function renderMeDone() {
   paint(milestone('你的情况填好了', '接下来说说<b>你想找什么样的人</b>。每条要求，再告诉我们你有多在意。', '',
     `<button class="btn primary block" id="go">说说我想找的人 ${ic('arrow')}</button>
-     <a class="btn block" href="#/me/review">看看我填了什么</a>
-     <button class="btn ghost" data-back="#/me/parentsMarriage">${ic('back')} 返回上一题</button>`));
-  bindBack();
+     <a class="btn block" href="#/me/review">看看我填了什么</a>`, { back: '#/me/parentsMarriage', seg: 1 }));
+  bindBack(); growBar();
   document.getElementById('go').onclick = () => go(S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age');
 }
 
@@ -947,9 +947,8 @@ function renderIdealBreak() {
   paint(milestone('主要的要求说完了', `还想对${T()}的<b>经济和家庭情况</b>提要求吗？这部分可以不填。`, '',
     `<button class="btn primary block" id="done">不用了，看看结果 ${ic('arrow')}</button>
      <button class="btn block" id="more">要加几条（8 题，大约 1 分钟）</button>
-     <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>
-     <button class="btn ghost" data-back="#/ideal/lifestyle">${ic('back')} 返回上一题</button>`));
-  bindBack();
+     <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>`, { back: '#/ideal/lifestyle', seg: 2 }));
+  bindBack(); growBar();
   document.getElementById('more').onclick = () => go('#/ideal/personalNetAssets');
   document.getElementById('review').onclick = () => go('#/ideal/review');
   const done = document.getElementById('done');

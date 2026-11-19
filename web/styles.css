@@ -258,7 +258,7 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .dots { display: flex; justify-content: center; gap: 8px; margin: 24px 0 0; }
 .dots i { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width .4s var(--ease), background .4s; }
 .dots i.on { width: 26px; background: var(--brand); }
-.milestone { text-align: center; padding: 30px 0 0; }
+.milestone { text-align: center; padding: 24px 0 0; }
 .done-ring { width: 120px; height: 120px; margin: 0 auto 22px; }
 .done-ring circle { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 3; stroke-dasharray: 330; stroke-dashoffset: 330; animation: draw .8s var(--ease) .1s forwards; }
 .done-ring path { fill: none; stroke: var(--brand); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: draw .45s var(--ease) .75s forwards; }
@@ -946,6 +946,10 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 @keyframes blink { 50% { opacity: .2; } }
 .screen:has(> .qfoot) { display: flex; flex-direction: column; min-height: calc(100dvh - 130px); }
 .screen > .qfoot { margin-top: auto; }
+/* 几个按钮上下排（小结页、引导页）：主按钮在上，次要的在下，次要的文字按钮居中 */
+.qfoot.col { flex-direction: column; align-items: stretch; }
+.qfoot.col .btn { flex: none; width: 100%; }
+.qfoot.col .btn.ghost { width: auto; align-self: center; }
 @keyframes fadeDown { from { opacity: 0; transform: translateY(-4px); } }
 @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 @keyframes spin { to { transform: rotate(360deg); } }
