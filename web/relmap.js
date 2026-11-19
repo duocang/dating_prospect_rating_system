@@ -57,9 +57,9 @@ function ribbon(c, k = 1, add = 0) {
   return `M${l.join(' L')} L${r.reverse().join(' L')} Z`;
 }
 // 星球边上的光：从接触点沿边缘向两侧各走约 40°，越远越暗（原图里亮度在 15°~20° 内降一半）
-function rimArcs(star, pt, id, tag) {
-  const [cx, cy] = L2P(star), R = star[2] * ZK, a0 = Math.atan2(pt[1] - cy, pt[0] - cx), span = 0.7;
-  const cold = star === STAR[[...COLD][0]] || star === STAR[[...COLD][1]]; // A、B 是蓝色星球：边缘用冷光；“你”和 D 保持暖光
+function rimArcs(key, pt, id, tag) {
+  const star = STAR[key], [cx, cy] = L2P(star), R = star[2] * ZK, a0 = Math.atan2(pt[1] - cy, pt[0] - cx), span = 0.7;
+  const cold = COLD.has(key); // A、B 是蓝色星球：边缘用冷光；“你”和 D 保持暖光
   return [-1, 1].map((sgn, j) => {
     const a1 = a0 + sgn * span, ex = cx + Math.cos(a1) * R, ey = cy + Math.sin(a1) * R, sx = cx + Math.cos(a0) * R, sy = cy + Math.sin(a0) * R;
     const gid = `rm-rim-${id}-${tag}${j}`;
@@ -103,7 +103,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
   const P = layout(tree, 0, 0, 0, null, 0, {});
   const open = new Set([tree.id]);
   let focus = tree.id;
-  el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"><defs><marker id="rm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="rm-ah"/></marker></defs></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
+  el.innerHTML = `<div class="rm-view"><div class="rm-stage"><svg class="rm-lines" width="1" height="1"></svg></div></div><div class="rm-note" aria-live="polite"></div>`;
   const stage = el.querySelector('.rm-stage'), svg = el.querySelector('svg'), note = el.querySelector('.rm-note'), viewEl = el.querySelector('.rm-view');
   // 每个圆属于哪一组（A/B/D），星球按组上色
   let sparkN = 0;
@@ -132,15 +132,8 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, initial = nul
         svg.insertAdjacentHTML('beforeend', `${grad('zh', '#FFD29A', '#78BEFF', 0.5)}${grad('zb', '#FFF4E2', '#EAF6FF', 0.95)}${grad('zc', '#FFFBF4', '#F2F9FF', 0.95)}
           <path data-to="${id}" class="z-halo" style="fill:url(#rm-zh-${id})" d="${ribbon(cs, 1.35, 10)}"/>
           <path data-to="${id}" class="z-body" style="fill:url(#rm-zb-${id})${mixed ? ';filter:blur(.5px) drop-shadow(0 0 2px rgba(236, 232, 240, .75))' : ''}" d="${ribbon(cs, 0.42, 0.6)}"/>
-          ${rimArcs(STAR[s0], a, id, 'a')}${rimArcs(STAR[s1], e, id, 'b')}`);
+          ${rimArcs(s0, a, id, 'a')}${rimArcs(s1, e, id, 'b')}`);
         coreStyle = ` style="stroke:url(#rm-zc-${id})"`;
-      } else if (z) {
-        // 光丝贴着星球朝向对方的一侧出发，两端水平切出，中间是一道 S 弯
-        const r1 = SIZE[n.id === 'seekers' ? n.kind : P[linkFrom || parent].n.kind] / 2, r2 = SIZE[n.id === 'seekers' ? P[parent].n.kind : n.kind] / 2;
-        const sx = Math.sign(x2 - x1) || 1, sy = Math.sign(y2 - y1);
-        x1 += sx * r1 * .92; y1 += sy * r1 * .38; x2 -= sx * r2 * .92; y2 -= sy * r2 * .38;
-        const mx = (x1 + x2) / 2;
-        d = `M${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`;
       } else {
         const mx = (x1 + x2) / 2 + (y2 - y1) * 0.12, my = (y1 + y2) / 2 - (x2 - x1) * 0.12;
         d = `M${x1} ${y1} Q${mx} ${my} ${x2} ${y2}`;
