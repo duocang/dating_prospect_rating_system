@@ -453,7 +453,7 @@ async function renderHome() {
     } else paint(`<section class="hero home-mid">
       <div class="home-stage">
         <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
-        <div class="relmap rise" id="relmap" style="--i:1"></div>
+        <div class="relmap rise eclipse" id="relmap" style="--i:1"></div>
       </div>
       <div class="stack rise" style="--i:2">${actions}</div>
     </section>`);

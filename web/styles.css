@@ -273,7 +273,7 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .ap-more { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
 .ap-hero .rm-note { display: none; }
 .display .nw { display: inline-block; }
-.hero.ap-hero .display { font-size: clamp(28px, 7.8vw, 50px); }
+.hero.ap-hero .display, .hero.home-mid .display { font-size: clamp(28px, 7.8vw, 50px); }
 .ap-hero .ap-sub { font-size: var(--t-callout); margin-top: 12px; }
 .ap-hero .ap-ctas { margin-top: 20px; gap: 10px 22px; }
 .ap-hero .ap-ctas .btn { min-height: 42px; padding: 0 22px; font-size: 15px; }
