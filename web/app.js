@@ -858,7 +858,7 @@ function iNav(key) {
 
 function impBlock(e) {
   return `<div class="imp" id="imp">
-    <h3>这一条，你有多在意？</h3>
+    <h3>这一条，你有多在意？<span class="imp-wait">先选上面的条件。</span></h3>
     <div class="imp-list" role="radiogroup" aria-label="在意程度">${IMP.filter(([v]) => v !== 'off').map(([v, l, note]) => `<button type="button" class="imp-opt ${e.imp === v ? 'on' : ''}" data-imp="${v}" role="radio" aria-checked="${e.imp === v}">
       <span class="mark">${ic('check')}</span><span class="t"><b>${l}</b><span>${note}</span></span></button>`).join('')}</div>
   </div>`;
@@ -889,7 +889,7 @@ function renderIdealQ(key) {
     <h1 class="q" id="qt">${tx(q)}</h1>
     <p class="qhint">${hint}</p>
     <div id="target">${body}</div>
-    <div id="impwrap" ${f.type === 'number' || entryValid(key, e) ? '' : 'hidden'}>${impBlock(e)}</div>
+    <div id="impwrap" ${f.type === 'number' || entryValid(key, e) ? '' : 'class="off" inert aria-disabled="true"'}>${impBlock(e)}</div>
     <div class="qfoot">
       ${e.imp !== 'off' ? `<button class="btn primary" id="ok">${S.backToReview ? '改好了' : '好了，下一题'} ${ic('arrow')}</button><button class="btn ghost" id="skip">不在意</button>` : '<button class="btn block" id="skip">不在意，跳过这题</button>'}
     </div>`);
@@ -913,8 +913,9 @@ function renderIdealQ(key) {
   const touched = () => {
     e.dirty = true;
     const w = document.getElementById('impwrap'), ok = entryValid(key, e);
-    if (w.hidden && ok) { w.hidden = false; w.classList.remove('flash'); void w.offsetWidth; w.classList.add('flash'); }
-    if (!ok) { w.hidden = true; cancel(); }
+    // 和苹果选配置一样：在意程度一直摆着，没选条件时是灰的、点不了；选好条件就亮起来
+    w.classList.toggle('off', !ok); w.inert = !ok;
+    if (ok) w.removeAttribute('aria-disabled'); else { w.setAttribute('aria-disabled', 'true'); cancel(); }
   };
   view.querySelectorAll('[data-imp]').forEach((b) => (b.onclick = () => {
     if (busy) return;

@@ -442,6 +442,14 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .check-row.shake { animation: shake .4s; }
 .imp { margin-top: 16px; padding: 14px 12px; }
 .imp h3 { font-size: var(--t-body); margin: 0 0 10px; }
+/* 在意程度：没选条件时整块变灰、点不了（像苹果选配置时还没轮到的那一步），选好后渐变亮起 */
+.imp .imp-wait { margin-left: 6px; font-weight: 600; color: var(--ink-2); opacity: 0; transition: opacity .4s var(--ease-a); }
+#impwrap .imp-opt, #impwrap .imp h3 { transition: color .4s var(--ease-a), border-color .4s var(--ease-a), box-shadow .4s var(--ease-a), opacity .4s var(--ease-a); }
+#impwrap.off .imp-wait { opacity: 1; }
+#impwrap.off .imp h3 { color: var(--ink); }
+#impwrap.off .imp-opt { cursor: default; color: var(--unk); box-shadow: inset 0 0 0 1px var(--line) !important; background: none; }
+#impwrap.off .imp-opt .t b, #impwrap.off .imp-opt .t span { color: var(--unk) !important; }
+#impwrap.off .imp-opt .mark { opacity: .35; }
 .imp-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 details.see-card { padding: 0; }
 details.see-card > summary::-webkit-details-marker { display: none; }
