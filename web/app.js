@@ -134,10 +134,10 @@ const IMP_RANK = { 灵活: 1, 重要: 2, 很重要: 3, 必须: 4 }; // 越在意
 const IMP_FROM_SERVER = { 灵活: '有最好', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
-const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
-const P2 = ['incomeAnnual', 'personalNetAssets', 'housing', 'familySupport', 'familyNetAssets', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
-const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle'];
-const I2 = ['personalNetAssets', 'housing', 'familySupport', 'familyNetAssets', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
+const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
+const P2 = ['incomeAnnual', 'housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
+const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
+const I2 = ['housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
 const TOTAL_Q = P1.length + P2.length + I1.length + I2.length;
 // 四段：进度条全程只有一条，分成四格，不会中途重置
 const SEGS = [
@@ -161,9 +161,12 @@ const ME_Q = {
   childrenPlan: ['以后想要孩子吗？'],
   personality: ['你和别人相处，更像哪一种？'],
   lifestyle: ['你平时的生活，更像哪一种？'],
+  looksCare: ['你在意另一半的长相吗？', '和你自己比，选最接近的一个。'],
   incomeAnnual: ['你一年大概挣多少钱？', '选个大概。工资加奖金，扣税前。'],
   personalNetAssets: ['你自己有多少家底？', '选个大概。房子、车、存款，减掉欠的钱。'],
   housing: ['你现在住在哪里？'],
+  car: ['你有车吗？'],
+  debt: ['除了房贷车贷，你还欠多少钱？', '比如消费贷、网贷、欠亲友的钱。选个大概。'],
   familySupport: ['家里能给你多大帮助？'],
   familyNetAssets: ['父母家大概有多少家底？', '选个大概，不知道就选“不清楚”。'],
   parentsSecurity: ['父母有养老保险和医保吗？', '不确定就选“不清楚”。'],
@@ -185,8 +188,11 @@ const IDEAL_Q = {
   childrenPlan: ['关于孩子，你能接受{T}怎么想？', '可以选好几个。'],
   personality: ['你喜欢{T}是哪种性格？', '可以选好几个。'],
   lifestyle: ['你喜欢{T}过哪种生活？', '可以选好几个。'],
+  looksCare: ['你希望{T}对长相怎么看？', '可以选好几个。'],
   personalNetAssets: ['你希望{T}自己至少有多少家底？', '选一个最低要求。'],
   housing: ['你能接受{T}现在住哪里？', '可以选好几个。'],
+  car: ['你希望{T}有车吗？', '可以选好几个。'],
+  debt: ['{T}除了房贷车贷，最多能欠多少？', '比如消费贷、网贷、欠亲友的钱。'],
   familySupport: ['你希望{T}家里能给多少帮助？', '可以选好几个。'],
   familyNetAssets: ['你希望{T}父母家至少有多少家底？', '选一个最低要求。'],
   parentsSecurity: ['你能接受{T}父母的养老情况是？', '可以选好几个。'],
@@ -199,10 +205,12 @@ const OPT_SUB = {
   直接沟通: '有话直说', 慢热温和: '熟了才放得开', 活跃外向: '爱说爱笑，喜欢热闹', 独立安静: '喜欢自己待着',
   规律作息: '每天差不多同一时间睡觉起床', 弹性作息: '睡觉起床时间不固定', 偏好安静: '喜欢安静、人少的地方',
   喜欢社交: '常和朋友聚会', 户外运动: '常去运动、爬山、跑步', 居家休闲: '休息时喜欢待在家',
+  希望对方更好看: '希望另一半比我好看', 和我差不多就好: '两个人长相差不多', 对方普通也可以: '另一半不如我好看也没关系', 不太在意长相: '更看重别的方面',
   计划长期定居本城: '打算一直在现在的城市', 城市可协商: '去哪里可以商量', 未来可能离开本城: '以后可能换城市',
 };
 const NUM = { age: { min: 18, max: 80, unit: '岁' }, heightCm: { min: 140, max: 210, unit: '厘米' } };
 const INCOME_P = [['5 万以下', 30000, 0, 50000], ['5 到 10 万', 75000, 50000, 100000], ['10 到 15 万', 125000, 100000, 150000], ['15 到 20 万', 175000, 150000, 200000], ['20 到 30 万', 250000, 200000, 300000], ['30 到 50 万', 400000, 300000, 500000], ['50 万以上', 700000, 500000, Infinity]];
+const MAX_WAN = { debt: [0, 5, 20, 50] };
 const MIN_WAN = { incomeAnnual: [5, 10, 15, 20, 30, 50], personalNetAssets: [10, 50, 100, 300, 600], familyNetAssets: [50, 150, 300, 600] };
 const IMP = [
   ['off', '不在意', '这一条不看，不影响结果。'],
@@ -219,8 +227,8 @@ const DEFAULT_IMP = {
   age: { m: '3', f: '3' }, heightCm: { m: '2', f: '1' }, city: { m: '3', f: '3' }, settlement: { m: '2', f: '2' },
   education: { m: '2', f: '2' }, occupation: { m: '1', f: '1' }, incomeAnnual: { m: '3', f: '1' },
   maritalStatus: { m: '3', f: '3' }, childrenStatus: { m: '3', f: '3' },
-  marriagePlan: { m: '3', f: '3' }, childrenPlan: { m: '3', f: '3' }, personality: { m: '2', f: '2' }, lifestyle: { m: '1', f: '1' },
-  personalNetAssets: { m: '1', f: '1' }, housing: { m: '2', f: '1' }, familySupport: { m: '1', f: '1' }, familyNetAssets: { m: '1', f: '1' },
+  marriagePlan: { m: '3', f: '3' }, childrenPlan: { m: '3', f: '3' }, personality: { m: '2', f: '2' }, lifestyle: { m: '1', f: '1' }, looksCare: { m: '1', f: '1' },
+  personalNetAssets: { m: '1', f: '1' }, housing: { m: '2', f: '1' }, car: { m: '1', f: '1' }, debt: { m: '2', f: '2' }, familySupport: { m: '1', f: '1' }, familyNetAssets: { m: '1', f: '1' },
   parentsSecurity: { m: '2', f: '2' }, siblings: { m: '1', f: '1' }, care: { m: '1', f: '1' }, parentsMarriage: { m: '1', f: '1' },
 };
 const defaultImp = (key) => DEFAULT_IMP[key]?.[S.me?.gender === 'female' ? 'm' : 'f'] || '2';
@@ -723,9 +731,9 @@ function renderMeQ(key) {
 
 function renderMeBreak() {
   paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，都可以不填。填了更准。',
-    '这些都选填。别人看不到具体数字，只知道符不符合。',
-    `<button class="btn primary block" id="more">继续填（9 题，大约 1 分钟）</button>
-     <button class="btn block" id="skip">这 9 题都跳过，去说说想找的人</button>`, { back: '#/me/lifestyle', seg: 0 }));
+    '这些都选填。别人只看到大概的档位，看不到具体数字。',
+    `<button class="btn primary block" id="more">继续填（${P2.length} 题，大约 1 分钟）</button>
+     <button class="btn block" id="skip">这 ${P2.length} 题都跳过，去说说想找的人</button>`, { back: '#/me/looksCare', seg: 0 }));
   bindBack(); growBar();
   document.getElementById('more').onclick = () => go('#/me/incomeAnnual');
   document.getElementById('skip').onclick = () => go(S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age');
@@ -806,6 +814,7 @@ function toReq(key, e) {
   if (!e.dirty && e.orig) return { ...e.orig, importance };
   const f = S.F[key];
   if (f.type === 'number') return { field: key, op: 'range', target: [...e.target], importance };
+  if (MAX_WAN[key]) return { field: key, op: 'atMost', target: Number(e.target), importance };
   if (f.type === 'money' || f.type === 'ordinal') return { field: key, op: 'atLeast', target: e.target, importance };
   return { field: key, op: 'in', target: e.target, importance };
 }
@@ -816,6 +825,7 @@ function describe(key, e) {
     return `${{ atLeast: '至少', atMost: '最多', about: '大约' }[e.orig.op] || ''} ${e.orig.target} ${NUM[key].unit}`;
   }
   if (f.type === 'number') return `${e.target[0]} 到 ${e.target[1]} ${NUM[key].unit}`;
+  if (MAX_WAN[key]) return Number(e.target) ? `最多 ${wan(e.target)} 万` : '没有负债';
   if (f.type === 'money') return `至少 ${wan(e.target)} 万`;
   if (f.type === 'ordinal') return `${e.target}及以上`;
   return e.target.map(nice).join('、');
@@ -865,6 +875,8 @@ function renderIdealQ(key) {
   if (f.type === 'number') {
     const t = e.target || defaultTarget(key);
     body = `<div class="range-pair">${stepperHtml('a', t[0], NUM[key].unit, '从')}${stepperHtml('b', t[1], NUM[key].unit, '到')}</div>`;
+  } else if (MAX_WAN[key]) {
+    body = chipList(MAX_WAN[key].map((w) => ({ v: String(w * 10000), label: w ? `最多 ${w} 万` : '不能有负债' })), e.target == null ? '' : String(e.target));
   } else if (f.type === 'money') {
     body = chipList(MIN_WAN[key].map((w) => ({ v: String(w * 10000), label: `至少 ${w} 万` })), e.target == null ? '' : String(e.target));
   } else if (f.type === 'ordinal') {
@@ -959,7 +971,7 @@ function renderIdealBreak() {
   paint(milestone('主要的要求说完了', `还想对${T()}的<b>经济和家庭情况</b>提要求吗？这部分可以不填。`, '',
     `<button class="btn primary block" id="done">不用了，看看结果 ${ic('arrow')}</button>
      <button class="btn block" id="more">要加几条（8 题，大约 1 分钟）</button>
-     <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>`, { back: '#/ideal/lifestyle', seg: 2 }));
+     <button class="btn ghost" id="review">${ic('list')} 先检查一下我的要求</button>`, { back: '#/ideal/looksCare', seg: 2 }));
   bindBack(); growBar();
   document.getElementById('more').onclick = () => go('#/ideal/personalNetAssets');
   document.getElementById('review').onclick = () => go('#/ideal/review');
@@ -1160,26 +1172,67 @@ const byIdeal = (reqs, items) => {
   const m = Object.fromEntries((items || []).map((it) => [it.label, it]));
   return reqs.map((q) => m[q.label]).filter(Boolean);
 };
-// 对照表（手机优先）：每条要求一行，全部显示；每行一条，格子只放小图标，
-// 对上的是浅绿勾，没对上的可点，点了原地显示对方的实际情况
+// 对照表的行：三张表统一按这六组排，组名单独一行
+const ROW_GROUPS = [
+  ['基本情况', ['age', 'heightCm', 'city', 'settlement']],
+  ['学历与工作', ['education', 'occupation', 'incomeAnnual']],
+  ['房车与负债', ['housing', 'car', 'debt', 'personalNetAssets']],
+  ['家庭', ['familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage']],
+  ['婚育', ['maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan']],
+  ['相处', ['personality', 'lifestyle', 'looksCare']],
+];
+// 一组行标签（服务端的字段名）→ [[组名, [标签…]], …]，按上面的顺序；不认识的放最后
+function groupRows(labels) {
+  const keyOf = Object.fromEntries(Object.values(S.F || {}).map((f) => [f.label, f.key]));
+  const set = new Set(labels);
+  const out = ROW_GROUPS.map(([g, keys]) => [g, keys.map((k) => S.F?.[k]?.label).filter((l) => l && set.has(l))]).filter(([, ls]) => ls.length);
+  const known = new Set(out.flatMap(([, ls]) => ls));
+  const rest = labels.filter((l) => !known.has(l) || !keyOf[l]);
+  if (rest.length) out.push(['其他', [...new Set(rest)]]);
+  return out;
+}
+// 三张对照表共用的骨架：第一列是“你”或“你的要求”，后面每人一列，格子里都是实际情况；
+// 橙色 = 不一样 / 没达到要求。same(label) 为真的行在“只看不一样的”打开时折叠
+function cmpGrid({ cls, firstHead, heads, labels, first, cell, same, mark = () => '', hint, sameNote, full = false }) {
+  const n = heads.length + 2;
+  const rows = groupRows(labels).map(([g, ls]) => {
+    const allSame = !full && ls.every(same);
+    return `<tr class="grp ${allSame ? 'same' : ''}"><th scope="rowgroup" colspan="${n}"><div class="cx"><span class="gl">${g}</span></div></th></tr>` +
+      ls.map((l) => `<tr class="${!full && same(l) ? 'same' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(l))}${mark(l)}</b></div></th><td class="me-col">${first(l)}</td>${heads.map((_, i) => cell(i, l)).join('')}</tr>`).join('');
+  }).join('');
+  return `<div class="cmp-block ${S.diffOnly && !full ? 'diff-on' : ''}"><div class="cmp-wrap"><table class="cmp ${cls}">
+    <thead><tr><th scope="col"></th>${firstHead}${heads.join('')}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>${CMP_NAV()}${sameNote || ''}${hint ? `<p class="cmp-hint">${hint}</p>` : ''}</div>`;
+}
+// 表格里的值：金额档位保持“10–50万元”的短写法，其他按说人话的写法再缩短
+const cellText = (v) => (/\d\s*–\s*\d/.test(String(v)) && !/岁|cm/.test(String(v)) ? String(v).replace(/\s*–\s*/g, '–') : shortRange(nice(v)));
+const cxv = (v, cls = '') => `<div class="cx">${v ? `<span class="${cls}">${esc(cellText(v))}</span>` : '<span class="muted">—</span>'}</div>`;
+// 你的理想型 / 想找你的人：每行是一项条件，第一列是你的要求（没要求写“不限”），格子是对方实际情况
 function compareTable(reqs, people, sfx = '') {
-  const itemOf = (p, q) => (p.fit.items || []).find((x) => x.label === q.label);
-  // 每一行都画出来；大家都符合的行标成 same。“只看不一样的”打开时，这些行像苹果对比页那样折叠收起，下面的行跟着滑上来
-  const same = (q) => people.every((p) => { const it = itemOf(p, q); return it && toneOf(it) === 't-good'; });
-  const allGood = reqs.filter(same);
-  const cellReq = (q) => esc(shortRange(reqText(q)));
-  const cx = (html) => `<div class="cx">${html}</div>`;
-  return `<div class="cmp-block ${S.diffOnly ? 'diff-on' : ''}"><div class="cmp-wrap"><table class="cmp cmp2">
-    <thead><tr><th scope="col"></th><th scope="col" class="ideal-col"><span class="al">你的理想型</span></th>${people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`).join('')}</tr></thead>
-    <tbody>${reqs.map((q) => `<tr class="${same(q) ? 'same' : ''}"><th scope="row">${cx(`<b>${esc(lab(q.label))}${q.must ? '<em>必须</em>' : ''}</b>`)}</th><td class="ideal-col">${cx(cellReq(q))}</td>
-      ${people.map((p) => {
-        const it = itemOf(p, q);
-        const [tone, icon, word] = it ? (STATUS[it.status] || ['t-unk', 'help', '没填']) : ['t-unk', 'help', '没填'];
-        if (it && tone !== 't-good') return `<td class="${tone}">${cx(`<button type="button" class="cell-tap" aria-expanded="false"><span class="st">${ic(icon)}</span><span class="sr">${word}：</span><span class="v">${it.value === null ? '不公开' : esc(shortRange(nice(it.value)))}</span></button>`)}</td>`;
-        return `<td class="${tone}">${cx(`<span class="st" role="img" aria-label="${word}">${ic(icon)}</span>`)}</td>`;
-      }).join('')}</tr>`).join('')}
-</tbody>
-  </table></div>${CMP_NAV()}${sameLine('都符合', allGood.map((q) => lab(q.label)))}${reqs.some((q) => people.some((p) => { const it = itemOf(p, q); return it && toneOf(it) !== 't-good'; })) ? '<p class="cmp-hint">点带虚线的符号，看对方实际情况</p>' : ''}</div>`;
+  const reqOf = Object.fromEntries(reqs.map((q) => [q.label, q]));
+  const itemOf = (p, l) => (p.fit?.items || []).find((x) => x.label === l);
+  const labels = [...new Set([...reqs.map((q) => q.label), ...people.flatMap((p) => Object.keys(p.facts || {}))])];
+  const good = (p, l) => { const it = itemOf(p, l); return !reqOf[l] || (it && toneOf(it) === 't-good'); };
+  const same = (l) => people.every((p) => good(p, l));
+  const heads = people.map((p, i) => `<th scope="col"><a href="#/match/${i}${sfx}"><span class="al">${nameTag(p)}</span><b>${pctQ(p.fit.total)}</b></a></th>`);
+  return cmpGrid({
+    cls: 'cmp2', labels, heads, same,
+    firstHead: '<th scope="col" class="me-col"><span class="al">你的要求</span></th>',
+    first: (l) => (reqOf[l] ? cxv(reqText(reqOf[l])) : '<div class="cx"><span class="muted">不限</span></div>'),
+    mark: (l) => (reqOf[l]?.must ? '<em>必须</em>' : ''),
+    cell: (i, l) => {
+      const p = people[i], it = reqOf[l] && itemOf(p, l);
+      if (it) {
+        const tone = toneOf(it);
+        if (tone === 't-unk') return '<td><div class="cx"><span class="muted">没填</span></div></td>';
+        return `<td class="${tone === 't-good' ? '' : 't-diff'}">${cxv(it.value === null ? '不公开' : it.value)}</td>`;
+      }
+      return `<td>${cxv(p.facts?.[l] === '未填写' ? '' : p.facts?.[l])}</td>`;
+    },
+    sameNote: sameLine('都符合', reqs.filter((q) => same(q.label)).map((q) => lab(q.label))),
+    hint: '橙色字 = 没达到你的要求',
+  });
 }
 
 // 表格里的范围写短：“27 岁 到 33 岁”→“27–33 岁”，“15 万 到 20 万”→“15–20 万”，一格放得下
@@ -1543,18 +1596,21 @@ function bindScrollHint(root = document) {
   });
 }
 
-// 你和理想型的理想型逐条对照：每行一个条件，第一列是你；和你不一样的格子标出来
+// 你和理想型的理想型逐条对照：第一列是你；和你不一样的格子标橙色
 function aCompareTable(myFacts, list, mine, full = false) {
-  const all = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
-  // 和结果页其他对照表一样：所有行都画出来，和你一样的行标成 same，由开关折叠；详情页（full）只有一个人，不折叠
-  const differs = (k) => list.some((a) => a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k]);
-  const sameKeys = full ? [] : all.filter((k) => !differs(k));
-  const cell = (v, diff) => `<td class="${diff ? 't-diff' : ''}"><div class="cx">${v ? esc(shortRange(nice(v))) : '<span class="muted">—</span>'}</div></td>`;
-  return `<div class="cmp-block ${S.diffOnly && !full ? 'diff-on' : ''}"><div class="cmp-wrap"><table class="cmp cmp-a">
-    <thead><tr><th scope="col"></th><th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>${list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`).join('')}</tr></thead>
-    <tbody>${all.map((k) => `<tr class="${!full && !differs(k) ? 'same' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(k))}</b></div></th>${cell(myFacts[k], false)}${list.map((a) => cell(a.facts[k], a.facts[k] && myFacts[k] && a.facts[k] !== myFacts[k])).join('')}</tr>`).join('')}
-</tbody>
-  </table></div>${CMP_NAV()}${sameLine('和你一样', sameKeys.map((k) => lab(k)))}<p class="cmp-hint">橙色字 = 和你不一样</p></div>`;
+  const labels = [...new Set([...Object.keys(myFacts), ...list.flatMap((a) => Object.keys(a.facts))])];
+  const known = (v) => v && v !== '未填写';
+  const diff = (a, l) => known(a.facts[l]) && known(myFacts[l]) && a.facts[l] !== myFacts[l];
+  const same = (l) => !list.some((a) => diff(a, l));
+  return cmpGrid({
+    cls: 'cmp-a', labels, same, full,
+    heads: list.map((a) => `<th scope="col"><span class="al">${nameTag(a)}</span><b>${pctQ(a.score)}</b></th>`),
+    firstHead: `<th scope="col" class="me-col"><span class="al">你</span>${mine ? `<b>${pctQ(mine)}</b>` : ''}</th>`,
+    first: (l) => cxv(known(myFacts[l]) ? myFacts[l] : ''),
+    cell: (i, l) => `<td class="${diff(list[i], l) ? 't-diff' : ''}">${cxv(known(list[i].facts[l]) ? list[i].facts[l] : '')}</td>`,
+    sameNote: full ? '' : sameLine('和你一样', labels.filter((l) => same(l) && known(myFacts[l])).map((l) => lab(l))),
+    hint: '橙色字 = 和你不一样',
+  });
 }
 
 const pagerLink = (to, label, off, icon) => (off ? `<a aria-label="${label}" aria-disabled="true">${ic(icon)}</a>` : `<a href="${to}" aria-label="${label}">${ic(icon)}</a>`);
@@ -2229,6 +2285,8 @@ async function route() {
     if (!S.config) {
       S.config = await api('GET', '/api/config');
       S.F = Object.fromEntries(S.config.fields.map((f) => [f.key, f]));
+      // 页面比服务端新时（部署间隙），服务端还不认识的题先不问，免得整页报错
+      for (const list of [P1, P2, I1, I2]) for (let i = list.length - 1; i >= 0; i--) if (list[i] !== 'gender' && !S.F[list[i]]) list.splice(i, 1);
       renderFoot();
       if (gen !== routeGen) return;
     }

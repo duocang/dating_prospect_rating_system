@@ -38,6 +38,15 @@ export const FAMILY_ASSET_BANDS = {
   '600–1,000万元': { min: 6000000, max: 10000000 },
 };
 
+// 负债：房贷、车贷以外的欠款（消费贷、网贷、欠亲友的钱等）
+export const DEBT_BANDS = {
+  '没有负债': { min: 0, max: 0 },
+  '5万元以下': { min: 0, max: 50000 },
+  '5–20万元': { min: 50000, max: 200000 },
+  '20–50万元': { min: 200000, max: 500000 },
+  '50万元以上': { min: 500000, max: null },
+};
+
 export const FIELDS = [
   { key: 'age', label: '年龄', type: 'number', unit: '岁', scale: 5, tier: 'L1', group: 'basic', ops: ['range', 'atLeast', 'atMost', 'about'] },
   { key: 'heightCm', label: '身高', type: 'number', unit: 'cm', scale: 20, tier: 'L1', group: 'appearance', ops: ['range', 'atLeast', 'atMost', 'about'] },
@@ -48,6 +57,8 @@ export const FIELDS = [
   { key: 'incomeAnnual', label: '年收入（税前劳动收入）', type: 'money', unit: '元', tier: 'L2', group: 'economy', ops: ['atLeast', 'range'], displayBands: [0, 50000, 100000, 150000, 200000, 300000, 500000] },
   { key: 'personalNetAssets', label: '个人净资产', type: 'money', unit: '元', tier: 'L2', group: 'economy', bands: PERSONAL_ASSET_BANDS, ops: ['atLeast'] },
   { key: 'housing', label: '本人住房', type: 'category', tier: 'L2', group: 'economy', options: ['合租', '整租', '与父母同住', '单位宿舍', '自有住房（有贷款）', '自有住房（无贷款）'] },
+  { key: 'car', label: '车', type: 'category', tier: 'L2', group: 'economy', options: ['没有车', '有车，有贷款', '有车，无贷款'] },
+  { key: 'debt', label: '其他负债', type: 'money', unit: '元', tier: 'L2', group: 'economy', bands: DEBT_BANDS, ops: ['atMost'] },
   { key: 'familySupport', label: '家庭可提供的支持', type: 'category', tier: 'L2', group: 'family', options: ['主要提供情感支持', '可应急小额支持', '可部分支持首付', '需本人反向支持'] },
   { key: 'familyNetAssets', label: '父母家庭净资产', type: 'money', unit: '元', tier: 'L2', group: 'family', bands: FAMILY_ASSET_BANDS, ops: ['atLeast'] },
   { key: 'parentsSecurity', label: '父母养老保障', type: 'category', tier: 'L2', group: 'family', options: ['双方有基本养老与医保', '一方有养老金，双方有医保', '主要依靠居民养老与医保', '保障存在缺口'] },
@@ -60,6 +71,7 @@ export const FIELDS = [
   { key: 'childrenPlan', label: '生育打算', type: 'category', tier: 'L1', group: 'future', options: ['希望育儿', '尚未决定', '不计划育儿'] },
   { key: 'personality', label: '沟通方式', type: 'category', tier: 'L1', group: 'lifestyle', options: ['直接沟通', '慢热温和', '活跃外向', '独立安静'] },
   { key: 'lifestyle', label: '生活方式', type: 'category', tier: 'L1', group: 'lifestyle', options: ['规律作息', '弹性作息', '偏好安静', '喜欢社交', '户外运动', '居家休闲'] },
+  { key: 'looksCare', label: '对长相的要求', type: 'category', tier: 'L1', group: 'lifestyle', options: ['希望对方更好看', '和我差不多就好', '对方普通也可以', '不太在意长相'] },
 ];
 
 export const FIELD_MAP = Object.fromEntries(FIELDS.map((f) => [f.key, f]));

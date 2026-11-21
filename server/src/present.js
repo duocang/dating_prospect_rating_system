@@ -1,7 +1,7 @@
 // 展示层：决定其他人的资料以什么粒度出现在你的结果里。所有发往浏览器的人选数据都必须经过这里。
 // 规则（docs/PRIVACY.md 第 3 节）：
 //   - 不发送内部 id，只发送“每位查看者各不相同”的代号
-//   - L1 基础资料可原样展示；L2 金额只展示分档；L2 类别不展示原值，只展示“是否符合”
+//   - L1 基础资料可原样展示；L2 金额只展示分档；L2 类别只展示选项文字
 //   - L3 身份资料从不进入结果
 import { FIELD_MAP, GENDERS, isUnknown } from '../../packages/schema/fields.js';
 import { aliasFor } from './crypto.js';
@@ -22,7 +22,7 @@ export function formatValue(fieldKey, value, { full }) {
   const f = FIELD_MAP[fieldKey];
   if (isUnknown(value)) return '未填写';
   if (f.type === 'money') return full && typeof value === 'number' ? wan(value) : moneyBand(f, value);
-  if (f.tier === 'L2' && !full) return null; // 不向他人展示
+  // L2 类别（住房、车、家庭情况）只展示选项文字，不涉及具体数字
   if (typeof value === 'object') return `${value.min ?? '?'}–${value.max ?? '?'}${f.unit || ''}`;
   return f.unit && f.type === 'number' ? `${value} ${f.unit}` : String(value);
 }
@@ -36,7 +36,7 @@ export function formatRequirement(req) {
   switch (req.op) {
     case 'range': text = `${fmt(t[0])}–${fmt(t[1])}`; break;
     case 'atLeast': text = `至少 ${fmt(t)}`; break;
-    case 'atMost': text = `至多 ${fmt(t)}`; break;
+    case 'atMost': text = f.type === 'money' && Number(t) === 0 ? '没有' : `最多 ${fmt(t)}`; break;
     case 'about': text = `约 ${fmt(t)}`; break;
     case 'in': text = (Array.isArray(t) ? t : [t]).join(' / '); break;
     default: text = String(t);
@@ -67,7 +67,10 @@ export function presentScore(result, profile, { subjectIsViewer }) {
   };
 }
 
-const CARD_FIELDS = ['age', 'heightCm', 'city', 'education', 'occupation', 'settlement', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'incomeAnnual'];
+// 卡片与对照表按这个顺序：基本 → 学历工作 → 房车与负债 → 家庭 → 婚育 → 相处
+const CARD_FIELDS = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual',
+  'housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage',
+  'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 
 export function presentCard(key, viewerId, person, { hideVirtual = false, name = null } = {}) {
   const facts = {};

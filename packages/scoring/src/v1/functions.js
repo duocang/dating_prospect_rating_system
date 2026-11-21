@@ -41,6 +41,12 @@ export function scoreMoney(iv, op, target) {
     const R = (x) => (x === -INF ? 0 : x === INF ? 100 : clamp((100 * Math.max(0, x)) / t));
     return { score: [R(a), R(b)], gap: [Math.max(0, t - b), Math.max(0, t - a)] };
   }
+  if (op === 'atMost') {
+    // 最多 t（负债）：不超过 t 满分；超过时按 t/x 递减，t 为 0（不能有负债）时超过即 0
+    const t = Number(target);
+    const R = (x) => (x === INF ? 0 : x <= t ? 100 : t > 0 ? clamp((100 * t) / x) : 0);
+    return { score: [R(b), R(a)], gap: [Math.max(0, a - t), b === INF ? INF : Math.max(0, b - t)] };
+  }
   if (op === 'range') {
     const [L, U] = [Number(target[0]), Number(target[1])];
     const f = (x) => {

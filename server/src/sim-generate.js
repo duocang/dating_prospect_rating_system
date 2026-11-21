@@ -12,6 +12,8 @@ const SETTLE = ['计划长期定居本城', '城市可协商', '未来可能离�
 const MARRIAGE = ['1–3年内考虑结婚', '长期伴侣，暂不结婚', '婚姻安排可协商'];
 const CHILDREN = ['希望育儿', '不计划育儿', '尚未决定'];
 const LIFESTYLE = ['规律作息', '弹性作息', '偏好安静', '喜欢社交', '户外运动', '居家休闲'];
+// 对长相的要求：后加的字段，用单独的随机数流抽，原来每个人的其他资料保持不变
+const LOOKS = [['希望对方更好看', 15], ['和我差不多就好', 45], ['对方普通也可以', 15], ['不太在意长相', 25]];
 const PERSONALITY = ['直接沟通', '慢热温和', '活跃外向', '独立安静'];
 const OCCUPATIONS = ['零售与服务', '行政与运营', '制造与工程', '教育与培训', '医疗与健康', '软件与技术', '物流与交通', '财务与商务', '设计与传媒'];
 const IMPORTANCE_KEYS = ['年龄', '身高', '收入', '学历', '住房', '定居', '家庭支持', '婚姻', '育儿', '性格', '生活方式'];
@@ -126,6 +128,9 @@ function convert(p) {
     categoryReq('childrenPlan', pr.childrenAccepted, imp('childrenPlan')),
     categoryReq('personality', pr.personalityAccepted, imp('personality')),
     categoryReq('lifestyle', pr.lifestyleAccepted, imp('lifestyle')),
+    categoryReq('looksCare', p.looks.accepted, p.looks.importance),
+    categoryReq('car', p.extra.carAccepted, p.extra.carImp),
+    p.extra.debtMax !== null ? { field: 'debt', op: 'atMost', target: p.extra.debtMax, importance: p.extra.debtImp } : null,
   ].filter(Boolean);
   const ms = maritalOf(p);
   requirements.push(...ms.reqs);
@@ -142,7 +147,7 @@ function convert(p) {
       familySupport: f.support, familyNetAssets: f.netAssetsBand, parentsSecurity: f.parentsSecurity,
       siblings: f.siblings, care: f.care, parentsMarriage: f.parentsMarriage,
       maritalStatus: ms.status, childrenStatus: ms.kids,
-      marriagePlan: p.marriage, childrenPlan: p.children, personality: p.personality, lifestyle: p.lifestyle,
+      marriagePlan: p.marriage, childrenPlan: p.children, personality: p.personality, lifestyle: p.lifestyle, looksCare: p.looks.care, car: p.extra.car, debt: p.extra.debt,
     },
     requirements,
   };
@@ -230,5 +235,29 @@ export function generateCityPool({ cityId, cityName, count = 500, incomeBand = '
     };
   });
 
+  const rng2 = makeRng((actualSeed ^ 0x5bd1e995) >>> 0);
+  const looks = LOOKS.map(([v]) => v);
+  for (const p of raw) {
+    p.looks = {
+      care: pickWeighted(rng2, LOOKS),
+      accepted: rng2() < 0.7 ? looks : [looks[Math.floor(rng2() * looks.length)]],
+      importance: 1 + Math.floor(rng2() * 3),
+    };
+  }
+  // 车和其他负债：同样后加，再用一条独立随机数流，前面抽过的都不受影响
+  const rng3 = makeRng((actualSeed ^ 0x27d4eb2f) >>> 0);
+  const CARS = ['没有车', '有车，有贷款', '有车，无贷款'];
+  for (const p of raw) {
+    const has = p.annualIncomeRmb >= 150000 ? 0.65 : 0.4;
+    const r = rng3();
+    p.extra = {
+      car: r < 1 - has ? CARS[0] : r < 1 - has / 2 ? CARS[1] : CARS[2],
+      debt: pickWeighted(rng3, [['没有负债', 58], ['5万元以下', 22], ['5–20万元', 11], ['20–50万元', 4], ['50万元以上', 1], ['不愿透露', 4]]),
+      carAccepted: rng3() < 0.75 ? CARS : CARS.slice(1),
+      carImp: 1 + Math.floor(rng3() * 2),
+      debtMax: rng3() < 0.55 ? [0, 50000, 200000][Math.floor(rng3() * 3)] : null,
+      debtImp: 1 + Math.floor(rng3() * 3),
+    };
+  }
   return raw.map(convert);
 }
