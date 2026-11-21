@@ -407,7 +407,7 @@ async function renderHome() {
       done: `${brokerNotice()}<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
-    if (st === 'new') { paintIntroHome(); relMap(document.getElementById('relmap'), EXAMPLE, { esc, still: true }); return; }
+    if (st === 'new') { paintIntroHome(); const el = document.getElementById('relmap'); relMap(el, EXAMPLE, { esc, still: true, maxH: heroRoom(el) }); return; }
     if (st === 'done') {
       paint(`<section class="hero home-back">
         <div class="home-stage">
@@ -492,6 +492,18 @@ function homeRows(r) {
 }
 
 // 第一次来的人：一段一段往下滑的首页，每段只讲一件事，滑到时淡入（苹果官网式）
+// 首页星图像产品图一样在第一屏完整露出：高度 = 屏幕可见高度 − 星图上沿；只在宽度变了时重算（手机滚动时地址栏伸缩不让图跳）
+function heroRoom(el) {
+  let w = 0, h = 0;
+  return () => {
+    if (innerWidth !== w || !h) {
+      w = innerWidth;
+      const top = el.getBoundingClientRect().top + scrollY;
+      h = Math.max(220, Math.min(560, innerHeight - top - 16));
+    }
+    return h;
+  };
+}
 function paintIntroHome() {
   const start = store.get('vier.intro') ? '#/me/gender' : '#/intro';
   const orb = planetOrb;

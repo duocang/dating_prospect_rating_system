@@ -271,6 +271,16 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .ap-ctas { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 24px; margin-top: 28px; }
 .ap-ctas .btn { width: auto; padding: 0 30px; }
 .ap-more { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+.ap-hero .rm-note { display: none; }
+@media (max-height: 760px) {
+  .ap-hero { padding-top: 22px; }
+  .ap-hero .ap-sub { margin-top: 10px; }
+  .ap-hero .ap-ctas { margin-top: 18px; }
+}
+@media (max-height: 640px) {
+  .ap-hero .display { font-size: clamp(34px, 9vw, 44px); }
+  .ap-hero .ap-ctas { margin-top: 14px; }
+}
 .ap-more:hover { text-decoration: underline; }
 .ap-more .ic { width: 15px; height: 15px; }
 .ap-sec { padding: 88px 0 0; text-align: center; }

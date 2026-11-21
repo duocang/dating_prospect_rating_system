@@ -313,7 +313,7 @@ export function relMap(el, tree, { esc = (s) => s, onFocus = null, onList = null
     const extent = (s) => [Math.min(...ids.map((i) => P[i].x * s - half(i, s))), Math.max(...ids.map((i) => P[i].x * s + half(i, s)))];
     // 总览时展台高度跟着内容走：先按最高 540 算出能放多大，再把高度收到刚好装下，窄屏上不留一大片空
     const overview = focus === tree.id;
-    const Hmax = overview ? maxH : H;
+    const Hmax = overview ? (typeof maxH === 'function' ? maxH() : maxH) : H;
     let sc = Math.min(1.4, (Hmax - LABEL_H - 2 * PAD_Y) / (y1 - y0 + dMax));
     for (let k = 0; k < 80; k++) { const [l, r] = extent(sc); if (r - l <= W - 2 * PAD) break; sc *= 0.98; }
     if (overview) { H = Math.round((y1 - y0 + dMax) * sc + LABEL_H + 2 * PAD_Y); viewEl.style.height = `${H}px`; }
