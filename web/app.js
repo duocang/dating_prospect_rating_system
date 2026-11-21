@@ -1198,8 +1198,9 @@ function cmpGrid({ cls, firstHead, heads, labels, first, cell, same, mark = () =
   const n = heads.length + 2;
   const rows = groupRows(labels).map(([g, ls]) => {
     const allSame = !full && ls.every(same);
-    return `<tr class="grp ${allSame ? 'same' : ''}"><th scope="rowgroup" colspan="${n}"><div class="cx"><span class="gl">${g}</span></div></th></tr>` +
-      ls.map((l) => `<tr class="${!full && same(l) ? 'same' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(l))}${mark(l)}</b></div></th><td class="me-col">${first(l)}</td>${heads.map((_, i) => cell(i, l)).join('')}</tr>`).join('');
+    const shut = S.foldGrp.has(g);
+    return `<tr class="grp ${allSame ? 'same' : ''}"><th scope="rowgroup" colspan="${n}"><div class="cx"><button type="button" class="grp-tog" data-grp="${g}" aria-expanded="${!shut}"><span class="gl">${g}</span><span class="chev">${ic('next')}</span></button></div></th></tr>` +
+      ls.map((l) => `<tr data-grp="${g}" class="${!full && same(l) ? 'same' : ''} ${shut ? 'gf' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(l))}${mark(l)}</b></div></th><td class="me-col">${first(l)}</td>${heads.map((_, i) => cell(i, l)).join('')}</tr>`).join('');
   }).join('');
   return `<div class="cmp-block ${S.diffOnly && !full ? 'diff-on' : ''}"><div class="cmp-wrap"><table class="cmp ${cls}">
     <thead><tr><th scope="col"></th>${firstHead}${heads.join('')}</tr></thead>
@@ -1208,6 +1209,21 @@ function cmpGrid({ cls, firstHead, heads, labels, first, cell, same, mark = () =
 }
 // 表格里的值：金额档位保持“10–50万元”的短写法，其他按说人话的写法再缩短
 const cellText = (v) => (/\d\s*–\s*\d/.test(String(v)) && !/岁|cm/.test(String(v)) ? String(v).replace(/\s*–\s*/g, '–') : shortRange(nice(v)));
+// 分组收起：点组名收起 / 展开这一组的行；记在本次打开的页面里，切页签、看详情都保持
+S.foldGrp = new Set();
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('.grp-tog');
+  if (!b) return;
+  const g = b.dataset.grp, open = b.getAttribute('aria-expanded') !== 'true';
+  open ? S.foldGrp.delete(g) : S.foldGrp.add(g);
+  const tb = b.closest('tbody');
+  // 收起前先量好每格的真实高度，收起 / 展开按这个距离走
+  const cells = [...tb.querySelectorAll(`tr[data-grp="${CSS.escape(g)}"] .cx`)];
+  const hs = cells.map((c) => c.scrollHeight);
+  cells.forEach((c, i) => c.style.setProperty('--h', `${hs[i]}px`));
+  b.setAttribute('aria-expanded', open);
+  tb.querySelectorAll(`tr[data-grp="${CSS.escape(g)}"]`).forEach((tr) => tr.classList.toggle('gf', !open));
+});
 const cxv = (v, cls = '') => `<div class="cx">${v ? `<span class="${cls}">${esc(cellText(v))}</span>` : '<span class="muted">—</span>'}</div>`;
 // 你的理想型 / 想找你的人：每行是一项条件，第一列是你的要求（没要求写“不限”），格子是对方实际情况
 function compareTable(reqs, people, sfx = '') {

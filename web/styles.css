@@ -724,9 +724,18 @@ details.see-card > summary em, details.see-card > summary .chev .ic, details.wba
 .cmp td.t-diff { background: none; color: var(--warn); font-weight: 600; }
 .cmp td { text-align: center; color: var(--ink); }
 /* 分组行：组名单独一行，左对齐，横向滑动时组名停在左边 */
-.cmp-block .cmp tbody tr.grp th { position: static; max-width: none; min-width: 0 !important; background: none !important; box-shadow: none !important; padding: 18px 0 6px !important; border-bottom: 0; }
+.cmp-block .cmp tbody tr.grp th { position: static; max-width: none; min-width: 0 !important; background: none !important; box-shadow: none !important; padding: 6px 0 0 !important; border-bottom: 0; }
 .cmp tr.grp .gl { position: sticky; left: 0; display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--ink-2); }
 .cmp tbody tr.grp:first-child th { padding-top: 10px !important; }
+.grp-tog { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; position: sticky; left: 0; }
+.grp-tog .gl { position: static; }
+.grp-tog .chev { display: inline-grid; color: var(--ink-2); transform: rotate(90deg); transition: transform .4s var(--ease-a); }
+.grp-tog .chev .ic { width: 13px; height: 13px; stroke-width: 2.4; }
+.grp-tog[aria-expanded="false"] .chev { transform: rotate(0deg); }
+/* 收起的组：和“只看不一样的”同一套折叠动画 */
+.cmp tbody tr:not(.grp) .cx { overflow: hidden; max-height: var(--h, 12em); transition: max-height .4s var(--ease-a), opacity .2s linear .2s; }
+.cmp tbody tr.gf .cx { max-height: 0 !important; opacity: 0 !important; transition: max-height .4s var(--ease-a), opacity .2s linear 0s; }
+.cmp-block .cmp tbody tr.gf > * { padding-top: 0 !important; padding-bottom: 0 !important; border-bottom-color: transparent !important; }
 .cmp-hint { color: var(--unk); text-align: center; margin: 10px 0 0; }
 .cmp2 thead th, .cmp-a thead th { padding: 4px 6px 10px; font-weight: 400; white-space: nowrap; vertical-align: bottom; }
 .cmp2 thead b, .cmp-a thead b { color: var(--ink) !important; }
