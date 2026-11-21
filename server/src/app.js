@@ -10,11 +10,12 @@ import { computeRelations } from '../../packages/matching/src/relations.js';
 import { FIELDS, GROUP_LABELS, FIELD_MAP, GENDERS, isUnknown } from '../../packages/schema/fields.js';
 import { generateCityPool } from './sim-generate.js';
 import { RateLimiter } from './ratelimit.js';
+import { createCaptcha } from './captcha.js';
 
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png' };
 
-export function createApp({ root, dataDir, configPath }) {
+export function createApp({ root, dataDir, configPath, onCaptcha }) {
   const config = JSON.parse(readFileSync(configPath, 'utf8'));
   const { key, source: keySource } = loadKey(join(dataDir, '.dev-key'));
   const store = new FileStore(dataDir, key);
@@ -58,7 +59,7 @@ export function createApp({ root, dataDir, configPath }) {
 
   // ---------- 限流（按 IP 或账户计次，见 docs/SECURITY.md）----------
   const limiter = new RateLimiter();
-  const LIM = { recover: [10, 3600e3], session: [30, 3600e3], results: [60, 3600e3], saves: [300, 3600e3], adminFail: [10, 3600e3], ...(config.rateLimits || {}) };
+  const LIM = { recover: [10, 3600e3], captcha: [60, 3600e3], session: [30, 3600e3], results: [60, 3600e3], saves: [300, 3600e3], adminFail: [10, 3600e3], ...(config.rateLimits || {}) };
   // 部署在 Caddy 后面时（TRUST_PROXY=1），真实 IP 在 X-Forwarded-For 第一段；否则直接取连接地址，防止伪造
   const trustProxy = process.env.TRUST_PROXY === '1';
   const clientIp = (req) => (trustProxy && String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
@@ -67,6 +68,15 @@ export function createApp({ root, dataDir, configPath }) {
     if (!limiter.hit(name + ':' + key, max, win)) throw new HttpError(429, msg);
   }
   setInterval(() => limiter.sweep(), 10 * 60e3).unref();
+  // 图片验证码：过了验证才建账户（docs/AUTH.md）。onCaptcha 只有进程内的测试会传
+  const captcha = createCaptcha({ onIssue: onCaptcha });
+  setInterval(() => captcha.sweep(), 60e3).unref();
+  // 同意记录：用于计算结果时必须确认已满 18 岁
+  function makeConsent(body, prevAdult) {
+    const adult = body.adult === true || prevAdult === true;
+    if (body.scoring && !adult) throw new ValidationError('请先确认你已满 18 岁');
+    return { version: config.privacy.consentVersion, at: new Date().toISOString(), adult, scoring: !!body.scoring, pool: !!body.pool, research: !!body.research };
+  }
 
   // ---------- 管理后台（docs/ADMIN.md）----------
   // 正式环境必须设置 ADMIN_TOKEN；测试环境没设时口令是 admin。
@@ -178,9 +188,29 @@ export function createApp({ root, dataDir, configPath }) {
       return s ? json(res, 200, s) : json(res, 400, { error: '只能查询基础字段的匿名分布' });
     }
     if (path === '/api/health' && method === 'GET') return json(res, 200, { ok: true });
+    if (path === '/api/captcha' && method === 'GET') {
+      limit('captcha', clientIp(req));
+      return json(res, 200, captcha.issue());
+    }
+    // 过了验证码才建账户：资料、要求、同意记录一次存好；没过验证的人在服务器上不留任何记录
     if (path === '/api/session' && method === 'POST') {
       limit('session', clientIp(req));
+      const body = await readBody(req);
+      if (!body.captchaId || !body.answer) throw new HttpError(400, '请先输入验证码');
+      if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
+      // 先全部校验，再建账户：任何一项不对都不落盘
+      const prof = validateProfile(body);
+      const reqs = validateRequirements(body.requirements);
+      const c = body.consent || {};
+      if (!c.scoring) throw new ValidationError('需要先同意“用你的资料计算结果”');
+      const consent = makeConsent(c);
       const { id, token } = store.createUser();
+      try {
+        store.saveProfile(id, prof);
+        store.saveIdentity(id, { nickname: String(body.identity?.nickname || '').slice(0, 20) });
+        store.saveRequirements(id, reqs);
+        store.saveConsents(id, consent);
+      } catch (e) { store.deleteUser(id); throw e; }
       return json(res, 201, { token: `${id}.${token}` });
     }
     // 用恢复码在另一台设备找回账户：发新令牌，旧设备上的令牌失效
@@ -219,9 +249,7 @@ export function createApp({ root, dataDir, configPath }) {
     }
     if (path === '/api/me/consent' && method === 'PUT') {
       // 只服务成年人：同意时必须确认已满 18 岁（资料里的年龄也限定 18 岁起）
-      const adult = body.adult === true || latestConsent(store.getUser(uid))?.adult === true;
-      if (body.scoring && !adult) throw new ValidationError('请先确认你已满 18 岁');
-      const c = { version: config.privacy.consentVersion, at: new Date().toISOString(), adult, scoring: !!body.scoring, pool: !!body.pool, research: !!body.research };
+      const c = makeConsent(body, latestConsent(store.getUser(uid))?.adult);
       store.saveConsents(uid, c);
       return json(res, 200, { ok: true, consent: c });
     }

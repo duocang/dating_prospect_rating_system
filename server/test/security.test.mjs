@@ -9,13 +9,15 @@ import { createApp } from '../src/app.js';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const dataDir = mkdtempSync(join(tmpdir(), 'vier-sec-'));
 let base, server;
+// 进程内拿到验证码明文（只有测试会传 onCaptcha，HTTP 上拿不到）
+const answers = new Map();
 
 before(async () => {
   const configPath = join(dataDir, 'app.json');
   const cfg = JSON.parse(readFileSync(join(root, 'config/app.json'), 'utf8'));
   cfg.rateLimits = { session: [8, 3600e3], results: [3, 3600e3], adminFail: [3, 3600e3] };
   writeFileSync(configPath, JSON.stringify(cfg));
-  ({ server } = createApp({ root, dataDir, configPath }));
+  ({ server } = createApp({ root, dataDir, configPath, onCaptcha: (id, a) => answers.set(id, a) }));
   await new Promise((r) => server.listen(0, r));
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -27,16 +29,20 @@ const call = async (method, path, token, body, headers = {}) => {
 };
 const profile = (age) => ({ gender: 'male', profile: { age, heightCm: 178, city: '上海', education: '本科', childrenPlan: '希望育儿' } });
 const requirements = [{ field: 'age', op: 'range', target: [24, 32], importance: 3 }];
+// 新流程：过了验证码才建账户，资料、要求、同意一起交
+async function session(age, consent) {
+  const c = await call('GET', '/api/captcha');
+  return call('POST', '/api/session', null, { captchaId: c.body.id, answer: answers.get(c.body.id), ...profile(age), requirements, consent });
+}
 async function filled(age = 30) {
-  const { body: { token } } = await call('POST', '/api/session');
-  await call('PUT', '/api/me/profile', token, profile(age));
-  await call('PUT', '/api/me/requirements', token, { requirements });
-  return token;
+  return (await session(age, { adult: true, scoring: true, pool: false })).body.token;
 }
 
 test('同意时必须确认已满 18 岁', async () => {
+  const r = await session(30, { scoring: true, pool: false });
+  assert.equal(r.status, 400);
+  assert.match(r.body.error, /18/);
   const t = await filled();
-  assert.equal((await call('PUT', '/api/me/consent', t, { scoring: true, pool: false })).status, 400);
   assert.equal((await call('PUT', '/api/me/consent', t, { adult: true, scoring: true, pool: false })).status, 200);
 });
 

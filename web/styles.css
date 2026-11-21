@@ -438,6 +438,15 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .check-row.on .mark { border-color: var(--brand); }
 .check-row a { text-decoration: underline; text-underline-offset: 3px; margin: 0 2px; }
 .check-row.shake { animation: shake .4s; }
+/* 验证码：圆角卡片里一张画出来的图，下面是“换一张” */
+.cap-card { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 12px; padding: 18px 16px 6px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); }
+.cap-card.shake { animation: shake .4s; }
+.cap-img { width: 100%; max-width: 360px; aspect-ratio: 250 / 70; border-radius: 14px; background: var(--surface-2); color: var(--ink); overflow: hidden; transition: opacity .2s var(--ease); }
+.cap-img svg { display: block; width: 100%; height: 100%; }
+.cap-img.loading { opacity: .35; }
+.text-input.cap-input { text-align: center; font-size: 22px; letter-spacing: .32em; text-transform: uppercase; }
+.text-input.cap-input::placeholder { letter-spacing: .5em; }
+.cap-card + .cap-input + .err { margin: 8px 0 0; text-align: center; }
 .imp { margin-top: 16px; padding: 14px 12px; }
 .imp h3 { font-size: var(--t-body); margin: 0 0 10px; }
 /* 在意程度：没选条件时整块变灰、点不了（像苹果选配置时还没轮到的那一步），选好后渐变亮起 */

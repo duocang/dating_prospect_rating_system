@@ -35,13 +35,22 @@ async function api(method, path, body) {
   return data;
 }
 
+// 没过验证码之前，答案只存在这台设备上（vier.draft），服务器上不留任何记录；过了验证才建账户（docs/AUTH.md）
+const DRAFT_KEYS = ['gender', 'profile', 'requirements', 'consent', 'identity'];
+function loadDraft() {
+  let d = {};
+  try { d = JSON.parse(store.get('vier.draft') || '{}') || {}; } catch { /* 坏了就当没填过 */ }
+  return { gender: d.gender || null, profile: d.profile || null, requirements: d.requirements || null, consent: d.consent || null, identity: d.identity || {}, hasRecovery: false, local: true };
+}
+function saveDraft() {
+  if (!S.me?.local) return;
+  store.set('vier.draft', JSON.stringify(Object.fromEntries(DRAFT_KEYS.map((k) => [k, S.me[k]]))));
+}
 async function ensureSession() {
   if (store.get('vier.token')) {
     try { S.me = await api('GET', '/api/me'); return; } catch (e) { if (e.status !== 401) throw e; store.del('vier.token'); }
   }
-  const { token } = await api('POST', '/api/session');
-  store.set('vier.token', token);
-  S.me = await api('GET', '/api/me');
+  S.me = loadDraft();
 }
 
 // 提示条；可以带一个动作按钮（例如“改一下”）
@@ -247,13 +256,13 @@ function resumeHash() {
   if (k) return `#/me/${k}`;
   if (!S.me.requirements?.length) return '#/ideal/age';
   if (!S.me.consent?.scoring) return '#/consent';
-  return '#/results';
+  return S.me.local ? '#/verify' : '#/results';
 }
 
 // ---------- 通用界面片段 ----------
 // 换个人 / 删除资料：清掉这个人的一切本地状态（跳过的题也算），界面偏好（主题、看法）保留
 function resetSession() {
-  store.del('vier.token'); store.del('vier.skipped');
+  store.del('vier.token'); store.del('vier.skipped'); store.del('vier.draft');
   Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null, tab: 'ideal' });
 }
 // 页面里用到的观察器（滑到时淡入、吸顶栏）：换页时统一断开，不留在旧页面上
@@ -400,7 +409,8 @@ function bindBack(before) {
 async function renderHome() {
   const state = () => {
     if (!S.me?.gender) return 'new';
-    return S.me.requirements?.length && S.me.consent?.scoring ? 'done' : 'partial';
+    // 还没过验证的人：结果在服务器上算，先当“没填完”，继续填写会走到验证码
+    return S.me.requirements?.length && S.me.consent?.scoring && !S.me.local ? 'done' : 'partial';
   };
   const draw = () => {
     const st = state();
@@ -460,10 +470,17 @@ async function renderHome() {
     // 已经开始填的人：首页底部可以存恢复码 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
-      acts.insertAdjacentHTML('beforeend', `<button class="btn ghost block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '存个恢复码，换手机也能找回'}</button>
+      // 恢复码要有服务器上的账户：过了验证才能生成
+      acts.insertAdjacentHTML('beforeend', `${S.me.local ? '<p class="small muted" style="margin:0">恢复码完成验证后可以生成。</p>' : `<button class="btn ghost block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '存个恢复码，换手机也能找回'}</button>`}
         <button class="btn block" id="restart">换个人，从头开始</button>`);
-      document.getElementById('rcode').onclick = () => { openRecovery().onclose = () => { dir = 'none'; draw(); }; };
+      const rc = document.getElementById('rcode');
+      if (rc) rc.onclick = () => { openRecovery().onclose = () => { dir = 'none'; draw(); }; };
       document.getElementById('restart').onclick = () => {
+        if (S.me.local) {
+          const m = askSheet('从头开始？', '这台设备上填的会清掉，服务器上本来就没有。', '从头开始');
+          m.el.querySelector('#yes').onclick = () => { m.close(); resetSession(); dir = 'none'; draw(); };
+          return;
+        }
         const lose = !S.me.hasRecovery;
         const m = askSheet('从头开始？', lose ? '你还没存恢复码，资料会丢。想留着就先存一个。' : '这台设备上的资料会清掉。用恢复码可以找回来。',
           lose ? '不保留，从头开始' : '从头开始', { danger: lose, pre: lose ? '<button class="btn primary block" id="pre-rc">先存恢复码</button>' : '' });
@@ -474,7 +491,7 @@ async function renderHome() {
   };
   draw();
   // 已有会话时读取资料，把按钮换成“继续填写”或“看谁适合我”
-  if (!S.me && store.get('vier.token')) {
+  if (!S.me) {
     try { await ensureSession(); if ((location.hash.replace(/^#/, '') || '/') === '/' && state() !== 'new') { dir = 'none'; draw(); } } catch { /* 忽略 */ }
   }
 }
@@ -622,9 +639,11 @@ function saveProfile() {
   if (!d.gender) return saveChain;
   const profile = Object.fromEntries(Object.entries(d.profile).filter(([, v]) => v !== '' && v !== null && v !== undefined));
   return queueSave(async () => {
-    await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname } });
+    if (!S.me.local) await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname } });
     S.me.gender = d.gender;
     S.me.profile = profile;
+    S.me.identity = { ...(S.me.identity || {}), nickname: d.nickname };
+    saveDraft();
     S.results = null;
   });
 }
@@ -836,8 +855,9 @@ function saveReqs() {
   const d = iDraft();
   const requirements = [...I1, ...I2].map((k) => toReq(k, d[k])).filter(Boolean);
   return queueSave(async () => {
-    await api('PUT', '/api/me/requirements', { requirements });
+    if (!S.me.local) await api('PUT', '/api/me/requirements', { requirements });
     S.me.requirements = requirements;
+    saveDraft();
     S.results = null;
   });
 }
@@ -1062,8 +1082,8 @@ function renderConsent() {
     <h2 class="sec-title" id="q-research">2. 用于匿名统计吗？</h2>
     ${choice('research', st.research, '只算很多人加在一起的数', '不参与统计')}
     <h2 class="sec-title">${ic('lock')}换手机也想找回？</h2>
-    <p class="small muted" style="margin:0 0 10px">存个恢复码。在别的手机上输入，就能回到你的资料。</p>
-    <div class="stack"><button type="button" class="btn block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</button></div>
+    <p class="small muted" style="margin:0 0 10px">存个恢复码。在别的手机上输入，就能回到你的资料。${S.me.local ? '完成验证后可以生成。' : ''}</p>
+    ${S.me.local ? '' : `<div class="stack"><button type="button" class="btn block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</button></div>`}
     <label class="check-row ${c.adult ? 'on' : ''}" id="adult"><input type="checkbox" class="sr"${c.adult ? ' checked' : ''}><span class="mark">${ic('check')}</span><span>我已满 18 岁，同意<a href="#/terms">用户协议</a>和<a href="#/policy">隐私政策</a></span></label>
     <div class="qfoot"><button class="btn primary block" id="go">同意，开始找人 ${ic('arrow')}</button></div>`);
   bindBack();
@@ -1071,20 +1091,76 @@ function renderConsent() {
     st[b.dataset.name] = b.dataset.v;
     selectOne(view.querySelectorAll(`[data-name="${b.dataset.name}"]`), b);
   }));
-  document.getElementById('rcode').onclick = () => openRecovery();
+  const rc = document.getElementById('rcode');
+  if (rc) rc.onclick = () => openRecovery();
   let adult = !!c.adult;
   const ad = document.getElementById('adult');
   ad.querySelector('input').onchange = (e) => { adult = e.target.checked; ad.classList.toggle('on', adult); };
   const btn = document.getElementById('go');
   btn.onclick = async () => {
     if (!adult) { toast('请先勾选“我已满 18 岁”'); ad.classList.add('shake'); setTimeout(() => ad.classList.remove('shake'), 500); return; }
+    const consent = { adult: true, scoring: true, pool: st.pool === '1', research: st.research === '1' };
+    // 还没过验证：同意先存本机，下一步输验证码，过了才一起交给服务器
+    if (S.me.local) { S.me.consent = consent; saveDraft(); return go('#/verify'); }
     btn.classList.add('loading');
     try {
-      await api('PUT', '/api/me/consent', { adult: true, scoring: true, pool: st.pool === '1', research: st.research === '1' });
+      await api('PUT', '/api/me/consent', consent);
       S.me = await api('GET', '/api/me');
       go('#/results');
     } catch (e) { btn.classList.remove('loading'); toast(e.message); }
   };
+}
+
+// ---------- 验证码 ----------
+// 填完、同意之后输一次图片验证码；过了才在服务器上建账户，把资料、要求、同意一次存好
+function renderVerify() {
+  if (!S.me.local) return go('#/results');
+  if (resumeHash() !== '#/verify') return go(resumeHash());
+  paint(`${simpleHead('#/consent', '最后一步', '确认一下')}
+    <h1 class="q" id="qt">输入图里的字</h1>
+    <p class="qhint">${ic('shield')}5 个字符，不分大小写。验证后保存你的资料。</p>
+    <div class="cap-card" id="cap">
+      <div class="cap-img" id="capimg" role="img" aria-label="验证码图片"></div>
+      <button type="button" class="btn ghost sm" id="capnew">换一张</button>
+    </div>
+    <input class="text-input mono cap-input" id="capin" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="8" placeholder="·····" aria-label="验证码" aria-describedby="caperr">
+    <p class="err" id="caperr" role="alert" hidden></p>
+    <div class="qfoot"><button class="btn primary block" id="capgo">验证并查看结果 ${ic('arrow')}</button></div>`);
+  bindBack();
+  const card = document.getElementById('cap'), img = document.getElementById('capimg'), input = document.getElementById('capin');
+  const err = document.getElementById('caperr'), btn = document.getElementById('capgo');
+  let id = null;
+  const load = async () => {
+    img.classList.add('loading'); id = null;
+    try { const c = await api('GET', '/api/captcha'); id = c.id; img.innerHTML = c.svg; }
+    catch (e) { img.innerHTML = ''; err.textContent = e.message; err.hidden = false; }
+    img.classList.remove('loading');
+  };
+  const fail = (msg) => {
+    err.textContent = msg; err.hidden = false;
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    input.value = ''; input.focus();
+    load();
+  };
+  document.getElementById('capnew').onclick = () => { err.hidden = true; input.value = ''; input.focus(); load(); };
+  input.oninput = () => { err.hidden = true; };
+  input.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
+  btn.onclick = async () => {
+    const answer = input.value.trim();
+    if (!answer) { fail('先输入图里的字'); return; }
+    if (!id) return;
+    btn.classList.add('loading'); err.hidden = true;
+    try {
+      const { token } = await api('POST', '/api/session', { captchaId: id, answer, gender: S.me.gender, profile: S.me.profile || {}, requirements: S.me.requirements, consent: S.me.consent, identity: S.me.identity || {} });
+      store.set('vier.token', token);
+      store.del('vier.draft');
+      S.me = await api('GET', '/api/me');
+      S.results = null;
+      go('#/results');
+    } catch (e) { btn.classList.remove('loading'); fail(e.status === 400 && /验证码/.test(e.message) ? '不对，换了一张，再试一次' : e.message); }
+  };
+  input.focus();
+  load();
 }
 
 // ---------- 计算中 ----------
@@ -1902,7 +1978,7 @@ function renderPrivacy() {
     <div class="list-card">
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">我填的资料<span>年龄、学历、家庭等，点进去可以改</span></span>${ic('next')}</a>
       <a href="${S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age'}"><span class="ico">${ic('heart')}</span><span class="t">我的要求<span>${S.me.requirements?.length || 0} 条</span></span>${ic('next')}</a>
-      <button id="rcode"><span class="ico">${ic('lock')}</span><span class="t">恢复码<span>${S.me.hasRecovery ? '已经存过。丢了可以重新生成' : '存一个，换手机也能找回'}</span></span>${ic('next')}</button>
+      <button id="rcode"${S.me.local ? ' disabled' : ''}><span class="ico">${ic('lock')}</span><span class="t">恢复码<span>${S.me.local ? '完成验证后可以生成' : S.me.hasRecovery ? '已经存过。丢了可以重新生成' : '存一个，换手机也能找回'}</span></span>${ic('next')}</button>
       <a href="#/recover"><span class="ico">${ic('users')}</span><span class="t">用恢复码找回<span>在这台设备上换回原来的资料</span></span>${ic('next')}</a>
     </div>
     <h2 class="sec-title">${ic('shield')}你的资料怎么用</h2>
@@ -1921,7 +1997,9 @@ function renderPrivacy() {
   const form = document.getElementById('f');
   form.addEventListener('change', async () => {
     try {
-      await api('PUT', '/api/me/consent', { scoring: form.scoring.checked, pool: form.pool.checked, research: form.research.checked });
+      const next = { scoring: form.scoring.checked, pool: form.pool.checked, research: form.research.checked };
+      if (S.me.local) { S.me.consent = { ...(S.me.consent || {}), ...next }; saveDraft(); toast('已存在这台设备上'); return; }
+      await api('PUT', '/api/me/consent', next);
       S.me = await api('GET', '/api/me');
       S.results = null;
       toast(form.scoring.checked ? '已保存' : '已保存。要看结果时，需要重新打开第一项');
@@ -1929,7 +2007,7 @@ function renderPrivacy() {
   });
   document.getElementById('export').onclick = async () => {
     try {
-      const data = await api('GET', '/api/me/export');
+      const data = S.me.local ? { exportedAt: new Date().toISOString(), draft: Object.fromEntries(DRAFT_KEYS.map((k) => [k, S.me[k]])) } : await api('GET', '/api/me/export');
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
       a.download = 'vier-my-data.json';
@@ -1942,7 +2020,7 @@ function renderPrivacy() {
     m.el.querySelector('#yes').onclick = async (ev) => {
       ev.currentTarget.classList.add('loading');
       try {
-        await api('DELETE', '/api/me');
+        if (!S.me.local) await api('DELETE', '/api/me');
         resetSession();
         m.close();
         paint(milestone('已经删除', '你的全部资料都已从服务器上删除。', '', `<a class="btn primary block" href="#/">回到首页</a>`));
@@ -1988,6 +2066,9 @@ async function route() {
       return renderIdealQ(b);
     }
     if (a === 'consent') return renderConsent();
+    if (a === 'verify') return renderVerify();
+    // 没过验证就没有服务器上的结果：先去把剩下的填完或输验证码
+    if (S.me.local && (a === 'results' || a === 'match')) return go(resumeHash());
     if (a === 'results') return await renderResults();
     if (a === 'match') return await renderMatch(Number(b), h.split('/')[3] || 'ideal');
     if (a === 'privacy') return renderPrivacy();
