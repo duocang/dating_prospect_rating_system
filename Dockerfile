@@ -1,4 +1,4 @@
-# VIER 正式上线镜像：真人人选池、关闭支付。零依赖，不需要 npm install。
+# VIER 正式上线镜像：真人人选池。零依赖，不需要 npm install。
 FROM node:20-alpine
 
 WORKDIR /app

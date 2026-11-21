@@ -9,14 +9,14 @@
 ```bash
 npm start          # 或 node server/server.mjs，然后打开 http://localhost:8787
 npm run dev        # 开发用：server/、packages/、config/ 改动后自动重启；网页文件改了刷新浏览器即可
-npm test           # 评分、关系引擎、接口、牵线、支付、安全共 46 项测试
+npm test           # 评分、关系引擎、接口、安全
 ```
 
-本机默认是测试环境（`testMode: true`）：不发短信，验证码直接显示在页面上；人选池是同意进入人选池的真人加上你所在城市的虚拟人选。
+本机默认是测试环境（`testMode: true`）：人选池是同意进入人选池的真人加上你所在城市的虚拟人选。
 
 ## 部署上线
 
-上线用的是正式配置（`config/app.production.json`）：虚拟人选在卡片上标“虚拟”、不能牵线；支付关闭时 VIP 入口不出现。备案号填在 `site.icp`，页脚自动显示。
+上线用的是正式配置（`config/app.production.json`）：虚拟人选在卡片上标“虚拟”。备案号填在 `site.icp`，页脚自动显示。
 
 **准备**：一台装好 Docker 的服务器，一个已解析到这台服务器的域名（大陆服务器需 ICP 备案）。
 
@@ -30,7 +30,7 @@ docker compose up -d
 
 打开 `https://你的域名` 就能用。HTTPS 证书由 Caddy 自动申请和续期；不活跃满一年的账户由服务每天自动清理。
 
-**密钥**：另存一份，和备份分开放。**密钥丢了或换了，所有资料都打不开。** 没填密钥或仍用模拟支付时，服务拒绝启动。
+**密钥**：另存一份，和备份分开放。**密钥丢了或换了，所有资料都打不开。** 没填密钥时，服务拒绝启动。
 
 **更新**：`git pull && docker compose up -d --build`，用户数据不受影响。
 
@@ -42,21 +42,19 @@ docker compose cp app:/data ./backup-$(date +%F)
 
 **看日志**：`docker compose logs -f app`
 
-**打开 VIP**：按 [扫码支付接入](docs/PAYMENTS.md) 配好商户，把 `config/app.production.json` 里的 `payments.mode` 从 `off` 改成 `live`，再运行更新命令。
-
-**现在的限制**：短信服务还没接（正式环境发验证码会返回 503，见 [登录](docs/AUTH.md)）；限流计数在内存里，只适合单进程；文件存储只适合试点规模；用户协议和隐私政策是大白话初稿，上线前请懂法的人看一遍。
+**现在的限制**：限流计数在内存里，只适合单进程；文件存储只适合试点规模；用户协议和隐私政策是大白话初稿，上线前请懂法的人看一遍。
 
 ## 目录
 
 | 路径 | 内容 |
 |---|---|
 | `web/` | 新网页前端（关于你 → 理想型 → 同意 → 结果 → 人选详情 → 我的数据，每步独立页面） |
-| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层、扫码支付 |
+| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层、恢复码 |
 | `packages/schema/` | 字段注册表：资料、要求、评分、隐私分级共用的唯一来源 |
 | `packages/scoring/` | **可替换的评分模块**（当前 `fit-v1`），只通过接口被调用 |
 | `packages/matching/` | 关系引擎：理想型人选、对方的理想型、你符合对方理想型的程度、在找你的人、双向相合 |
-| `config/app.json` | 演示配置：人选池、免费/VIP 数量、评分器、隐私参数、支付模式 |
-| `config/app.production.json` | 正式上线配置：真人人选池、关闭支付，其余同上 |
+| `config/app.json` | 演示配置：人选池、每组人数、评分器、隐私参数 |
+| `config/app.production.json` | 正式上线配置：`testMode: false`，其余同上 |
 | `scripts/` | 生成模拟人选池、清理长期不活跃账户 |
 | `docs/` | 架构、命名、评分、隐私、决策记录 |
 | `archive/2026-11-15-pure-web/` | 旧的纯网页版本、模拟库、宣传图与研究资料，原样保留 |
@@ -69,5 +67,5 @@ docker compose cp app:/data ./backup-$(date +%F)
 - [新命名（取代 A/B/C/D）](docs/NAMING.md)
 - [评分算法 fit-v1 与替换方法](docs/SCORING.md)
 - [隐私与数据保护](docs/PRIVACY.md)
-- [扫码支付接入](docs/PAYMENTS.md)
+- [账户与恢复码](docs/AUTH.md)
 - [关键决策与理由](docs/DECISIONS.md)

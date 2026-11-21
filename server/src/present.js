@@ -87,18 +87,16 @@ export function presentCard(key, viewerId, person, { hideVirtual = false, name =
   };
 }
 
-// brokerFor(person) 可选：给“你可以联系的人”加上牵线状态（docs/CONTACT-BROKER.md），只有状态，没有对方 id
-export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtual = false } = {}) {
+export function presentRelations(key, viewer, rel, { hideVirtual = false } = {}) {
   const nm = namer(key, viewer.id);
   const card = (p) => presentCard(key, viewer.id, p, { hideVirtual, name: nm(p) });
-  const contactable = (p) => ({ ...card(p), ...(brokerFor ? { broker: brokerFor(p) } : {}) });
   return {
     scorer: rel.scorer,
     limits: rel.limits,
     myIdeal: rel.myIdeal.map(formatRequirement),
     summary: rel.summary,
     idealMatches: rel.idealMatches.map((m) => ({
-      ...contactable(m.person),
+      ...card(m.person),
       fit: presentScore(m.fit, m.person.profile, { subjectIsViewer: false }),
       rankRange: m.rankRange,
       tied: m.tiedWithPrevious,
@@ -108,13 +106,13 @@ export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtu
       theirEligibleCount: m.theirEligibleCount,
       theirPicks: m.theirPicks.map((p) => ({ ...card(p.person), score: p.fit.total, rankRange: p.rankRange })),
     })),
-    // 理想型的理想型：和你同性别，不能牵线，只给卡片上的粗粒度事实
+    // 理想型的理想型：和你同性别，只给卡片上的粗粒度事实
     idealOfIdeal: (rel.idealOfIdeal || []).map((a) => ({ ...card(a.person), score: a.score, rankRange: a.rankRange, fullyMetIdeals: a.fullN, eligibleIdeals: a.eligibleN })),
     myPlaceA: rel.myPlaceA,
     // 你自己的卡片事实（和别人同样的粒度），用于和理想型的理想型逐条对照
     myFacts: presentCard(key, viewer.id, viewer).facts,
     seekers: rel.seekers.map((s) => ({
-      ...contactable(s.person),
+      ...card(s.person),
       theirIdeal: s.person.requirements.map(formatRequirement),
       myFitToThem: presentScore(s.myFitToThem, viewer.profile, { subjectIsViewer: true }),
       theirFitToMyIdeal: s.theirFitToMyIdeal.total,
@@ -122,7 +120,7 @@ export function presentRelations(key, viewer, rel, { brokerFor = null, hideVirtu
       fit: presentScore(s.theirFitToMyIdeal, s.person.profile, { subjectIsViewer: false }),
     })),
     mutual: rel.mutual.map((m) => ({
-      ...contactable(m.person),
+      ...card(m.person),
       mutualScore: m.mutualScore,
       fitToMyIdeal: m.fitToMyIdeal.total,
       myFitToThem: m.myFitToThem.total,

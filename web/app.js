@@ -91,7 +91,6 @@ const I = {
   shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
   lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9Z"/><path d="M19 16l.7 1.8 1.8.7-1.8.7L19 21l-.7-1.8-1.8-.7 1.8-.7Z"/>',
-  crown: '<path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5Z"/>',
   download: '<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/>',
   info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-5M12 8h.01"/>',
@@ -252,7 +251,7 @@ function resumeHash() {
 }
 
 // ---------- 通用界面片段 ----------
-// 换个人 / 退出登录 / 删除资料：清掉这个人的一切本地状态（跳过的题也算），界面偏好（主题、看法）保留
+// 换个人 / 删除资料：清掉这个人的一切本地状态（跳过的题也算），界面偏好（主题、看法）保留
 function resetSession() {
   store.del('vier.token'); store.del('vier.skipped');
   Object.assign(S, { me: null, results: null, pDraft: null, iDraft: null, tab: 'ideal' });
@@ -408,11 +407,11 @@ async function renderHome() {
     const filled = S.me ? Object.keys(S.me.profile || {}).length + (S.me.gender ? 1 : 0) + (S.me.requirements?.length || 0) : 0;
     const actions = {
       new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/gender' : '#/intro'}">开始填写 ${ic('arrow')}</a>
-            <a class="btn ghost block" href="#/login">已经填过？用手机号登录</a>`,
+            <a class="btn ghost block" href="#/recover">已经填过？用恢复码找回</a>`,
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
-      done: `${brokerNotice()}<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
+      done: `<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
     if (st === 'new') { paintIntroHome(); const el = document.getElementById('relmap'); relMap(el, EXAMPLE, { esc, still: true, maxH: heroRoom(el) }); return; }
@@ -458,15 +457,17 @@ async function renderHome() {
       <div class="stack rise" style="--i:2">${actions}</div>
     </section>`);
     if (st !== 'done') relMap(document.getElementById('relmap'), EXAMPLE, { esc });
-    // 已经开始填的人：首页底部可以退出登录 / 换个人重新开始
+    // 已经开始填的人：首页底部可以存恢复码 / 换个人重新开始
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
-      acts.insertAdjacentHTML('beforeend', `<button class="btn block" id="restart">${S.me.phone ? `退出登录（${esc(S.me.phone)}）` : '换个人，从头开始'}</button>`);
+      acts.insertAdjacentHTML('beforeend', `<button class="btn ghost block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '存个恢复码，换手机也能找回'}</button>
+        <button class="btn block" id="restart">换个人，从头开始</button>`);
+      document.getElementById('rcode').onclick = () => { openRecovery().onclose = () => { dir = 'none'; draw(); }; };
       document.getElementById('restart').onclick = () => {
-        const lose = !S.me.phone;
-        const m = askSheet(lose ? '从头开始？' : '退出登录？', lose ? '你还没登录，资料会丢。想留着就先登录。' : '下次用手机号登录就能回来。',
-          lose ? '不保留，从头开始' : '退出登录', { danger: lose, pre: lose ? '<a class="btn primary block" href="#/login">先登录保存</a>' : '' });
-        m.el.querySelector('a')?.addEventListener('click', m.close);
+        const lose = !S.me.hasRecovery;
+        const m = askSheet('从头开始？', lose ? '你还没存恢复码，资料会丢。想留着就先存一个。' : '这台设备上的资料会清掉。用恢复码可以找回来。',
+          lose ? '不保留，从头开始' : '从头开始', { danger: lose, pre: lose ? '<button class="btn primary block" id="pre-rc">先存恢复码</button>' : '' });
+        m.el.querySelector('#pre-rc')?.addEventListener('click', () => { m.close(); openRecovery(); });
         m.el.querySelector('#yes').onclick = () => { m.close(); resetSession(); dir = 'none'; draw(); };
       };
     }
@@ -560,7 +561,7 @@ function paintIntroHome() {
     <section class="ap-sec ap-last">
       <h2 class="ap-h2 reveal">现在开始。</h2>
       <p class="ap-sub reveal">大约 5 分钟，看看谁适合你。</p>
-      <div class="ap-ctas reveal"><a class="btn primary" href="${start}">开始填写</a><a class="ap-more" href="#/login">已经填过？用手机号登录 ${ic('next')}</a></div>
+      <div class="ap-ctas reveal"><a class="btn primary" href="${start}">开始填写</a><a class="ap-more" href="#/recover">已经填过？用恢复码找回 ${ic('next')}</a></div>
     </section>`, { wide: true });
   view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' })));
   revealOnScroll();
@@ -1047,11 +1048,11 @@ function choice(name, cur, yes, no) {
 
 function renderConsent() {
   const c = S.me.consent || {};
-  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0', willing: '0' };
+  const st = { pool: c.pool ? '1' : '0', research: c.research ? '1' : '0' };
   paint(`${simpleHead('#/ideal/review', '最后一步', '你的资料，你做主')}
     <h1 class="q" id="qt">最后，问你几件事</h1>
     <div class="privacy-label">
-      <div><span class="ico">${ic('user')}</span><p><b>收集什么</b>你填的情况和要求。登录了才有手机号。</p></div>
+      <div><span class="ico">${ic('user')}</span><p><b>收集什么</b>你填的情况和要求。不要手机号，也不要名字。</p></div>
       <div><span class="ico">${ic('heart')}</span><p><b>拿来做什么</b>只用来算谁和你合适。匿名统计要你同意才算。</p></div>
       <div><span class="ico">${ic('eyeOff')}</span><p><b>谁能看到</b>别人看不到你的名字、存款和家里情况。随时可以下载或永久删除。</p></div>
     </div>
@@ -1060,25 +1061,17 @@ function renderConsent() {
     ${SEE_CARD()}
     <h2 class="sec-title" id="q-research">2. 用于匿名统计吗？</h2>
     ${choice('research', st.research, '只算很多人加在一起的数', '不参与统计')}
-    <div id="wq" ${st.pool === '1' ? '' : 'hidden'}>
-      <h2 class="sec-title" id="q-willing">3. 愿意被想认识你的人联系吗？</h2>
-      ${choice('willing', st.willing, '有人想认识你时，问你同不同意', '别人联系不到你')}
-    </div>
-    <div id="cq" hidden>
-    <h2 class="sec-title">${ic('user')}用手机号登录</h2>
-    <p class="small muted" style="margin:0 0 10px">用手机号登录。你同意后，这个号码才会发给对方一次。</p>
-    <div id="lbox">${S.me.phone ? loggedInNote() : loginBlock()}</div>
-    </div>
+    <h2 class="sec-title">${ic('lock')}换手机也想找回？</h2>
+    <p class="small muted" style="margin:0 0 10px">存个恢复码。在别的手机上输入，就能回到你的资料。</p>
+    <div class="stack"><button type="button" class="btn block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</button></div>
     <label class="check-row ${c.adult ? 'on' : ''}" id="adult"><input type="checkbox" class="sr"${c.adult ? ' checked' : ''}><span class="mark">${ic('check')}</span><span>我已满 18 岁，同意<a href="#/terms">用户协议</a>和<a href="#/policy">隐私政策</a></span></label>
     <div class="qfoot"><button class="btn primary block" id="go">同意，开始找人 ${ic('arrow')}</button></div>`);
   bindBack();
   view.querySelectorAll('.choice .opt').forEach((b) => (b.onclick = () => {
     st[b.dataset.name] = b.dataset.v;
-    if (b.dataset.name === 'pool') document.getElementById('wq').hidden = b.dataset.v !== '1';
-    document.getElementById('cq').hidden = !(st.pool === '1' && st.willing === '1');
     selectOne(view.querySelectorAll(`[data-name="${b.dataset.name}"]`), b);
   }));
-  if (!S.me.phone) bindLogin(document.getElementById('lbox'), () => { document.getElementById('lbox').innerHTML = loggedInNote(); });
+  document.getElementById('rcode').onclick = () => openRecovery();
   let adult = !!c.adult;
   const ad = document.getElementById('adult');
   ad.querySelector('input').onchange = (e) => { adult = e.target.checked; ad.classList.toggle('on', adult); };
@@ -1087,10 +1080,7 @@ function renderConsent() {
     if (!adult) { toast('请先勾选“我已满 18 岁”'); ad.classList.add('shake'); setTimeout(() => ad.classList.remove('shake'), 500); return; }
     btn.classList.add('loading');
     try {
-      const wantBroker = st.pool === '1' && st.willing === '1';
-      if (wantBroker && !S.me.phone) { btn.classList.remove('loading'); toast('选了“可以”，请先用手机号登录'); document.getElementById('lphone')?.focus(); return; }
       await api('PUT', '/api/me/consent', { adult: true, scoring: true, pool: st.pool === '1', research: st.research === '1' });
-      if (S.me.phone) await api('PUT', '/api/me/broker/willing', { willing: wantBroker });
       S.me = await api('GET', '/api/me');
       go('#/results');
     } catch (e) { btn.classList.remove('loading'); toast(e.message); }
@@ -1265,7 +1255,6 @@ function pcard(c, inner, { href = '', i = 0, head = '', more = '', quick = '' } 
   return `<details class="pcard fold" style="--i:${i}">
     <summary class="pcard-head"><div class="pcard-name"><b>${nameTag(c)}</b><span>${subLine(c)}</span></div>
       ${quick ? `<span class="quick">${quick}</span>` : head}<span class="chev">${ic('next')}</span></summary>
-    ${brokerTag(c) ? `<div class="broker-tags">${brokerTag(c)}</div>` : ''}
     <div class="facts">${Object.entries(c.facts).filter(([k]) => k !== '年龄' && k !== '常住城市').slice(0, 4).map(([, v]) => `<span>${esc(nice(v))}</span>`).join('')}</div>
     ${inner}
     ${href ? `<a class="pcard-more" href="${href}">${more || '看详细'} ${ic('next')}</a>` : ''}
@@ -1292,7 +1281,7 @@ function tabList(r, tab) {
     const switcher = secHead(`最符合你要求的 ${people.length} 位${real < people.length ? `<small>其中真人 ${real} 位</small>` : ''}`, tie, table);
     const body = (table ? compareTable(reqs, people)
       : `<div class="cards">${people.map((m, i) => pcard(m,
-        fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items) + brokerBox(m),
+        fitLine('你', t, byIdeal(reqs, m.fit.items)) + fitLine(t, '你', m.myFitToThem.items),
         { href: `#/match/${i}`, i, quick: twoWay(r, m) + rankQ(i, m.fit.total, m.rankRange), more: `看${t}想找什么样的人` })).join('')}</div>`);
     return switcher + body;
   }
@@ -1317,7 +1306,7 @@ function tabList(r, tab) {
   const table = S.view === 'table', reqs = r.myIdeal || [];
   const switcherD = secHead(`你最符合${T()}们要求的 ${r.seekers.length} 位`, '', table);
   if (table) return switcherD + compareTable(reqs, r.seekers, '/seekers');
-  return switcherD + `<div class="cards">${r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem) + brokerBox(m), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看${t}想找什么样的人` })).join('')}</div>`;
+  return switcherD + `<div class="cards">${r.seekers.map((m, i) => pcard(m, both(m, m.myFitToThem), { i, quick: twoWay(r, m) + rankQ(i, m.myFitToThem.total, m.rankRange), href: `#/match/${i}/seekers`, more: `看${t}想找什么样的人` })).join('')}</div>`;
 }
 
 // 卡片右侧：名次 + 契合度。名次按加权分排（越在意的条件分量越大），所以 8/11 也可能排在 9/11 前面
@@ -1450,9 +1439,8 @@ async function renderResults() {
   const r = await loadResults();
   if (gen !== routeGen) return;
   if (S.tab === 'mutual') S.tab = 'ideal';
-  const restoreY = /^#\/(match|ideal|me|privacy|broker)/.test(S.prev || '') && S.resY != null ? S.resY : null;
+  const restoreY = /^#\/(match|ideal|me|privacy)/.test(S.prev || '') && S.resY != null ? S.resY : null;
   const s = r.summary;
-  const payOn = (S.config.payments?.providers || []).length > 0; // 支付关闭时不出现 VIP 入口
   const few = s.counterpartCount === 0; // 真人模式刚上线，人还没有
 
   const [vt, vs] = verdict(r);
@@ -1462,12 +1450,8 @@ async function renderResults() {
       <p class="res-sub rise">${vs}</p>
       ${few ? '' : '<div class="relmap rise" id="relmap" style="--i:1"></div>'}
     </section>
-    ${brokerNotice()}
     <div class="tb-sentinel" aria-hidden="true"></div><div class="tabs-bar"><div class="tb-title" aria-hidden="true"><b>你的结果</b><span>${vt}</span></div><div class="tabs" role="tablist" aria-label="三组人">${['ideal', 'theirs', 'seekers'].map((k) => `<button role="tab" id="tab-${k}" aria-controls="tabpanel" tabindex="${S.tab === k ? 0 : -1}" data-tab="${k}" aria-selected="${S.tab === k}" class="g-${k} ${S.tab === k ? 'on' : ''}"><i class="tdot"></i>${REL[k]()}<b class="tl">${{ ideal: 'B', theirs: 'A', seekers: 'D' }[k]}</b></button>`).join('')}</div></div>
     <div id="tabpanel" role="tabpanel"></div>
-    ${r.plan === 'vip'
-    ? `<div class="vip">${ic('crown')}<div class="t"><b>你是 VIP</b><span>每组可以看 ${S.config.plans.vip.matches} 位</span></div></div>`
-    : payOn ? `<button class="vip-line" id="upgrade">${ic('crown')}<span>每组多看 ${S.config.plans.vip.matches - S.config.plans.free.matches} 位<small>一次付费，长期有效</small></span><b>¥${(S.config.plans.vip.priceFen / 100).toFixed(2)}</b></button>` : ''}
     <div class="list-card edit-links">
       <a href="#/ideal/review"><span class="ico">${ic('edit')}</span><span class="t">改我的要求<span>${S.me.requirements?.length || 0} 条，改完马上重新算</span></span>${ic('next')}</a>
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">改我填的资料<span>年龄、学历、家庭等</span></span>${ic('next')}</a>
@@ -1497,7 +1481,6 @@ async function renderResults() {
     panel.querySelectorAll(".cell-tap").forEach((b) => (b.onclick = () => b.setAttribute("aria-expanded", b.getAttribute("aria-expanded") !== "true")));
     panel.querySelectorAll('[data-view]').forEach((b) => (b.onclick = () => { if (S.view === b.dataset.view) return; S.view = b.dataset.view; store.set('vier.view', S.view); show(tab, false, true); panel.querySelector(`[data-view="${S.view}"]`)?.focus(); }));
     if (anim && !reduceMotion()) { panel.classList.remove('swap-in'); void panel.offsetWidth; panel.classList.add('swap-in'); }
-    bindAsk(panel, [...r.idealMatches, ...r.seekers, ...r.mutual]);
     if (scroll) view.querySelector('.tabs').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'start' });
   };
   view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { if (b.dataset.tab !== S.tab) show(b.dataset.tab, false, true); }));
@@ -1549,8 +1532,6 @@ async function renderResults() {
   mapEl?.addEventListener('pointerdown', () => { touched = true; }, { once: true });
   const toTab = () => { if (!touched && mapEl?.isConnected) map?.show(S.tab); };
   if (map) { if (restoreY != null || matchMedia('(prefers-reduced-motion: reduce)').matches) toTab(); else setTimeout(toTab, 1500); }
-  const up = document.getElementById('upgrade');
-  if (up) up.onclick = () => openPayment('vip');
   if (restoreY != null) { dir = 'none'; requestAnimationFrame(() => window.scrollTo(0, restoreY)); }
 }
 
@@ -1636,7 +1617,7 @@ const detailNav = (idx, n, sfx) => `<div class="detail-nav">
       <div class="pager">${pagerLink(`#/match/${idx - 1}${sfx}`, '上一位', idx === 0, 'back')}${pagerLink(`#/match/${idx + 1}${sfx}`, '下一位', idx >= n - 1, 'next')}</div>
     </div>`;
 // 三组都能进详情：#/match/序号 是“他适合你”，#/match/序号/seekers 或 /mutual 是另外两组
-// 理想型的理想型：和你同性别，只读，不能牵线；只和你逐条对照
+// 理想型的理想型：和你同性别，只读；只和你逐条对照
 function renderTheirs(r, idx) {
   const list = r.idealOfIdeal || [], a = list[idx];
   if (!a) return go('#/results', 'back');
@@ -1648,7 +1629,7 @@ function renderTheirs(r, idx) {
       <h1>${nameTag(a)}</h1>
       <p class="small muted" style="margin:2px 0 0">${subLine(a)} · 第 ${idx + 1} 位</p>
     </section>
-    <p class="small muted" style="margin:14px 0 10px">用你的理想型的标准打分：${esc(a.name || 'TA')} ${pctQ(a.score)}，你 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。只能对照，不能牵线。</p>
+    <p class="small muted" style="margin:14px 0 10px">用你的理想型的标准打分：${esc(a.name || 'TA')} ${pctQ(a.score)}，你 ${r.myPlaceA ? pctQ(r.myPlaceA.score) : '—'}。只能对照。</p>
     ${aCompareTable(r.myFacts || {}, [a], r.myPlaceA?.score, true)}
     <div class="stack" style="margin-top:22px"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`);
   bindBack();
@@ -1685,7 +1666,6 @@ async function renderMatch(idx, tab = 'ideal') {
       ${fitLine('你', t, m.fit.items, true)}
       ${fitLine(t, '你', m.myFitToThem.items, true)}
     </div>
-    ${brokerBox(m, { full: true })}
 
     <details class="more fold"><summary>${ic('user')}${t}的要求，你符合哪些</summary>${checks(m.myFitToThem.items, `${t}要`, '你是')}</details>
     <details class="more fold"><summary>${ic('heart')}你的要求，${t}符合哪些</summary>${checks(m.fit.items, '你要', `${t}是`)}</details>
@@ -1702,7 +1682,6 @@ async function renderMatch(idx, tab = 'ideal') {
     </details>
     <div class="stack"><button class="btn block" data-back="#/results">${ic('back')}返回</button></div>`, { wide: true });
   bindBack();
-  bindAsk(view, [m]);
   document.getElementById('more').addEventListener('toggle', (e) => {
     if (e.target.open) requestAnimationFrame(() => requestAnimationFrame(() => view.querySelectorAll('.ring .fg').forEach((c) => (c.style.strokeDashoffset = 289 * (1 - Number(c.dataset.v) / 100)))));
   });
@@ -1749,352 +1728,60 @@ function sheet(html) {
   return m;
 }
 
-// ---------- 扫码支付 ----------
-function qrSvg(text) {
-  const qr = window.qrcode(0, 'M');
-  qr.addData(text);
-  qr.make();
-  return qr.createSvgTag({ cellSize: 5, margin: 0, scalable: true });
-}
-
-function openPayment(planId) {
-  const plan = S.config.plans[planId], free = S.config.plans.free;
-  const providers = S.config.payments?.providers || [];
-  const m = sheet(`<div id="pay"><h2>每组多看 ${plan.matches - free.matches} 位</h2>
-    <p class="price"><small>¥</small>${(plan.priceFen / 100).toFixed(2)}</p>
-    <ul class="perks"><li>${ic('check')}${REL.ideal()}、${REL.theirs()}、${REL.seekers()}，每组都从 ${free.matches} 位变成 ${plan.matches} 位</li><li>${ic('check')}一次付费，长期有效，不自动续费</li><li>${ic('check')}付完马上生效，不用重新填</li></ul>
-    ${providers.length ? `<div class="stack" id="pay-pre"><button class="btn primary block" id="topay">去付款</button><button class="btn block" id="notnow">先不用</button></div>
-      <div id="pay-step" hidden><div class="pay-tabs" role="tablist">${providers.map((p, i) => `<button data-p="${esc(p.id)}" class="${i ? '' : 'on'}" role="tab">${esc(p.label)}</button>`).join('')}</div>
-      <div class="qr" id="qr"><span class="spin"></span></div><p class="pay-hint" id="pay-hint">正在生成二维码…</p></div>`
-    : '<p class="err">暂时还不能在线支付。请稍后再试。</p>'}</div>`);
-  let timer = null, current = null, closed = false, reqN = 0;
-  m.onclose = () => { closed = true; clearTimeout(timer); };
-
-  async function start(pid) {
-    clearTimeout(timer);
-    const my = ++reqN; // 快速切换付款方式时，晚回来的旧二维码不能盖掉新的
-    m.el.querySelectorAll('[data-p]').forEach((a) => { a.classList.toggle('on', a.dataset.p === pid); a.setAttribute('aria-selected', a.dataset.p === pid); });
-    const box = m.el.querySelector('#qr'), hint = m.el.querySelector('#pay-hint');
-    box.innerHTML = '<span class="spin"></span>'; hint.textContent = '正在生成二维码…';
+// ---------- 恢复码 ----------
+// 没有账号密码：存一个恢复码，换手机时输入就能回到原来的资料。明文只显示这一次。
+function openRecovery() {
+  const again = !!S.me?.hasRecovery;
+  const m = sheet(`<div id="rc"><h2>${again ? '重新生成恢复码' : '恢复码'}</h2>
+    <p class="lead">换手机或清了浏览器，输入恢复码就能找回你的资料。${again ? '生成新的以后，旧的就不能用了。' : ''}</p>
+    <div class="stack"><button class="btn primary block" id="rc-go">${again ? '生成新的恢复码' : '生成恢复码'}</button><button class="btn block" id="rc-no">先不用</button></div></div>`);
+  m.el.querySelector('#rc-no').onclick = m.close;
+  m.el.querySelector('#rc-go').onclick = async (ev) => {
+    const b = ev.currentTarget; b.classList.add('loading');
     try {
-      const o = await api('POST', '/api/me/orders', { plan: planId, provider: pid });
-      if (closed || my !== reqN) return;
-      current = o.orderNo;
-      const app = pid === 'alipay' ? '支付宝' : '微信';
-      box.innerHTML = qrSvg(o.codeUrl);
-      hint.innerHTML = `打开<b>${app}</b>，点“扫一扫”，对准上面的二维码。<br><span class="wait">付完会自动升级，不用关这个窗口</span>
-        <br><button class="btn sm" id="paid" style="margin-top:12px">我已经付好了</button>`
-        + (o.mock ? `<br><span class="badge sim" style="margin-top:10px">模拟支付 · 不会真的扣钱</span><br><button class="btn sm" id="mock-pay" style="margin-top:10px">模拟“付款成功”</button>` : '');
-      m.el.querySelector('#paid').onclick = () => { clearTimeout(timer); poll(o.orderNo, true); };
-      const mp = m.el.querySelector('#mock-pay');
-      if (mp) mp.onclick = () => { mp.classList.add('loading'); api('POST', `/api/me/orders/${o.orderNo}/mock-pay`).catch((e) => toast(e.message)); };
-      poll(o.orderNo);
-    } catch (e) { if (closed || my !== reqN) return; box.innerHTML = ''; hint.innerHTML = `<span class="err">${esc(e.message)}</span>`; }
-  }
-
-  async function poll(orderNo, manual) {
-    if (closed || orderNo !== current) return;
-    try {
-      const s = await api('GET', `/api/me/orders/${orderNo}`);
-      if (s.status === 'paid') {
-        m.el.querySelector('#pay').innerHTML = `<div class="milestone" style="padding-top:6px">${DONE_RING}<h2>付款成功</h2><p class="lead">你已经是 VIP 了，正在刷新结果…</p></div>`;
-        S.me = await api('GET', '/api/me');
-        await loadResults(true);
-        setTimeout(() => { m.close(); if (/^#\/results/.test(location.hash)) { dir = 'none'; route(); } }, 1400);
-        return;
-      }
-      if (s.status === 'expired') { m.el.querySelector('#pay-hint').textContent = '二维码过期了，请重新选。'; return; }
-      if (manual) toast('还没收到钱。已付款的话，稍等会自动升级。');
-    } catch { /* 网络抖动时继续轮询 */ }
-    timer = setTimeout(() => poll(orderNo), 2000);
-  }
-
-  m.el.querySelectorAll('[data-p]').forEach((a) => (a.onclick = () => start(a.dataset.p)));
-  // 先看清买的是什么，点“去付款”才生成订单和二维码
-  if (providers.length) {
-    m.el.querySelector('#notnow').onclick = m.close;
-    m.el.querySelector('#topay').onclick = () => { m.el.querySelector('#pay-pre').hidden = true; m.el.querySelector('#pay-step').hidden = false; start(providers[0].id); };
-  }
-}
-
-// ---------- 手机号登录 ----------
-// 没有密码：手机号 + 验证码。测试环境不发短信，验证码直接显示在页面上。
-const loggedInNote = () => `<div class="note-card" style="margin:0">${ic('check')}<span>已登录 <b>${esc(S.me.phone)}</b></span></div>`;
-const loginBlock = () => `<div class="login-box">
-    <input class="text-input" id="lphone" inputmode="tel" maxlength="11" autocomplete="tel" placeholder="11 位手机号" aria-label="手机号">
-    <div class="row" style="margin-top:10px;gap:10px"><input class="text-input" id="lcode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="6 位验证码" aria-label="验证码" style="margin:0;flex:1"><button type="button" class="btn sm" id="lsend">获取验证码</button></div>
-    <p class="small muted" id="lhint" hidden></p>
-    <button type="button" class="btn primary block" id="lgo" style="margin-top:12px">登录</button></div>`;
-function bindLogin(root, onDone) {
-  const $ = (id) => root.querySelector('#' + id);
-  const hint = (t) => { $('lhint').innerHTML = t; $('lhint').hidden = !t; };
-  let wait = 0, timer;
-  $('lsend').onclick = async () => {
-    if (wait) return;
-    try {
-      const r = await api('POST', '/api/auth/code', { phone: $('lphone').value.trim() });
-      hint(r.devCode ? `测试环境不发短信，验证码是 <b>${esc(r.devCode)}</b>` : '验证码已发送，5 分钟内有效');
-      if (r.devCode) $('lcode').value = r.devCode;
-      wait = 60; $('lsend').disabled = true;
-      timer = setInterval(() => { if (!$('lsend')) return clearInterval(timer); wait--; $('lsend').textContent = wait ? `${wait} 秒后重发` : '获取验证码'; if (!wait) { clearInterval(timer); $('lsend').disabled = false; } }, 1000);
-      $('lcode').focus();
-    } catch (e) { hint(`<span class="err">${esc(e.message)}</span>`); }
+      const { code } = await api('POST', '/api/me/recovery');
+      S.me.hasRecovery = true;
+      m.el.querySelector('#rc').innerHTML = `<h2>你的恢复码</h2>
+        <p class="rc-code mono" id="rc-code">${esc(code)}</p>
+        <p class="lead">抄下来或截个图。只显示这一次，我们也查不到。谁拿到它，谁就能看到你的资料。</p>
+        <div class="stack"><button class="btn primary block" id="rc-copy">${ic('check')}复制</button><button class="btn block" id="rc-ok">我记好了</button></div>`;
+      m.el.querySelector('#rc-copy').onclick = () => navigator.clipboard?.writeText(code).then(() => toast('已复制'), () => toast('复制不了，请手动抄下来'));
+      m.el.querySelector('#rc-ok').onclick = m.close;
+    } catch (e) { b.classList.remove('loading'); toast(e.message); }
   };
-  $('lgo').onclick = async () => {
-    const b = $('lgo'); b.classList.add('loading');
-    const verify = (keep) => api('POST', '/api/auth/verify', { phone: $('lphone').value.trim(), code: $('lcode').value.trim(), ...(keep ? { keep } : {}) });
-    try {
-      let r;
-      try { r = await verify(); } catch (e) {
-        if (!e.data?.choose) throw e;
-        // 这个号码以前填过，这台手机上又刚填了一份：问一句留哪份，不悄悄丢掉
-        const keep = await new Promise((done) => {
-          const m = sheet(`<h2>这个号码以前填过资料</h2><p class="lead">留哪一份？另一份会被删掉。</p>
-            <div class="stack"><button class="btn primary block" data-k="this">用刚才填的</button><button class="btn block" data-k="saved">用以前的</button></div>`);
-          m.el.querySelectorAll('[data-k]').forEach((x) => (x.onclick = () => { m.close(); done(x.dataset.k); }));
-        });
-        r = await verify(keep);
-      }
-      if (r.token) store.set('vier.token', r.token);
-      S.me = await api('GET', '/api/me');
-      if (r.switched) { S.results = null; toast('已找回你之前的资料'); } else toast('已登录');
-      clearInterval(timer);
-      onDone(r);
-    } catch (e) { b.classList.remove('loading'); hint(`<span class="err">${esc(e.message)}</span>`); }
-  };
+  return m;
 }
 
-function renderLogin() {
-  const back = S.prev && !/login/.test(S.prev) ? S.prev : '#/privacy';
-  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
-    <h1 class="q" id="qt">用手机号登录</h1>
-    <p class="qhint">${ic('lock')}换手机也能找回资料。不用密码，用验证码。</p>
-    ${S.me.phone ? loggedInNote() + `<div class="stack" style="margin-top:14px"><button class="btn block" id="logout">退出登录</button></div>` : `<div id="lbox">${loginBlock()}</div>`}`);
+// 在新设备上输入恢复码：换成那个账户的令牌，这台设备上刚填的资料不保留
+function renderRecover() {
+  const back = S.prev && !/recover/.test(S.prev) ? S.prev : '#/';
+  const lose = !!S.me?.gender;
+  paint(`${simpleHead(back, '找回资料')}
+    <h1 class="q" id="qt">输入恢复码</h1>
+    <p class="qhint">${ic('lock')}12 位，不分大小写。${lose ? '找回后，这台设备上刚填的资料不保留。' : ''}</p>
+    <input class="text-input mono" id="rcin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="20" placeholder="XXXX-XXXX-XXXX" aria-label="恢复码">
+    <p class="err" id="rcerr" hidden></p>
+    <div class="qfoot"><button class="btn primary block" id="rcgo">找回 ${ic('arrow')}</button></div>`);
   bindBack();
-  if (!S.me.phone) bindLogin(document.getElementById('lbox'), () => go(back, 'back'));
-  const lo = document.getElementById('logout');
-  if (lo) lo.onclick = () => { resetSession(); go('#/', 'back'); };
-}
-
-// ---------- 牵线（docs/CONTACT-BROKER.md）----------
-// 甲看中乙 → 乙看到甲的极简信息并自己决定 → 乙同意后，甲的联系方式发给乙一次。
-const CONTACT_TYPES = { phone: '手机号', wechat: '微信号' };
-const BROKER_TAG = {
-  open: null, // 能联系是默认，不再每张卡都标
-  demo: ['', '虚拟人选，不能联系'],
-  ineligible: ['', '“必须有”没对上，不能联系'],
-  closed: ['', '该用户暂未开放牵线'],
-  pending: ['gold', '已发出牵线请求'],
-  accepted: ['l3', '已牵线'],
-  cooldown: ['', '暂时不能再次发起'],
-};
-const brokerTag = (c) => {
-  const t = BROKER_TAG[c.broker?.state];
-  if (c.broker?.state === 'cooldown') return `<span class="badge broker-tag">${waitText(c.broker.until)}后可以再联系</span>`;
-  return t ? `<span class="badge ${t[0]} broker-tag">${t[1]}</span>` : '';
-};
-
-const waitText = (until) => {
-  const ms = new Date(until) - Date.now();
-  if (!(ms > 0)) return '稍等一会儿';
-  const h = Math.ceil(ms / 3600e3);
-  return h < 24 ? `约 ${h} 小时` : `约 ${Math.ceil(h / 24)} 天`;
-};
-
-// 人选卡片下方的牵线入口；详情页用 full 版，带说明
-function brokerBox(c, { full = false } = {}) {
-  const t = T(), st = c.broker?.state;
-  if (!st) return '';
-  const line = {
-    demo: `这是虚拟人选，不能牵线。`,
-    closed: `该用户暂未开放牵线。`,
-    ineligible: `有“必须有”没对上，不能牵线。`,
-    pending: `已发出牵线请求，等${t}回应。${t}同意前你可以在“牵线”里取消。`,
-    accepted: `${t}已同意，你的联系方式已发给${t}。留意来电或好友申请。`,
-    cooldown: `${waitText(c.broker.until)}后可以再联系${t}。`,
-    open: full ? `${t}同意后，我们把你的联系方式发给${t}一次。${t}的联系方式不会给你。` : '',
-  }[st];
-  const btn = st === 'open'
-    ? `<button class="btn primary sm" data-ask="${esc(c.alias)}">${ic('heart')}想联系${t}</button>`
-    : st === 'pending' || st === 'accepted' ? `<a class="btn sm" href="#/broker">去“牵线”看看</a>` : '';
-  if (!full && !btn) return '';
-  return `<div class="broker-box ${full ? 'full' : ''}">${full ? `<b>${ic('heart')}牵线</b>` : ''}${line ? `<p>${line}</p>` : ''}${btn}</div>`;
-}
-
-function bindAsk(root, list) {
-  root.querySelectorAll('[data-ask]').forEach((b) => (b.onclick = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    const c = list.find((x) => x.alias === b.dataset.ask);
-    if (c) openAsk(c);
-  }));
-}
-
-function contactFields(cur) {
-  const type = cur?.type || 'phone';
-  return `<div class="chips" role="radiogroup" aria-label="联系方式">${Object.entries(CONTACT_TYPES).map(([v, l]) => `<button type="button" class="chip ${type === v ? 'on' : ''}" data-ctype="${v}" role="radio" aria-checked="${type === v}">${ic('check')}${l}</button>`).join('')}</div>
-    <input class="text-input" id="cvalue" autocomplete="off" maxlength="20" inputmode="${type === 'phone' ? 'tel' : 'text'}" placeholder="${type === 'phone' ? '11 位手机号' : '微信号'}" value="${esc(cur?.value || '')}" aria-label="联系方式">`;
-}
-function bindContactFields(root) {
-  let type = root.querySelector('.chip.on[data-ctype]')?.dataset.ctype || 'phone';
-  const input = root.querySelector('#cvalue');
-  root.querySelectorAll('[data-ctype]').forEach((b) => (b.onclick = () => {
-    type = b.dataset.ctype;
-    root.querySelectorAll('[data-ctype]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); });
-    input.inputMode = type === 'phone' ? 'tel' : 'text';
-    input.placeholder = type === 'phone' ? '11 位手机号' : '微信号';
-    input.focus();
-  }));
-  return () => ({ type, value: input.value.trim() });
-}
-
-// 甲：想联系 → 留联系方式（第一次）→ 看清楚会发什么 → 勾选同意 → 发送
-async function openAsk(c) {
-  const t = T();
-  let ov;
-  try { ov = await api('GET', '/api/me/broker'); } catch (e) { return toast(e.message); }
-  if (!ov.loggedIn) {
-    const lm = sheet(`<h2>先用手机号登录</h2><p class="lead">${t}可能过几天才回复。登录后，换手机也能看到。</p><div id="lbox">${loginBlock()}</div>`);
-    bindLogin(lm.el, () => { lm.close(); openAsk(c); });
-    return;
-  }
-  const has = !!ov.contact;
-  const m = sheet(`<h2>想认识${t}？</h2>
-    <ul class="perks broker-rules">
-      <li>${ic('check')}${t}只看到你的年龄段、城市、职业，和你们合得上几条。</li>
-      <li>${ic('check')}${t}点了同意，我们才把你的联系方式发给${t}一次，由${t}联系你。${t}的联系方式不会给你。</li>
-      <li>${ic('check')}${t}同意前，你可以取消。</li>
-      <li>${ic('check')}${t}不同意，你只会看到“暂未同意”。</li>
-    </ul>
-    <h3 class="small" style="margin:16px 0 8px">发给${t}的联系方式</h3>
-    ${has ? `<p class="mine">${CONTACT_TYPES[ov.contact.type]}：<b>${esc(ov.contact.value)}</b> <a href="#/broker" class="small">改一下</a></p>
-      <p class="small muted" style="margin:4px 0 0">只留你愿意被联系的号码。</p>`
-    : `${contactFields()}<p class="small muted" style="margin:6px 0 0">只在${t}同意后发给${t}一次。只留你愿意被联系的号码。</p>`}
-    <label class="agree"><input type="checkbox" id="agree"> <span>我同意：${t}同意后，把我的联系方式发给${t}</span></label>
-    <p class="err" id="ask-err" hidden></p>
-    <div class="stack"><button class="btn primary block" id="send" disabled>${ic('heart')}发送请求</button><button class="btn block" id="later">先不了</button></div>`);
-  const get = has ? null : bindContactFields(m.el);
-  const send = m.el.querySelector('#send'), err = m.el.querySelector('#ask-err');
-  m.el.querySelector('#agree').onchange = (e) => { send.disabled = !e.target.checked; };
-  m.el.querySelector('#later').onclick = m.close;
-  send.onclick = async () => {
-    send.classList.add('loading'); send.disabled = true; err.hidden = true;
+  const input = document.getElementById('rcin'), err = document.getElementById('rcerr'), btn = document.getElementById('rcgo');
+  input.focus();
+  input.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
+  btn.onclick = async () => {
+    btn.classList.add('loading'); err.hidden = true;
     try {
-      if (!has) await api('PUT', '/api/me/broker/contact', get());
-      await api('POST', '/api/me/broker/requests', { alias: c.alias, consent: true });
-      m.close();
-      toast(`已发出，等${t}回应`);
-      if (S.results) await loadResults(true); // 静默刷新卡片状态，不重播计算动画
-      dir = 'none'; route();
-    } catch (e) {
-      err.textContent = e.message; err.hidden = false;
-      send.classList.remove('loading'); send.disabled = false;
-    }
+      const res = await fetch('/api/recover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: input.value }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || '出错了');
+      resetSession();
+      store.set('vier.token', data.token);
+      await ensureSession();
+      toast('已找回你的资料');
+      go(resumeHash());
+    } catch (e) { btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false; }
   };
 }
 
-const brokerCountText = () => {
-  const b = S.me?.broker || {};
-  return [b.incomingPending ? `${b.incomingPending} 个请求等你回复` : '', b.contactsToRead ? `${b.contactsToRead} 个号码等你记下` : ''].filter(Boolean).join('，');
-};
-const brokerNotice = () => (brokerCountText() ? `<a class="note-card broker-notice" href="#/broker">${ic('heart')}<span><b>有人想认识你</b><br>${brokerCountText()}。</span>${ic('next')}</a>` : '');
-
-const OUT_TEXT = {
-  pending: ['gold', '等待对方回应'],
-  accepted: ['l3', '对方已同意，你的联系方式已发给对方'],
-  not_agreed: ['', '对方暂未同意'],
-  cancelled: ['', '已取消'],
-};
-
-function minimalText(mi) {
-  const t = T();
-  const who = [mi.gender, mi.ageBand, mi.city, mi.occupation].filter(Boolean).map(esc).join(' · ');
-  return `<p class="who">${who || '对方没有填写基本信息'}</p>
-    <p class="small muted" style="margin:4px 0 0">${t}符合你 ${mi.theyFitYou.met}/${mi.theyFitYou.of} 条要求；你符合${t} ${mi.youFitThem.met}/${mi.youFitThem.of} 条要求</p>`;
-}
-
-function incomingCard(r, i) {
-  const t = T();
-  if (r.status === 'pending') {
-    return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>想认识你</span></div></div>
-      ${minimalText(r.minimal)}
-      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" data-acc="${esc(r.id)}">${ic('check')}同意</button><button class="btn sm" data-dec="${esc(r.id)}">暂不同意</button><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>
-      <p class="small muted" style="margin:8px 0 0">同意后，你会拿到${t}的号码。不同意，${t}不会知道原因。</p></div>`;
-  }
-  return `<div class="pcard broker-req" style="--i:${i}"><div class="pcard-head"><div class="pcard-name"><b>${nameTag(r)}</b><span>你已同意</span></div></div>
-    ${minimalText(r.minimal)}
-    ${r.contact ? `<div class="released"><span>${CONTACT_TYPES[r.contact.type]}</span><b>${esc(r.contact.value)}</b></div>
-      <p class="small muted" style="margin:6px 0 0">先记下来。点“我已记下”后，号码会被删掉。</p>
-      <div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-seen="${esc(r.id)}">${ic('check')}我已记下</button><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>`
-    : `<p class="small muted" style="margin:8px 0 0">号码已经隐藏。</p><div class="row" style="margin-top:8px"><button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button></div>`}</div>`;
-}
-
-function outgoingRow(r) {
-  const [tone, word] = r.blocked ? ['', '已屏蔽'] : OUT_TEXT[r.status] || ['', r.status];
-  const act = r.status === 'pending' ? `<button class="btn ghost sm" data-cancel="${esc(r.id)}">取消</button>`
-    : r.status === 'accepted' && !r.blocked ? `<button class="btn ghost sm" data-blk="${esc(r.id)}">屏蔽</button>` : '';
-  return `<div class="out-row"><div class="t"><b>${nameTag(r)}</b><span class="badge ${tone}">${word}</span></div>${act}</div>`;
-}
-
-async function renderBroker() {
-  const gen = routeGen;
-  const ov = await api('GET', '/api/me/broker');
-  if (gen !== routeGen) return;
-  const t = T();
-  const back = /^#\/(match|results|privacy)/.test(S.prev || '') ? S.prev : S.me.consent?.scoring ? '#/results' : '#/privacy';
-  if (!ov.loggedIn) {
-    paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
-      <h1 class="q" id="qt">牵线</h1><p class="qhint">${ic('lock')}先用手机号登录，换手机也能看到回复。</p><div id="lbox">${loginBlock()}</div>`);
-    bindBack();
-    bindLogin(document.getElementById('lbox'), () => { dir = 'none'; renderBroker(); });
-    return;
-  }
-  paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${back}">${ic('back')}返回</button></div>
-    <h1 class="q" id="qt">牵线</h1>
-    <p class="qhint">${ic('lock')}你的号码加密保存，别人看不到。</p>
-
-    ${ov.incoming.length ? `<h2 class="sec-title">${ic('heart')}收到的请求</h2><div class="cards">${ov.incoming.map(incomingCard).join('')}</div>` : ''}
-
-    <h2 class="sec-title">${ic('users')}被别人联系</h2>
-    <form id="wf">${toggleCard('willing', '愿意被牵线', `打开后，有人想认识你会来问你。你同意了才互相联系。`, ov.willing)}</form>
-    ${ov.inPool ? '' : `<p class="small muted" style="margin:8px 4px 0">先在“我的资料”里打开“让别人也能找到我”。</p>`}
-
-    <h2 class="sec-title">${ic('user')}我的联系方式</h2>
-    ${ov.contact ? `<div class="contact-line"><span class="muted">${CONTACT_TYPES[ov.contact.type]}</span><b>${esc(ov.contact.value)}</b><button class="btn ghost sm" id="cedit">修改</button><button class="btn ghost sm" id="cdel">${ic('trash')}删除</button></div>` : ''}
-    <p class="small muted" style="margin:6px 0 10px">${ov.contact ? '默认用登录手机号，也可以改成微信号。' : '还没有联系方式。'}对方同意后才发给对方一次。</p>
-    <div id="cbox" ${ov.contact ? 'hidden' : ''}>${contactFields(ov.contact)}
-      <div class="row wrap" style="margin-top:12px"><button class="btn primary sm" id="csave">${ic('check')}保存</button></div></div>
-
-    ${ov.outgoing.length ? `<h2 class="sec-title">${ic('arrow')}我发出的</h2><div class="list-card out-list">${ov.outgoing.map(outgoingRow).join('')}</div>
-      <p class="small muted" style="margin:8px 4px 0">7 天没回复，也算“暂未同意”。</p>` : ''}`, { wide: true });
-  bindBack();
-  const redraw = async (msg) => { if (msg) toast(msg); S.me = await api('GET', '/api/me'); if (S.results) await loadResults(true); dir = 'none'; return renderBroker(); };
-  const act = (fn, msg) => async (e) => { const b = e.currentTarget; b.classList.add('loading'); b.disabled = true; try { await fn(b); await redraw(msg); } catch (err) { toast(err.message); b.classList.remove('loading'); b.disabled = false; } };
-  const confirmSheet = (title, text, yes, fn, msg, danger) => {
-    const m = askSheet(title, text, yes, { danger });
-    m.el.querySelector('#yes').onclick = act(async () => { await fn(); m.close(); }, msg);
-  };
-
-  document.getElementById('wf').addEventListener('change', async (e) => {
-    try { await api('PUT', '/api/me/broker/willing', { willing: e.target.checked }); toast(e.target.checked ? '已打开，有人发来请求时会出现在这里' : '已关闭'); }
-    catch (err) { e.target.checked = !e.target.checked; toast(err.message); }
-  });
-  const get = bindContactFields(document.getElementById('cbox'));
-  document.getElementById('csave').onclick = act(() => api('PUT', '/api/me/broker/contact', get()), '已保存');
-  const edit = document.getElementById('cedit');
-  if (edit) edit.onclick = () => { document.getElementById('cbox').hidden = false; edit.hidden = true; };
-  const del = document.getElementById('cdel');
-  if (del) del.onclick = () => confirmSheet('删除联系方式？', '删掉后，别人联系不到你。已经发出去的号码收不回来。', `${ic('trash')}确定删除`, () => api('DELETE', '/api/me/broker/contact'), '已删除', true);
-
-  const q = (sel, fn) => view.querySelectorAll(sel).forEach((b) => (b.onclick = fn(b)));
-  q('[data-acc]', (b) => () => confirmSheet('确定同意吗？', `同意后，你会拿到${t}的号码。不能反悔。`, `${ic('check')}确定同意`, () => api('POST', `/api/me/broker/requests/${b.dataset.acc}/accept`, { confirm: true }), '已同意，号码在下面'));
-  q('[data-dec]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.dec}/decline`), `已回复，${t}只会看到“对方暂未同意”`));
-  q('[data-seen]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.seen}/seen`), '号码已从服务器删除'));
-  q('[data-cancel]', (b) => act(() => api('POST', `/api/me/broker/requests/${b.dataset.cancel}/cancel`), '已取消'));
-  q('[data-blk]', (b) => () => confirmSheet(`屏蔽${t}？`, `${t}以后联系不到你，也不会知道被屏蔽。`, '确定屏蔽', () => api('POST', `/api/me/broker/requests/${b.dataset.blk}/block`), '已屏蔽', true));
-}
-
-
-// ---------- 管理后台：用户、号码（打码，查看要写理由）、牵线记录 ----------
+// ---------- 管理后台：用户列表、删除用户 ----------
 async function adminApi(method, path, body) {
   const res = await fetch(path, { method, headers: { 'content-type': 'application/json', 'x-admin-token': store.get('vier.admin') || '' }, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
@@ -2102,30 +1789,19 @@ async function adminApi(method, path, body) {
   return data;
 }
 const who = (p) => p ? `${p.virtual ? '<span class="badge sim">虚拟</span> ' : ''}${esc([p.gender, p.age && `${p.age} 岁`, p.city, p.occupation].filter(Boolean).join(' · ') || '资料未填')}` : '<span class="muted">已删除</span>';
-const ADMIN_STATUS = { pending: ['gold', '等待回应'], accepted: ['l3', '已同意'], declined: ['', '已拒绝'], cancelled: ['', '已取消'], expired: ['', '已过期'], withdrawn: ['', '已作废'] };
 const fmtTime = (t) => (t ? new Date(t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
-const ctext = (c) => (c ? `${CONTACT_TYPES[c.type]} ${esc(c.value)}` : '');
 
-function adminUserRow(u, testMode) {
+function adminUserRow(u) {
   const tags = [
-    u.suspended ? '<span class="badge must">已暂停</span>' : '',
     u.pool ? '<span class="badge">在人选池</span>' : '',
-    u.willing ? '<span class="badge l3">愿意被牵线</span>' : '',
-    u.plan === 'vip' ? '<span class="badge gold">VIP</span>' : '',
+    u.recovery ? '<span class="badge l3">存了恢复码</span>' : '',
     u.filled ? '' : '<span class="badge">资料未填完</span>',
   ].join('');
-  const phones = [u.loginPhone && `登录 ${esc(u.loginPhone)}`, u.contact && `联系 ${ctext(u.contact)}`].filter(Boolean).join(' · ');
   return `<div class="pcard admin-user" data-uid="${esc(u.id)}">
     <div class="row wrap" style="justify-content:space-between"><b>${who(u)}</b><span class="small muted">活跃 ${fmtTime(u.lastActiveAt)}</span></div>
     <div class="row wrap" style="margin-top:8px;gap:6px">${tags}</div>
-    <p class="small" style="margin:8px 0 0">${phones || '<span class="muted">没留号码</span>'} <span class="reveal-out"></span></p>
-    <p class="small muted" style="margin:4px 0 0">发出 ${u.sent} · 收到 ${u.received} · 被屏蔽 ${u.blockedBy} · <span class="mono">${esc(u.id)}</span></p>
-    <div class="row wrap" style="margin-top:10px">
-      ${u.loginPhone || u.contact ? `<button class="btn sm" data-act="reveal">查看号码</button>` : ''}
-      <button class="btn sm" data-act="${u.suspended ? 'unsuspend' : 'suspend'}">${u.suspended ? '恢复' : '暂停'}</button>
-      <button class="btn ghost sm" data-act="delete">删除</button>
-      ${testMode && u.willing ? `<button class="btn ghost sm" data-act="vreq">让虚拟人发起</button>` : ''}
-    </div></div>`;
+    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(u.id)}</span></p>
+    <div class="row wrap" style="margin-top:10px"><button class="btn ghost sm" data-act="delete">删除</button></div></div>`;
 }
 
 async function renderAdmin() {
@@ -2138,27 +1814,20 @@ async function renderAdmin() {
     document.getElementById('go').onclick = () => { store.set('vier.admin', document.getElementById('tok').value.trim()); dir = 'none'; renderAdmin(); };
     return;
   }
-  const tab = S.adminTab || 'users';
   const q = (S.adminQ || '').trim();
-  const users = data.users.filter((u) => !q || [u.id, u.city, u.loginPhone, u.contact?.value, u.occupation].join(' ').includes(q));
+  const users = data.users.filter((u) => !q || [u.id, u.city, u.occupation].join(' ').includes(q));
   if (gen !== routeGen) return;
-  const counts = { users: data.users.length, contact: data.users.filter((u) => u.contact).length, willing: data.users.filter((u) => u.willing).length, pending: data.requests.filter((r) => r.status === 'pending').length };
+  const counts = { users: data.users.length, pool: data.users.filter((u) => u.pool).length, recovery: data.users.filter((u) => u.recovery).length };
   paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
-    ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚拟人选，这里可以替虚拟人回应。</p>` : ''}
-    <div class="admin-stats"><div><b>${counts.users}</b><span>用户</span></div><div><b>${counts.contact}</b><span>留了号码</span></div><div><b>${counts.willing}</b><span>愿意被牵线</span></div><div><b>${counts.pending}</b><span>等待回应</span></div></div>
-    <div class="tabs" role="tablist" style="margin-top:16px">${[['users', '用户'], ['contact', '带号码的'], ['requests', '牵线记录']].map(([k, l]) => `<button role="tab" data-tab="${k}" class="${tab === k ? 'on' : ''}" aria-selected="${tab === k}">${l}</button>`).join('')}</div>
-    ${tab === 'requests' ? (data.requests.length ? `<div class="cards">${data.requests.map((r) => { const [tone, word] = ADMIN_STATUS[r.status] || ['', r.status]; return `<div class="pcard">
-        <div class="row wrap" style="justify-content:space-between"><span class="badge ${tone}">${word}</span><span class="small muted">${fmtTime(r.createdAt)}</span></div>
-        <p class="small" style="margin:8px 0 0">发起：${who(r.from)}</p><p class="small" style="margin:4px 0 0">接收：${who(r.to)}</p>
-        ${data.testMode && r.status === 'pending' && r.to?.virtual ? `<div class="row wrap" style="margin-top:10px"><button class="btn primary sm" data-a="${esc(r.id)}/accept">替虚拟人同意</button><button class="btn sm" data-a="${esc(r.id)}/decline">替虚拟人拒绝</button></div>` : ''}</div>`; }).join('')}</div>` : '<p class="muted">还没有牵线记录。</p>')
-    : `<input class="text-input" id="aq" type="search" placeholder="按城市、职业、号码后四位、用户 id 搜索" value="${esc(q)}">
-      <div class="cards" style="margin-top:12px">${users.filter((u) => tab !== 'contact' || u.contact).map((u) => adminUserRow(u, data.testMode)).join('') || '<p class="muted">没有符合的用户。</p>'}</div>`}`, { wide: true });
+    ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚拟人选。</p>` : ''}
+    <div class="admin-stats"><div><b>${counts.users}</b><span>用户</span></div><div><b>${counts.pool}</b><span>在人选池</span></div><div><b>${counts.recovery}</b><span>存了恢复码</span></div></div>
+    <input class="text-input" id="aq" type="search" placeholder="按城市、职业、用户 id 搜索" value="${esc(q)}" style="margin-top:16px">
+    <div class="cards" style="margin-top:12px">${users.map((u) => adminUserRow(u)).join('') || '<p class="muted">没有符合的用户。</p>'}</div>`, { wide: true });
 
   const again = () => { dir = 'none'; renderAdmin(); };
   document.getElementById('out').onclick = () => { store.del('vier.admin'); again(); };
-  view.querySelectorAll('[data-tab]').forEach((b) => (b.onclick = () => { S.adminTab = b.dataset.tab; again(); }));
   const aq = document.getElementById('aq');
-  if (aq) aq.onchange = () => { S.adminQ = aq.value; again(); };
+  aq.onchange = () => { S.adminQ = aq.value; again(); };
   const ask = (title, text, label, danger, fn) => {
     const m = sheet(`<h2>${title}</h2><p class="lead">${text}</p><input class="text-input" id="why" placeholder="理由（会记入审计日志）"><p class="err" id="whyerr" hidden></p>
       <div class="stack" style="margin-top:12px"><button class="btn ${danger ? 'danger' : 'primary'} block" id="yes">${label}</button><button class="btn block" id="no">取消</button></div>`);
@@ -2168,21 +1837,12 @@ async function renderAdmin() {
       try { await fn(m.el.querySelector('#why').value.trim()); m.close(); } catch (e) { b.classList.remove('loading'); const er = m.el.querySelector('#whyerr'); er.textContent = e.message; er.hidden = false; }
     };
   };
-  view.querySelectorAll('.admin-user [data-act]').forEach((b) => (b.onclick = () => {
-    const card = b.closest('.admin-user'), id = card.dataset.uid, act = b.dataset.act;
-    if (act === 'reveal') return ask('查看完整号码', '每次查看都会记录：谁、什么时候、为什么。', '查看', false, async (reason) => {
-      const r = await adminApi('POST', `/api/admin/users/${id}/reveal`, { reason });
-      card.querySelector('.reveal-out').innerHTML = `<br><b>${[r.loginPhone && `登录 ${esc(r.loginPhone)}`, r.contact && `联系 ${ctext(r.contact)}`].filter(Boolean).join(' · ')}</b>`;
-    });
-    if (act === 'suspend') return ask('暂停这个用户？', '暂停后不出现在任何人的结果里，不能发起或接收牵线，等待中的请求作废。可以随时恢复。', '暂停', true, async (reason) => { await adminApi('POST', `/api/admin/users/${id}/suspend`, { reason }); toast('已暂停'); again(); });
-    if (act === 'unsuspend') return adminApi('POST', `/api/admin/users/${id}/unsuspend`, {}).then(() => { toast('已恢复'); again(); }).catch((e) => toast(e.message));
-    if (act === 'delete') return ask('永久删除这个用户？', '资料、要求、号码、牵线记录全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
-    if (act === 'vreq') return adminApi('POST', '/api/admin/broker/virtual-request', { to: id }).then(() => { toast('已让一位虚拟人发起，去这个用户的“牵线”页看看'); again(); }).catch((e) => toast(e.message));
+  view.querySelectorAll('.admin-user [data-act="delete"]').forEach((b) => (b.onclick = () => {
+    const id = b.closest('.admin-user').dataset.uid;
+    ask('永久删除这个用户？', '资料、要求、恢复码全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
   }));
-  view.querySelectorAll('[data-a]').forEach((b) => (b.onclick = () => adminApi('POST', `/api/admin/broker/requests/${b.dataset.a}`).then(() => { toast('已处理'); again(); }).catch((e) => toast(e.message))));
 }
 
-// ---------- 我的资料 ----------
 function toggleCard(name, title, text, checked, { required = false, i = 0 } = {}) {
   return `<label class="toggle-card" style="--i:${i}">
     <div class="t"><b>${title}${required ? '<span class="req-pill">必须</span>' : ''}</b><span>${text}</span></div>
@@ -2197,17 +1857,17 @@ const LEGAL = {
     ['这是什么', 'VIER 帮你看清：你想找的人是谁、谁在找你这样的人。结果只比较条件，不代表一个人好不好，也不保证能成。'],
     ['谁能用', '只给年满 18 岁的人用。目前只为男生和女生之间做推荐。'],
     ['请如实填写', '填假资料会让别人的结果不准。冒充别人、骚扰别人的账户会被暂停或删除。'],
-    ['牵线', '对方同意后，我们才把你的联系方式发给对方一次。见面和来往请注意安全，不要转账给没见过面的人。'],
-    ['付费', 'VIP 只是多看几位人选。付款前会写清楚价格。'],
+    ['恢复码', '恢复码等于你的钥匙。谁拿到它，谁就能看到你的资料。请自己保管好，不要发给别人。'],
+    ['免费', '全部功能免费，不收钱。'],
     ['不能做的事', '不能批量抓取页面、反复改要求来“扫”别人，不能把看到的信息拿去别处用。'],
     ['改动', '协议改了会在这里更新，重要的改动会提醒你。'],
   ]],
   policy: ['隐私政策', [
-    ['我们收什么', '你填的资料和要求；登录用的手机号；你同意了哪些事、什么时候同意的。不收照片和身份证。'],
+    ['我们收什么', '你填的资料和要求；你同意了哪些事、什么时候同意的。不收手机号、照片和身份证。'],
     ['为什么收', '只为了帮你找人、帮别人找到你（你同意后），以及你同意的匿名统计。'],
     ['敏感信息', '收入、家里的情况属于敏感信息。别人只能看到大概的档位或“是否符合”，看不到原值。'],
-    ['怎么存', '全部加密存在中国境内的服务器上。手机号和资料分开存放。'],
-    ['谁能看到', '别人只看到你的代号，每个人看到的代号都不一样。没有你同意，不会把联系方式给任何人。不卖给任何第三方。'],
+    ['怎么存', '全部加密存在中国境内的服务器上。恢复码只存加密后的样子，我们也看不到原码。'],
+    ['谁能看到', '别人只看到你的代号，每个人看到的代号都不一样。不卖给任何第三方。'],
     ['存多久', '一年没用就自动删除。你也可以随时在“我的资料”里下载或永久删除。'],
     ['你的权利', '随时查看、修改、下载、删除你的资料，随时关掉“让别人也能找到我”。'],
     ['未成年人', '不满 18 岁请不要使用。发现后会删除相关资料。'],
@@ -2233,8 +1893,8 @@ function renderFoot() {
 function renderPrivacy() {
   const c = S.me.consent || {};
   const st = S.me.gender ? (S.me.requirements?.length && c.scoring ? 'done' : 'partial') : 'new';
-  // 从哪来回哪去；从“我的资料”里点进去的子页面（牵线、改资料、登录、协议）回来时，不改原来的去处
-  if (!/^#\/(broker|me\/|ideal\/|login|terms|policy)/.test(S.prev || '')) S.privacyFrom = /^#\/(results|match)/.test(S.prev || '') ? S.prev : (S.prev ? '#/' : (st === 'done' ? '#/results' : '#/'));
+  // 从哪来回哪去；从“我的资料”里点进去的子页面（改资料、找回、协议）回来时，不改原来的去处
+  if (!/^#\/(me\/|ideal\/|recover|terms|policy)/.test(S.prev || '')) S.privacyFrom = /^#\/(results|match)/.test(S.prev || '') ? S.prev : (S.prev ? '#/' : (st === 'done' ? '#/results' : '#/'));
   paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${S.privacyFrom || '#/'}">${ic('back')}返回</button></div>
     <h1 class="q" id="qt">我的资料</h1>
     <p class="qhint">${ic('lock')}你的资料加密保存。</p>
@@ -2242,8 +1902,8 @@ function renderPrivacy() {
     <div class="list-card">
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">我填的资料<span>年龄、学历、家庭等，点进去可以改</span></span>${ic('next')}</a>
       <a href="${S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age'}"><span class="ico">${ic('heart')}</span><span class="t">我的要求<span>${S.me.requirements?.length || 0} 条</span></span>${ic('next')}</a>
-      <a href="#/login"><span class="ico">${ic('lock')}</span><span class="t">账号<span>${S.me.phone ? `已登录 ${esc(S.me.phone)}` : '用手机号登录，换手机也能找回'}</span></span>${ic('next')}</a>
-      <a href="#/broker"><span class="ico">${ic('users')}</span><span class="t">牵线<span>${brokerCountText() || '联系方式、愿意被牵线、收到和发出的请求'}</span></span>${ic('next')}</a>
+      <button id="rcode"><span class="ico">${ic('lock')}</span><span class="t">恢复码<span>${S.me.hasRecovery ? '已经存过。丢了可以重新生成' : '存一个，换手机也能找回'}</span></span>${ic('next')}</button>
+      <a href="#/recover"><span class="ico">${ic('users')}</span><span class="t">用恢复码找回<span>在这台设备上换回原来的资料</span></span>${ic('next')}</a>
     </div>
     <h2 class="sec-title">${ic('shield')}你的资料怎么用</h2>
     <form id="f">
@@ -2257,6 +1917,7 @@ function renderPrivacy() {
       <button id="delete" class="danger-row"><span class="ico">${ic('trash')}</span><span class="t">永久删除我的全部资料<span>删除后不能恢复</span></span>${ic('next')}</button>
     </div>`);
   bindBack();
+  document.getElementById('rcode').onclick = () => openRecovery().onclose = () => { dir = 'none'; renderPrivacy(); };
   const form = document.getElementById('f');
   form.addEventListener('change', async () => {
     try {
@@ -2311,6 +1972,7 @@ async function route() {
     if (a === 'intro') return renderIntro();
     if (a === 'admin') return await renderAdmin();
     if (a === 'terms' || a === 'policy') return renderLegal(a);
+    if (a === 'recover') return renderRecover();
     if (!S.me) { await ensureSession(); if (gen !== routeGen) return; }
     if (a === 'me') {
       if (!b) return go('#/me/gender');
@@ -2329,8 +1991,6 @@ async function route() {
     if (a === 'results') return await renderResults();
     if (a === 'match') return await renderMatch(Number(b), h.split('/')[3] || 'ideal');
     if (a === 'privacy') return renderPrivacy();
-    if (a === 'broker') return await renderBroker();
-    if (a === 'login') return renderLogin();
     return await renderHome();
   } catch (e) {
     paint(`<section class="milestone"><h1 class="display">出了点小问题</h1><p class="lead">${esc(e.message)}</p>

@@ -28,29 +28,25 @@
 | PUT | `/api/me/requirements` | 保存理想型 |
 | PUT | `/api/me/consent` | 记录同意（三项） |
 | GET | `/api/me/results` | 计算五组结果（需同意计算） |
-| POST | `/api/me/orders` | 创建 VIP 订单，返回二维码内容（见 PAYMENTS.md） |
-| GET | `/api/me/orders/<订单号>` | 查询订单状态，前端每 2 秒轮询 |
-| POST | `/api/me/orders/<订单号>/mock-pay` | 模拟支付成功，仅 `payments.mode = mock` 时可用 |
-| POST | `/api/payments/notify/<wechat\|alipay>` | 支付渠道的异步通知，验签后升级套餐 |
+| POST | `/api/me/recovery` | 生成恢复码（旧码作废，见 AUTH.md） |
+| POST | `/api/recover` | 用恢复码换新令牌 |
 | GET | `/api/me/export` | 导出全部自己的资料 |
 | DELETE | `/api/me` | 永久删除 |
 | GET | `/api/stats?field=` | k-匿名分布，仅基础字段 |
-| GET/PUT/POST/DELETE | `/api/me/broker…` | 牵线：联系方式、愿意被牵线、发起 / 同意 / 拒绝 / 取消 / 屏蔽（见 CONTACT-BROKER.md） |
 
 ## 配置（config/app.json）
 
 - `virtualPerCity`：每座城市的虚拟人选数（男女各半，默认 1000，设 0 关闭）。人选池 = 同意进入人选池的真人 + 你常住城市的虚拟人选；城市名单和生成参数在 `config/cities.json`（GDP 前 100 城）。
-- `plans`：`free` 每组 3 位，`vip` 每组 5 位（理想型人选、TA 心中的人选、在找你的人、双向相合分别可设）。
+- `limits`：每组看几位，所有人一样，默认都是 5（`matches` 理想型人选、`theirPicks` TA 心中的人选、`idealOfIdeal` 理想型的理想型、`seekers` 在找你的人、`mutual` 双向相合）。
 - `scorer`：评分器 id 和参数覆盖。
 - `privacy`：同意版本、k 值、不活跃保留天数。
-- `payments`：支付模式（`mock` 模拟、`live` 真实商户、`off` 关闭付费且不显示 VIP 入口）、启用的渠道、订单有效期、通知地址；`plans.*.priceFen` 是价格（分）。`NODE_ENV=production` 时不允许 `mock`。
 
 环境变量：`PORT`、`VIER_DATA_DIR`、`VIER_CONFIG`、`VIER_DATA_KEY`（生产必填，32 字节 base64），`NODE_ENV=production`。
 
 ## 数据积累路线
 
 1. **现在**：文件存储 + 模拟人选池，跑通问卷、同意和结果。
-2. **试点（上海前 100 份）**：切 `poolMode: real`，换 PostgreSQL，加登录、限流、核验状态字段；评分仍用 fit-v1。
+2. **试点（上海前 100 份）**：切 `poolMode: real`，换 PostgreSQL，加限流、核验状态字段；评分仍用 fit-v1。
 3. **积累到 500 份以上**：用真人档案和独立评价校准评分参数，注册 `fit-v2`，两版并行比较前几名的稳定性后再切换。
 4. **长期**：互动信号（查看、标记）单独建模，不混进条件分；研究数据只按 k-匿名导出。
 

@@ -1,23 +1,10 @@
 {
-  "plans": {
-    "free": {
-      "label": "免费版",
-      "matches": 3,
-      "theirPicks": 3,
-      "idealOfIdeal": 3,
-      "seekers": 3,
-      "mutual": 3,
-      "priceFen": 0
-    },
-    "vip": {
-      "label": "VIP",
-      "matches": 5,
-      "theirPicks": 5,
-      "idealOfIdeal": 5,
-      "seekers": 5,
-      "mutual": 5,
-      "priceFen": 199
-    }
+  "limits": {
+    "matches": 5,
+    "theirPicks": 5,
+    "idealOfIdeal": 5,
+    "seekers": 5,
+    "mutual": 5
   },
   "scorer": {
     "id": "fit-v1",
@@ -29,20 +16,6 @@
     "inactiveRetentionDays": 365,
     "tokenTtlDays": 90,
     "emptyRetentionDays": 7
-  },
-  "payments": {
-    "mode": "mock",
-    "providers": [
-      "wechat",
-      "alipay"
-    ],
-    "orderExpireMinutes": 15,
-    "notifyBaseUrl": ""
-  },
-  "broker": {
-    "expireDays": 7,
-    "cancelCooldownHours": 1,
-    "notAgreedCooldownDays": 7
   },
   "virtualPerCity": 1000,
   "testMode": true,

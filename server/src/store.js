@@ -1,16 +1,26 @@
 // 文件存储（开发与小规模试点用）。接口刻意保持简单，正式上线时换成数据库实现同样的方法即可。
 //
 // 目录结构（data/ 不进 git）
-//   data/users/<id>.json   账户：性别方向、套餐、同意记录为明文；资料（L1+L2）与择偶要求整体加密
-//   data/vault/<id>.json   L3 身份库：昵称、联系方式等，整体加密，与资料分开存放
+//   data/users/<id>.json   账户：性别方向、同意记录为明文；资料（L1+L2）与择偶要求整体加密
+//   data/vault/<id>.json   L3 身份库：昵称等，整体加密，与资料分开存放
 //   data/audit.log         审计日志（JSON Lines），主体只记哈希，不记资料内容
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, readdirSync, rmSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIELD_MAP } from '../../packages/schema/fields.js';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomInt } from 'node:crypto';
 import { encryptJson, decryptJson, newId, newToken, sha256, safeEqualHex, auditSubject } from './crypto.js';
 
 const ID_RE = /^u_[0-9a-f]{24}$/;
+
+// 恢复码：12 位，去掉 0/O、1/I/L 这些容易看错的字符，显示成 XXXX-XXXX-XXXX；输入时不分大小写、不管横线空格
+const RECOVERY_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+const RECOVERY_LEN = 12;
+export const normalizeRecoveryCode = (code) => String(code || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
+function makeRecoveryCode() {
+  let s = '';
+  for (let i = 0; i < RECOVERY_LEN; i++) s += RECOVERY_ALPHABET[randomInt(RECOVERY_ALPHABET.length)];
+  return s.match(/.{4}/g).join('-');
+}
 
 export class FileStore {
   constructor(dir, key) {
@@ -41,7 +51,7 @@ export class FileStore {
     const token = newToken();
     const now = new Date().toISOString();
     this.#write(this.#userPath(id), {
-      id, createdAt: now, lastActiveAt: now, tokenHash: sha256(token), plan: 'free',
+      id, createdAt: now, lastActiveAt: now, tokenHash: sha256(token),
       gender: null, seeks: [], profile: null, requirements: null, consents: [],
     });
     this.#write(this.#vaultPath(id), { box: encryptJson(this.key, {}) });
@@ -49,34 +59,39 @@ export class FileStore {
     return { id, token };
   }
 
-  // ---------- 手机号登录 ----------
-  // 索引只存带密钥的哈希 → 用户 id，不存明文号码；号码本身放在加密的身份库里
-  phoneKey(phone) { return createHmac('sha256', this.key).update('phone:' + phone).digest('hex'); }
-  #phoneIndexPath() { return join(this.dir, 'phone-index.json'); }
-  #phoneIndex() { const p = this.#phoneIndexPath(); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {}; }
-  findByPhone(phone) {
-    const id = this.#phoneIndex()[this.phoneKey(phone)];
+  // ---------- 恢复码 ----------
+  // 换设备找回用。索引只存带密钥的哈希 → 用户 id，明文只在生成时给用户看一次
+  #recoveryKey(code) { return createHmac('sha256', this.key).update('recovery:' + normalizeRecoveryCode(code)).digest('hex'); }
+  #recoveryIndexPath() { return join(this.dir, 'recovery-index.json'); }
+  #recoveryIndex() { const p = this.#recoveryIndexPath(); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {}; }
+  newRecoveryCode(id) {
+    const code = makeRecoveryCode();
+    const idx = this.#recoveryIndex();
+    // 一人只有一个有效恢复码：先删掉旧的
+    for (const [k, v] of Object.entries(idx)) if (v === id) delete idx[k];
+    idx[this.#recoveryKey(code)] = id;
+    this.#write(this.#recoveryIndexPath(), idx);
+    this.saveIdentity(id, { ...this.getIdentity(id), recovery: true });
+    this.audit('recovery.created', id);
+    return code;
+  }
+  findByRecoveryCode(code) {
+    if (normalizeRecoveryCode(code).length !== RECOVERY_LEN) return null;
+    const id = this.#recoveryIndex()[this.#recoveryKey(code)];
     return id && existsSync(this.#userPath(id)) ? id : null;
   }
-  bindPhone(id, phone) {
-    const idx = this.#phoneIndex();
-    idx[this.phoneKey(phone)] = id;
-    this.#write(this.#phoneIndexPath(), idx);
-    this.saveIdentity(id, { ...this.getIdentity(id), phone });
-    this.audit('phone.bound', id);
-  }
-  // 登录后发新令牌；旧设备上的令牌失效
+  // 换设备后发新令牌；旧设备上的令牌失效
   issueToken(id) {
     const token = newToken();
     this.#mutate(id, (raw) => { raw.tokenHash = sha256(token); });
-    this.audit('user.login', id);
+    this.audit('user.recovered', id);
     return token;
   }
-  #unbindPhone(id) {
-    const idx = this.#phoneIndex();
+  #dropRecovery(id) {
+    const idx = this.#recoveryIndex();
     let changed = false;
     for (const [k, v] of Object.entries(idx)) if (v === id) { delete idx[k]; changed = true; }
-    if (changed) this.#write(this.#phoneIndexPath(), idx);
+    if (changed) this.#write(this.#recoveryIndexPath(), idx);
   }
 
   authenticate(id, token) {
@@ -98,7 +113,7 @@ export class FileStore {
     if (!existsSync(p)) return null;
     const raw = JSON.parse(readFileSync(p, 'utf8'));
     return {
-      id: raw.id, createdAt: raw.createdAt, lastActiveAt: raw.lastActiveAt, plan: raw.plan,
+      id: raw.id, createdAt: raw.createdAt, lastActiveAt: raw.lastActiveAt,
       gender: raw.gender, seeks: raw.seeks, consents: raw.consents,
       profile: decryptJson(this.key, raw.profile) || {},
       requirements: decryptJson(this.key, raw.requirements) || [],
@@ -133,13 +148,9 @@ export class FileStore {
     this.audit('consent.recorded', id, { version: consents.version, scoring: consents.scoring, pool: consents.pool, research: consents.research });
   }
 
-  setPlan(id, plan) {
-    this.#mutate(id, (raw) => { raw.plan = plan; });
-    this.audit('plan.changed', id, { plan });
-  }
-
   saveIdentity(id, identity) {
-    if (!identity.phone && existsSync(this.#vaultPath(id))) { const cur = this.getIdentity(id); if (cur?.phone) identity = { ...identity, phone: cur.phone }; }
+    // 改昵称时保留“已生成恢复码”的标记
+    if (!identity.recovery && existsSync(this.#vaultPath(id))) { const cur = this.getIdentity(id); if (cur?.recovery) identity = { ...identity, recovery: true }; }
     this.#write(this.#vaultPath(id), { box: encryptJson(this.key, identity) });
     this.audit('identity.saved', id);
   }
@@ -151,7 +162,7 @@ export class FileStore {
 
   // 彻底删除：资料、要求、同意记录与身份库一起删除；审计只留哈希化主体
   deleteUser(id) {
-    this.#unbindPhone(id);
+    this.#dropRecovery(id);
     for (const p of [this.#userPath(id), this.#vaultPath(id)]) if (existsSync(p)) rmSync(p);
     this.version++;
     this.audit('user.deleted', id);
@@ -173,13 +184,13 @@ export class FileStore {
   }
 }
 
-// 开了会话却一题没填、也没登录的空账户，几天后删掉，免得被人刷出大量空文件
+// 开了会话却一题没填、也没生成恢复码的空账户，几天后删掉，免得被人刷出大量空文件
 FileStore.prototype.purgeEmpty = function purgeEmpty(days) {
   const cutoff = Date.now() - days * 86400000;
   let n = 0;
   for (const id of this.listUserIds()) {
     const u = this.getUser(id);
-    if (u && !u.gender && Date.parse(u.lastActiveAt) < cutoff && !this.getIdentity(id)?.phone) { this.deleteUser(id); n++; }
+    if (u && !u.gender && Date.parse(u.lastActiveAt) < cutoff && !this.getIdentity(id)?.recovery) { this.deleteUser(id); n++; }
   }
   return n;
 };

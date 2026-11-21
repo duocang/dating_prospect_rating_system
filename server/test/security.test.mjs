@@ -59,23 +59,26 @@ test('结果里带“你的位置”和第一名并列人数', async () => {
   assert.ok(r.summary.topTie >= 1);
 });
 
-test('登录时本机和号码各有一份资料：先问保留哪一份，选“这一份”就覆盖旧资料', async () => {
-  const phone = '13800001111';
-  const a = await filled(30);
-  const { body: { devCode: c1 } } = await call('POST', '/api/auth/code', a, { phone });
-  await call('POST', '/api/auth/verify', a, { phone, code: c1 });
-  // 换一台手机，不登录先填了一份新的
-  const b = await filled(33);
-  const send = await call('POST', '/api/auth/code', b, { phone });
-  const devCode = send.body?.devCode;
-  assert.ok(devCode);
-  const ask = await call('POST', '/api/auth/verify', b, { phone, code: devCode });
-  assert.equal(ask.status, 409);
-  assert.equal(ask.body.choose, true);
-  const ok = await call('POST', '/api/auth/verify', b, { phone, code: devCode, keep: 'this' });
-  assert.equal(ok.status, 200);
-  const me = await call('GET', '/api/me', ok.body.token);
-  assert.equal(me.body.profile.age, 33);
+test('恢复码：在另一台设备找回账户，旧令牌失效，重新生成后旧码作废', async () => {
+  const a = await filled(31);
+  const { status, body: { code } } = await call('POST', '/api/me/recovery', a);
+  assert.equal(status, 201);
+  assert.match(code, /^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$/);
+  assert.equal((await call('GET', '/api/me', a)).body.hasRecovery, true);
+  // 不分大小写、不管横线
+  const r = await call('POST', '/api/recover', null, { code: code.toLowerCase().replace(/-/g, ' ') });
+  assert.equal(r.status, 200);
+  assert.equal((await call('GET', '/api/me', r.body.token)).body.profile.age, 31);
+  assert.equal((await call('GET', '/api/me', a)).status, 401, '旧设备的令牌失效');
+  assert.equal((await call('POST', '/api/recover', null, { code: 'ABCD-EFGH-JKMN' })).status, 400);
+  const again = (await call('POST', '/api/me/recovery', r.body.token)).body.code;
+  assert.notEqual(again, code);
+  assert.equal((await call('POST', '/api/recover', null, { code })).status, 400, '旧码作废');
+  const r2 = await call('POST', '/api/recover', null, { code: again });
+  assert.equal(r2.status, 200);
+  // 删除账户后恢复码也没了
+  await call('DELETE', '/api/me', r2.body.token);
+  assert.equal((await call('POST', '/api/recover', null, { code: again })).status, 400);
 });
 
 test('网页不能被别的网站套进框里', async () => {
