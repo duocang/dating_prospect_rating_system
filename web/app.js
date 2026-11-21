@@ -444,7 +444,7 @@ async function renderHome() {
       });
     } else paint(`<section class="hero home-mid">
       <div class="home-stage">
-        <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
+        <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
         <div class="relmap rise" id="relmap" style="--i:1"></div>
       </div>
       <div class="stack rise" style="--i:2">${actions}</div>
@@ -499,7 +499,7 @@ function heroRoom(el) {
     if (innerWidth !== w || !h) {
       w = innerWidth;
       const top = el.getBoundingClientRect().top + scrollY;
-      h = Math.max(220, Math.min(560, innerHeight - top - 16));
+      h = Math.max(240, Math.min(640, innerHeight - top - 12));
     }
     return h;
   };
@@ -509,7 +509,7 @@ function paintIntroHome() {
   const orb = planetOrb;
   const check = ic('check');
   paint(`<section class="hero ap-hero">
-      <h1 class="display rise">你喜欢的人，<br>喜欢谁。</h1>
+      <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
       <p class="ap-sub rise" style="--i:1">说说你，和你想找的人。看看谁和你<b>两边都合适</b>。</p>
       <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button></div>
       <div class="relmap rise eclipse" id="relmap" style="--i:2"></div>

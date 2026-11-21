@@ -264,7 +264,7 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .done-ring path { fill: none; stroke: var(--brand); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: draw .45s var(--ease) .75s forwards; }
 .backdrop { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; display: none; }
 /* 首屏：标题、一句话、按钮和星图在同一块黑色舞台上（和结果页一样） */
-.ap-hero { margin: -8px calc(50% - 50vw) 0; padding: 36px calc(50vw - 50%) 14px; background: #000; color: var(--ink); }
+.ap-hero { margin: -8px calc(50% - 50vw) 0; padding: 28px calc(50vw - 50%) 14px; background: #000; color: var(--ink); }
 .ap-eyebrow { margin: 0 0 8px; font-weight: 600; letter-spacing: .02em; }
 .ap-sub { max-width: 26em; margin: 16px auto 0; line-height: 1.42; font-weight: 500; color: var(--ink-2); text-align: center; }
 .ap-sub b { color: var(--ink); font-weight: 600; }
@@ -272,13 +272,19 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .ap-ctas .btn { width: auto; padding: 0 30px; }
 .ap-more { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
 .ap-hero .rm-note { display: none; }
+.display .nw { display: inline-block; }
+.hero.ap-hero .display { font-size: clamp(28px, 7.8vw, 50px); }
+.ap-hero .ap-sub { font-size: var(--t-callout); margin-top: 12px; }
+.ap-hero .ap-ctas { margin-top: 20px; gap: 10px 22px; }
+.ap-hero .ap-ctas .btn { min-height: 42px; padding: 0 22px; font-size: 15px; }
+.ap-hero .ap-more { font-size: 15px; }
 @media (max-height: 760px) {
   .ap-hero { padding-top: 22px; }
   .ap-hero .ap-sub { margin-top: 10px; }
   .ap-hero .ap-ctas { margin-top: 18px; }
 }
 @media (max-height: 640px) {
-  .ap-hero .display { font-size: clamp(34px, 9vw, 44px); }
+  .hero.ap-hero .display { font-size: clamp(26px, 7.4vw, 40px); }
   .ap-hero .ap-ctas { margin-top: 14px; }
 }
 .ap-more:hover { text-decoration: underline; }
@@ -334,7 +340,7 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .home-stage .ap-eyebrow { margin: 0 0 4px; color: #A1A1A6; }
 .home-stage .display { color: #F5F5F7; }
 .home-stage .relmap, [data-theme="light"] .home-stage .relmap { margin: 10px auto 0; border-radius: 0; background: transparent; }
-.ap-hero .display, .hero .display { font-size: var(--t-hero); }
+.hero .display { font-size: var(--t-hero); }
 .home-row h3, .pcard-name b, .ap-tile h3, .ap-row h3 { font-size: var(--t-2); }
 .ap-tile, .ap-fact, .ap-row:not(.home-row), .more, .why-fold, .pos-card, .note-card, .privacy-label, .imp, .cmp-wrap, .ideal-card, .ideal-fold, .vip { background: var(--surface); box-shadow: none; }
 .ap-tile, .ap-fact, .ap-row:not(.home-row), .more, .note-card, .privacy-label, .imp, .cmp-wrap { border-radius: var(--card-r); }
