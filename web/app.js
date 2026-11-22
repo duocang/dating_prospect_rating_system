@@ -1933,10 +1933,10 @@ async function renderAdmin() {
   const head = A.mode === 'brief'
     ? `<tr><th>名字 / id</th><th>微信</th><th>来源</th><th>性别</th>${brief.map((h) => `<th>${h}</th>`).join('')}<th>要求</th><th>活跃</th><th></th></tr>`
     : (() => { const gs = []; data.fields.forEach((f) => { const l = gs[gs.length - 1]; if (l && l.g === f.group) l.n++; else gs.push({ g: f.group, n: 1 }); });
-      return `<tr class="adm-gh"><th colspan="3"></th>${gs.map((x) => `<th colspan="${x.n}">${esc(x.g)}</th>`).join('')}</tr><tr><th>名字 / id</th><th>来源</th><th>性别</th>${data.fields.map((f) => `<th>${esc(f.label)}</th>`).join('')}</tr>`; })();
+      return `<tr class="adm-gh"><th colspan="4"></th>${gs.map((x) => `<th colspan="${x.n}">${esc(x.g)}</th>`).join('')}</tr><tr><th>名字 / id</th><th>微信</th><th>来源</th><th>性别</th>${data.fields.map((f) => `<th>${esc(f.label)}</th>`).join('')}</tr>`; })();
   const row = (p) => A.mode === 'brief'
     ? `<tr><td>${nameBtn(p)}</td><td class="mono">${esc(p.wechat || '—')}</td><td>${src(p)}</td><td>${esc(p.gender)}</td><td>${p.age ?? '—'}</td><td>${esc(p.city || '—')}</td><td>${esc(p.occupation || '—')}</td><td>${p.reqCount}</td><td class="nowrap">${p.virtual ? '—' : fmtTime(p.lastActiveAt)}</td><td>${p.virtual ? '' : `<button class="btn ghost sm" data-del="${esc(p.id)}">删除</button>`}</td></tr>`
-    : `<tr><td>${nameBtn(p)}</td><td>${src(p)}</td><td>${esc(p.gender)}</td>${data.fields.map((f) => `<td class="${p.facts[f.key] ? '' : 'nf'}">${esc(p.facts[f.key] || '未填写')}</td>`).join('')}</tr>`;
+    : `<tr><td>${nameBtn(p)}</td><td class="mono">${esc(p.wechat || '—')}</td><td>${src(p)}</td><td>${esc(p.gender)}</td>${data.fields.map((f) => `<td class="${p.facts[f.key] ? '' : 'nf'}">${esc(p.facts[f.key] || '未填写')}</td>`).join('')}</tr>`;
   paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
     ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚构人选。</p>` : ''}
     <div class="admin-stats"><div><b>${real.length}</b><span>真人</span></div><div><b>${real.filter((u) => u.pool).length}</b><span>在人选池</span></div><div><b>${data.people.length - real.length}</b><span>虚构（${esc(data.city)}）</span></div></div>
