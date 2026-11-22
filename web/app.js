@@ -424,7 +424,7 @@ async function renderHome() {
       done: `<a class="btn primary block" href="#/results">看全部结果 ${ic('arrow')}</a>
             <a class="btn block" href="#/me/review">改改我填的资料</a>`,
     }[st];
-    if (st === 'new') { paintIntroHome(); const el = document.getElementById('relmap'); relMap(el, EXAMPLE, { esc, still: true, maxH: heroRoom(el) }); return; }
+    if (st === 'new') { paintIntroHome(); const el = document.getElementById('relmap'); const room = heroRoom(el); room(); relMap(el, EXAMPLE, { esc, still: true, maxH: room }); return; }
     if (st === 'done') {
       paint(`<section class="hero home-back">
         <div class="home-stage">
@@ -462,7 +462,7 @@ async function renderHome() {
     } else paint(`<section class="hero home-mid">
       <div class="home-stage">
         <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
-        <div class="relmap rise eclipse" id="relmap" style="--i:1"></div>
+      <div class="relmap rise eclipse" id="relmap" style="--i:1"></div>
       </div>
       <div class="stack rise" style="--i:2">${actions}</div>
     </section>`);
@@ -521,11 +521,18 @@ function homeRows(r) {
 // 首页星图像产品图一样在第一屏完整露出：高度 = 屏幕可见高度 − 星图上沿；只在宽度变了时重算（手机滚动时地址栏伸缩不让图跳）
 function heroRoom(el) {
   let w = 0, h = 0;
+  const hero = el.closest('.ap-hero');
   return () => {
     if (innerWidth !== w || !h) {
       w = innerWidth;
+      // 先收起留白量出星图最高能多高，再让整块首屏刚好占满一屏；星图被宽度限住时，多出的高度由上方几处留白分掉
+      hero?.classList.remove('fit');
       const top = el.getBoundingClientRect().top + scrollY;
       h = Math.max(240, Math.min(640, innerHeight - top - 12));
+      if (hero) {
+        hero.style.setProperty('--hero-h', `${Math.max(0, innerHeight - (hero.getBoundingClientRect().top + scrollY))}px`);
+        hero.classList.add('fit');
+      }
     }
     return h;
   };
@@ -535,10 +542,13 @@ function paintIntroHome() {
   const orb = planetOrb;
   const check = ic('check');
   paint(`<section class="hero ap-hero">
+      <i class="hs hs-top"></i>
       <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
       <p class="ap-sub rise" style="--i:1">说说你，和你想找的人。看看谁和你<b>两边都合适</b>。</p>
       <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button></div>
+      <i class="hs hs-mid"></i>
       <div class="relmap rise eclipse" id="relmap" style="--i:2"></div>
+      <i class="hs hs-end"></i>
     </section>
     <section class="ap-sec" id="ap-how">
       <h2 class="ap-h2 reveal">三步，看清谁适合你。</h2>

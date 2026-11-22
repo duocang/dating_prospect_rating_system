@@ -270,6 +270,18 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .ap-ctas .btn { width: auto; padding: 0 30px; }
 .ap-more { display: inline-flex; align-items: center; gap: 2px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
 .ap-hero .rm-note { display: none; }
+/* 首屏占满一屏：星图被屏幕宽度限住时，多出的高度按比例分到标题上方、按钮与星图之间、星图下方（手机上下方只留一点） */
+.ap-hero .hs { display: none; }
+.ap-hero.fit { display: flex; flex-direction: column; min-height: var(--hero-h); }
+.ap-hero.fit .hs { display: block; flex: 1 1 0; }
+.ap-hero.fit .hs-top { flex-grow: 2; }
+.ap-hero.fit .hs-mid { flex-grow: 3; }
+.ap-hero.fit .hs-end { flex-grow: .6; }
+@media (min-width: 900px) {
+  .ap-hero.fit .hs-top { flex-grow: 1; }
+  .ap-hero.fit .hs-mid { flex-grow: 1; }
+  .ap-hero.fit .hs-end { flex-grow: 1; }
+}
 .display .nw { display: inline-block; }
 .hero.ap-hero .display, .hero.home-mid .display { font-size: clamp(28px, 7.8vw, 50px); }
 .ap-hero .ap-sub { font-size: var(--t-callout); margin-top: 12px; }
