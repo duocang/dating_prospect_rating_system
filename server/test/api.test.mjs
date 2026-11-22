@@ -153,3 +153,20 @@ test('虚拟人选带婚姻状况和有没有孩子', async () => {
   assert.ok(pool.every((p) => ['未婚', '离异', '丧偶'].includes(p.profile.maritalStatus)));
   assert.ok(pool.some((p) => p.requirements.some((r) => r.field === 'maritalStatus')));
 });
+
+test('管理员查看单个用户：全部字段和要求都列出，没填的标未填写', async () => {
+  const { body: { token } } = await signup();
+  const id = token.split('.')[0];
+  const get = async (tok) => { const r = await fetch(`${base}/api/admin/users/${id}`, { headers: { 'x-admin-token': tok } }); return { status: r.status, body: await r.json() }; };
+  assert.equal((await get('wrong')).status, 401);
+  const { status, body } = await get('admin');
+  assert.equal(status, 200);
+  assert.equal(body.nickname, '小测');
+  const p = Object.fromEntries(body.profile.map((r) => [r.label, r]));
+  assert.equal(p['身高'].value, '165 cm');
+  assert.equal(p['身高'].filled, true);
+  assert.ok(body.profile.some((r) => !r.filled && r.value === '未填写'));
+  assert.ok(body.requirements.length > requirements.length);
+  assert.ok(body.requirements.some((r) => r.filled && r.importance === '必须'));
+  assert.ok(body.requirements.some((r) => !r.filled && r.text === '未填写'));
+});

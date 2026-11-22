@@ -5,7 +5,7 @@ import { join, resolve, extname, normalize, sep } from 'node:path';
 import { FileStore, latestConsent } from './store.js';
 import { loadKey, sha256, safeEqualHex } from './crypto.js';
 import { validateProfile, validateRequirements, ValidationError } from './validate.js';
-import { presentRelations, formatRequirement } from './present.js';
+import { presentRelations, formatRequirement, formatValue, FIELD_SECTIONS } from './present.js';
 import { computeRelations } from '../../packages/matching/src/relations.js';
 import { FIELDS, GROUP_LABELS, FIELD_MAP, GENDERS, isUnknown } from '../../packages/schema/fields.js';
 import { generateCityPool } from './sim-generate.js';
@@ -96,13 +96,28 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
         const c = latestConsent(u), idn = store.getIdentity(u.id);
         return {
           ...brief(u), createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
-          filled: !!u.gender && u.requirements.length > 0, pool: !!c?.pool,
           filled: !!u.gender && u.requirements.length > 0, pool: !!c?.pool, recovery: !!idn?.recovery,
         };
       }).sort((a, b) => Date.parse(b.lastActiveAt) - Date.parse(a.lastActiveAt));
       return json(res, 200, { testMode, users });
     }
     const um = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24})$/);
+    // 单个用户的完整资料：所有字段都列出来（没填的标“未填写”），连同全部要求；每次查看都记审计日志
+    if (um && method === 'GET') {
+      const u = store.getUser(um[1]);
+      if (!u) return json(res, 404, { error: '找不到这个用户' });
+      const idn = store.getIdentity(u.id), c = latestConsent(u);
+      store.audit('admin.user_viewed', u.id);
+      const listed = new Set(FIELD_SECTIONS.flatMap(([, ks]) => ks));
+      const rows = [...FIELD_SECTIONS.flatMap(([g, ks]) => ks.map((k) => [g, FIELD_MAP[k]])), ...FIELDS.filter((f) => !listed.has(f.key)).map((f) => ['其他', f])];
+      const asked = new Map(u.requirements.map((r) => [r.field, formatRequirement(r)]));
+      return json(res, 200, {
+        ...brief(u), nickname: idn?.nickname || '', createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
+        consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null, recovery: !!idn?.recovery,
+        profile: rows.map(([group, f]) => ({ group, label: f.label, value: formatValue(f.key, u.profile?.[f.key], { full: true }), filled: !isUnknown(u.profile?.[f.key]) })),
+        requirements: rows.map(([group, f]) => { const r = asked.get(f.key); return { group, label: f.label, text: r ? r.text : '未填写', importance: r ? r.importance : '', filled: !!r }; }),
+      });
+    }
     if (um && method === 'DELETE') {
       const id = um[1];
       if (!store.getUser(id)) return json(res, 404, { error: '找不到这个用户' });

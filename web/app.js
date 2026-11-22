@@ -1887,7 +1887,7 @@ function adminUserRow(u) {
     <div class="row wrap" style="justify-content:space-between"><b>${who(u)}</b><span class="small muted">活跃 ${fmtTime(u.lastActiveAt)}</span></div>
     <div class="row wrap" style="margin-top:8px;gap:6px">${tags}</div>
     <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(u.id)}</span></p>
-    <div class="row wrap" style="margin-top:10px"><button class="btn ghost sm" data-act="delete">删除</button></div></div>`;
+    <div class="row wrap" style="margin-top:10px;gap:8px"><button class="btn sm" data-act="view">查看全部资料</button><button class="btn ghost sm" data-act="delete">删除</button></div></div>`;
 }
 
 async function renderAdmin() {
@@ -1923,10 +1923,31 @@ async function renderAdmin() {
       try { await fn(m.el.querySelector('#why').value.trim()); m.close(); } catch (e) { b.classList.remove('loading'); const er = m.el.querySelector('#whyerr'); er.textContent = e.message; er.hidden = false; }
     };
   };
+  view.querySelectorAll('.admin-user [data-act="view"]').forEach((b) => (b.onclick = async () => {
+    const id = b.closest('.admin-user').dataset.uid;
+    b.classList.add('loading');
+    try { adminDetail(await adminApi('GET', `/api/admin/users/${id}`)); } catch (e) { toast(e.message); } finally { b.classList.remove('loading'); }
+  }));
   view.querySelectorAll('.admin-user [data-act="delete"]').forEach((b) => (b.onclick = () => {
     const id = b.closest('.admin-user').dataset.uid;
     ask('永久删除这个用户？', '资料、要求、恢复码全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
   }));
+}
+
+// 管理后台：一个用户的全部资料和全部要求，按组列出，没填的灰色显示“未填写”
+function adminDetail(d) {
+  const table = (rows, val) => {
+    let g = '';
+    return `<table class="admin-kv">${rows.map((r) => `${r.group !== g ? `<tr class="ag"><th colspan="2">${esc((g = r.group))}</th></tr>` : ''}<tr class="${r.filled ? '' : 'nf'}"><td>${esc(r.label)}</td><td>${val(r)}</td></tr>`).join('')}</table>`;
+  };
+  const c = d.consent;
+  const m = sheet(`<h2>${who(d)}</h2>
+    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.nickname ? ` · 昵称 ${esc(d.nickname)}` : ''}</p>
+    <p class="small muted" style="margin:4px 0 0">注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}${d.recovery ? ' · 存了恢复码' : ''}</p>
+    <h3 style="margin:20px 0 6px">本人资料</h3>${table(d.profile, (r) => esc(r.value))}
+    <h3 style="margin:20px 0 6px">对另一半的要求</h3>${table(d.requirements, (r) => esc(r.text) + (r.importance ? ` <span class="badge">${esc(r.importance)}</span>` : ''))}
+    <div class="stack" style="margin-top:16px"><button class="btn block" id="no">关闭</button></div>`);
+  m.el.querySelector('#no').onclick = m.close;
 }
 
 function toggleCard(name, title, text, checked, { required = false, i = 0 } = {}) {

@@ -72,6 +72,16 @@ const CARD_FIELDS = ['age', 'heightCm', 'city', 'settlement', 'education', 'occu
   'housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage',
   'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 
+// 同样的顺序分成六组，管理后台的完整资料页按这个分组
+export const FIELD_SECTIONS = [
+  ['基本情况', ['age', 'heightCm', 'city', 'settlement']],
+  ['学历与工作', ['education', 'occupation', 'incomeAnnual']],
+  ['房车与负债', ['housing', 'car', 'debt', 'personalNetAssets']],
+  ['家庭', ['familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage']],
+  ['婚育', ['maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan']],
+  ['相处', ['personality', 'lifestyle', 'looksCare']],
+];
+
 export function presentCard(key, viewerId, person, { hideVirtual = false, name = null } = {}) {
   const facts = {};
   for (const k of CARD_FIELDS) {
