@@ -1065,3 +1065,12 @@ html.vt-pick .screen { animation: none; }
 .adm-rel li { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
 .adm-rel li > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .adm-map .rm-note { display: none; }
+/* 分组标题要一眼看出能点：深色加粗、带“几项”、右侧圆底箭头，和内容行拉开距离 */
+.grp-tog { gap: 8px; min-height: 36px; }
+.grp-tog .gl, .cmp tr.grp .gl, .admin-kv tr.grp .gl { font-size: 15px; font-weight: 700; letter-spacing: .01em; color: var(--ink); }
+.grp-tog .gn { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+.grp-tog .chev { width: 20px; height: 20px; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--ink); }
+.grp-tog .chev .ic { width: 11px; height: 11px; }
+.grp-tog:hover .chev { background: var(--line); }
+.cmp-block .cmp tbody tr.grp th { padding-top: 14px !important; }
+.admin-kv tr.grp th { padding-top: 16px; }

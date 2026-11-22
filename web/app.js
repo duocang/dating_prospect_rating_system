@@ -1275,7 +1275,7 @@ function cmpGrid({ cls, firstHead, heads, labels, first, cell, same, mark = () =
   const rows = groupRows(labels).map(([g, ls]) => {
     const allSame = !full && ls.every(same);
     const shut = S.foldGrp.has(g);
-    return `<tr class="grp ${allSame ? 'same' : ''}"><th scope="rowgroup" colspan="${n}"><div class="cx"><button type="button" class="grp-tog" data-grp="${g}" aria-expanded="${!shut}"><span class="gl">${g}</span><span class="chev">${ic('next')}</span></button></div></th></tr>` +
+    return `<tr class="grp ${allSame ? 'same' : ''}"><th scope="rowgroup" colspan="${n}"><div class="cx"><button type="button" class="grp-tog" data-grp="${g}" aria-expanded="${!shut}"><span class="gl">${g}</span><span class="gn">${ls.length} 项</span><span class="chev">${ic('next')}</span></button></div></th></tr>` +
       ls.map((l) => `<tr data-grp="${g}" class="${!full && same(l) ? 'same' : ''} ${shut ? 'gf' : ''}"><th scope="row"><div class="cx"><b>${esc(lab(l))}${mark(l)}</b></div></th><td class="me-col">${first(l)}</td>${heads.map((_, i) => cell(i, l)).join('')}</tr>`).join('');
   }).join('');
   return `<div class="cmp-block ${S.diffOnly && !full ? 'diff-on' : ''}"><div class="cmp-wrap"><table class="cmp ${cls}">
@@ -1286,7 +1286,8 @@ function cmpGrid({ cls, firstHead, heads, labels, first, cell, same, mark = () =
 // 表格里的值：金额档位保持“10–50万元”的短写法，其他按说人话的写法再缩短
 const cellText = (v) => (/\d\s*–\s*\d/.test(String(v)) && !/岁|cm/.test(String(v)) ? String(v).replace(/\s*–\s*/g, '–') : shortRange(nice(v)));
 // 分组收起：点组名收起 / 展开这一组的行；记在本次打开的页面里，切页签、看详情都保持
-S.foldGrp = new Set();
+// 默认只展开“基本情况”，其余组先收起（结果页和管理后台都一样）
+S.foldGrp = new Set([...ROW_GROUPS.slice(1).map(([g]) => g), '其他']);
 document.addEventListener('click', (ev) => {
   const b = ev.target.closest('.grp-tog');
   if (!b) return;
@@ -1950,7 +1951,7 @@ function adminDetail(d) {
   const table = (rows, val) => {
     let g = '';
     return `<table class="admin-kv"><tbody>${rows.map((r) => {
-      const head = r.group !== g ? `<tr class="grp"><th colspan="2"><button type="button" class="grp-tog" data-grp="${esc(r.group)}" aria-expanded="${!S.foldGrp.has(r.group)}"><span class="gl">${esc((g = r.group))}</span><span class="chev">${ic('next')}</span></button></th></tr>` : '';
+      const head = r.group !== g ? `<tr class="grp"><th colspan="2"><button type="button" class="grp-tog" data-grp="${esc(r.group)}" aria-expanded="${!S.foldGrp.has(r.group)}"><span class="gl">${esc((g = r.group))}</span><span class="gn">${rows.filter((x) => x.group === r.group).length} 项</span><span class="chev">${ic('next')}</span></button></th></tr>` : '';
       return `${head}<tr data-grp="${esc(r.group)}" class="${r.filled ? '' : 'nf'}${S.foldGrp.has(r.group) ? ' gf' : ''}"><td><div class="cx">${esc(r.label)}</div></td><td><div class="cx">${val(r)}</div></td></tr>`;
     }).join('')}</tbody></table>`;
   };
