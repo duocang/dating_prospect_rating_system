@@ -4,7 +4,7 @@ import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, extname, normalize, sep } from 'node:path';
 import { FileStore, latestConsent } from './store.js';
 import { loadKey, sha256, safeEqualHex } from './crypto.js';
-import { validateProfile, validateRequirements, ValidationError } from './validate.js';
+import { validateProfile, validateRequirements, ValidationError, checkWechat } from './validate.js';
 import { presentRelations, formatRequirement, formatValue, FIELD_SECTIONS } from './present.js';
 import { namer } from './names.js';
 import { computeRelations } from '../../packages/matching/src/relations.js';
@@ -104,7 +104,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     const c = p.simulated ? null : latestConsent(p);
     const facts = {};
     for (const [, f] of sectionRows()) facts[f.key] = isUnknown(p.profile?.[f.key]) ? '' : formatValue(f.key, p.profile[f.key], { full: true });
-    return { ...brief(p), name: nameOf(p, idn), createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
+    return { ...brief(p), name: nameOf(p, idn), wechat: idn?.wechat || '', createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
       filled: !!p.gender && p.requirements.length > 0, pool: p.simulated ? true : !!c?.pool, recovery: !!idn?.recovery, reqCount: p.requirements.length, facts };
   }
   async function handleAdmin(req, res, path, method) {
@@ -133,7 +133,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       const rows = sectionRows();
       const asked = new Map(u.requirements.map((r) => [r.field, formatRequirement(r)]));
       return json(res, 200, {
-        ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
+        ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', wechat: idn?.wechat || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
         consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null, recovery: !!idn?.recovery,
         profile: rows.map(([group, f]) => ({ group, label: f.label, value: formatValue(f.key, u.profile?.[f.key], { full: true }), filled: !isUnknown(u.profile?.[f.key]) })),
         requirements: rows.map(([group, f]) => { const r = asked.get(f.key); return { group, label: f.label, text: r ? r.text : '未填写', importance: r ? r.importance : '', filled: !!r }; }),
@@ -236,6 +236,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
       // 先全部校验，再建账户：任何一项不对都不落盘
       const prof = validateProfile(body);
+      const wechat = checkWechat(body.identity?.wechat);
       const reqs = validateRequirements(body.requirements);
       const c = body.consent || {};
       if (!c.scoring) throw new ValidationError('需要先同意“用你的资料计算结果”');
@@ -243,7 +244,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       const { id, token } = store.createUser();
       try {
         store.saveProfile(id, prof);
-        store.saveIdentity(id, { nickname: String(body.identity?.nickname || '').slice(0, 20) });
+        store.saveIdentity(id, { nickname: String(body.identity?.nickname || '').slice(0, 20), wechat });
         store.saveRequirements(id, reqs);
         store.saveConsents(id, consent);
       } catch (e) { store.deleteUser(id); throw e; }
@@ -267,7 +268,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     if (path === '/api/me' && method === 'GET') {
       const u = store.getUser(uid);
       const idn = store.getIdentity(uid);
-      return json(res, 200, { gender: u.gender, profile: u.profile, requirements: u.requirements, consent: latestConsent(u), identity: { nickname: idn?.nickname }, hasRecovery: !!idn?.recovery });
+      return json(res, 200, { gender: u.gender, profile: u.profile, requirements: u.requirements, consent: latestConsent(u), identity: { nickname: idn?.nickname, wechat: idn?.wechat || '' }, hasRecovery: !!idn?.recovery });
     }
     // 生成恢复码：明文只在这次返回，服务端只存带密钥的哈希；再生成一次，旧码作废
     if (path === '/api/me/recovery' && method === 'POST') {
@@ -275,7 +276,11 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     }
     if (path === '/api/me/profile' && method === 'PUT') {
       store.saveProfile(uid, validateProfile(body));
-      if (body.identity) store.saveIdentity(uid, { nickname: String(body.identity.nickname || '').slice(0, 20) });
+      if (body.identity) {
+        const cur = store.getIdentity(uid) || {};
+        const wechat = body.identity.wechat === undefined ? cur.wechat : checkWechat(body.identity.wechat);
+        store.saveIdentity(uid, { ...cur, nickname: String(body.identity.nickname || '').slice(0, 20), wechat });
+      }
       return json(res, 200, { ok: true });
     }
     if (path === '/api/me/requirements' && method === 'PUT') {

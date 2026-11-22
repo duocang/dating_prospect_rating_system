@@ -71,3 +71,12 @@ export function validateRequirements(list) {
     return out;
   });
 }
+
+// 微信号：必填。字母开头 6–20 位（字母、数字、- _），或者绑定的 11 位手机号
+const WECHAT_RE = /^([a-zA-Z][-_a-zA-Z0-9]{5,19}|1\d{10})$/;
+export function checkWechat(v) {
+  const w = String(v ?? '').trim();
+  if (!w) fail('请先留下微信号');
+  if (!WECHAT_RE.test(w)) fail('微信号格式不对');
+  return w;
+}

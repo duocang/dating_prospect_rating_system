@@ -27,7 +27,7 @@ const call = async (method, path, token, body) => {
   return { status: res.status, body: await res.json() };
 };
 
-const profile = { gender: 'female', profile: { age: 29, heightCm: 165, city: '上海', education: '硕士', incomeAnnual: 180000, personalNetAssets: '50–100万元', childrenPlan: '希望育儿', secretField: 'x' }, identity: { nickname: '小测' } };
+const profile = { gender: 'female', profile: { age: 29, heightCm: 165, city: '上海', education: '硕士', incomeAnnual: 180000, personalNetAssets: '50–100万元', childrenPlan: '希望育儿', secretField: 'x' }, identity: { nickname: '小测', wechat: 'xiaoce_2026' } };
 const requirements = [
   { field: 'age', op: 'range', target: [28, 34], importance: 3 },
   { field: 'incomeAnnual', op: 'atLeast', target: 150000, importance: 3 },
@@ -184,4 +184,16 @@ test('管理员总览含虚构人选，虚构人也能看详情和星空关系',
   const real = o.people.find((p) => !p.virtual && p.filled);
   const r = await (await fetch(`${base}/api/admin/users/${real.id}`, h)).json();
   assert.ok(r.relations.idealMatches.length > 0);
+});
+
+test('没留微信号或格式不对，建不了账户；后台能看到微信号', async () => {
+  const noWx = await session({ ...profile, identity: { nickname: '小测' }, requirements, consent });
+  assert.equal(noWx.status, 400);
+  const bad = await session({ ...profile, identity: { wechat: '12ab' }, requirements, consent });
+  assert.equal(bad.status, 400);
+  const { body: { token } } = await signup();
+  const me = await call('GET', '/api/me', token);
+  assert.equal(me.body.identity.wechat, 'xiaoce_2026');
+  const d = await (await fetch(`${base}/api/admin/users/${token.split('.')[0]}`, { headers: { 'x-admin-token': 'admin' } })).json();
+  assert.equal(d.wechat, 'xiaoce_2026');
 });

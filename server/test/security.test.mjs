@@ -27,7 +27,7 @@ const call = async (method, path, token, body, headers = {}) => {
   const res = await fetch(base + path, { method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined });
   return { status: res.status, body: await res.json().catch(() => null), headers: res.headers };
 };
-const profile = (age) => ({ gender: 'male', profile: { age, heightCm: 178, city: '上海', education: '本科', childrenPlan: '希望育儿' } });
+const profile = (age) => ({ gender: 'male', profile: { age, heightCm: 178, city: '上海', education: '本科', childrenPlan: '希望育儿' }, identity: { wechat: 'tester_01' } });
 const requirements = [{ field: 'age', op: 'range', target: [24, 32], importance: 3 }];
 // 新流程：过了验证码才建账户，资料、要求、同意一起交
 async function session(age, consent) {

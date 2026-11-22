@@ -142,7 +142,7 @@ const IMP_RANK = { 灵活: 1, 重要: 2, 很重要: 3, 必须: 4 }; // 越在意
 const IMP_FROM_SERVER = { 灵活: '有最好', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
-const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
+const P1 = ['wechat', 'gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 const P2 = ['incomeAnnual', 'housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
 const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 const I2 = ['housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
@@ -156,6 +156,7 @@ const SEGS = [
 ];
 
 const ME_Q = {
+  wechat: ['先留个微信号', '只给管理员看，用来在需要时联系你。不会出现在任何人的结果里。'],
   gender: ['你是？', '目前只为男生和女生之间做推荐。'],
   age: ['你今年多大？', '点数字可以直接输入。'],
   heightCm: ['你有多高？', '不穿鞋。点数字可以直接输入。'],
@@ -248,11 +249,15 @@ const skipped = {
   set(key, on) { const s = this.all(); on ? s.add(key) : s.delete(key); store.set('vier.skipped', JSON.stringify([...s])); },
 };
 
+// 微信号：字母开头 6–20 位（字母、数字、- _），或者绑定的 11 位手机号
+const WECHAT_RE = /^([a-zA-Z][-_a-zA-Z0-9]{5,19}|1\d{10})$/;
+
 // 用户下一步该去哪：已经填过或跳过的题不再问
 function resumeHash() {
+  if (!S.me?.identity?.wechat) return '#/me/wechat';
   if (!S.me?.gender) return '#/me/gender';
   const p = S.me.profile || {}, sk = skipped.all();
-  const k = P1.find((x) => x !== 'gender' && p[x] === undefined && !sk.has(x));
+  const k = P1.find((x) => x !== 'gender' && x !== 'wechat' && p[x] === undefined && !sk.has(x));
   if (k) return `#/me/${k}`;
   if (!S.me.requirements?.length) return '#/ideal/age';
   if (!S.me.consent?.scoring) return '#/consent';
@@ -416,7 +421,7 @@ async function renderHome() {
     const st = state();
     const filled = S.me ? Object.keys(S.me.profile || {}).length + (S.me.gender ? 1 : 0) + (S.me.requirements?.length || 0) : 0;
     const actions = {
-      new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/gender' : '#/intro'}">开始填写 ${ic('arrow')}</a>
+      new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/wechat' : '#/intro'}">开始填写 ${ic('arrow')}</a>
             <a class="btn ghost block" href="#/recover">已经填过？用恢复码找回</a>`,
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
@@ -538,7 +543,7 @@ function heroRoom(el) {
   };
 }
 function paintIntroHome() {
-  const start = store.get('vier.intro') ? '#/me/gender' : '#/intro';
+  const start = store.get('vier.intro') ? '#/me/wechat' : '#/intro';
   const orb = planetOrb;
   const check = ic('check');
   paint(`<section class="hero ap-hero">
@@ -618,7 +623,7 @@ function renderIntro() {
   <div class="qfoot col"><button class="btn primary block" id="nx">下一页 ${ic('arrow')}</button><button class="btn ghost" id="skip">跳过介绍</button></div>`);
   const box = document.getElementById('slides'), dots = view.querySelectorAll('.dots i'), nx = document.getElementById('nx');
   let cur = 0, target = -1; // target：按钮触发的滚动目标，滚到之前不被中间位置打断
-  const done = () => { store.set('vier.intro', '1'); go('#/me/gender'); };
+  const done = () => { store.set('vier.intro', '1'); go('#/me/wechat'); };
   const sync = (i) => {
     cur = i;
     dots.forEach((d, k) => d.classList.toggle('on', k === i));
@@ -640,19 +645,20 @@ function renderIntro() {
 
 // ---------- 第一、二段：关于你（一屏一问，每题自动保存） ----------
 function pDraft() {
-  if (!S.pDraft) S.pDraft = { gender: S.me.gender || '', profile: { ...(S.me.profile || {}) }, nickname: S.me.identity?.nickname || '' };
+  if (!S.pDraft) S.pDraft = { gender: S.me.gender || '', profile: { ...(S.me.profile || {}) }, nickname: S.me.identity?.nickname || '', wechat: S.me.identity?.wechat || '' };
   return S.pDraft;
 }
 
 function saveProfile() {
   const d = pDraft();
-  if (!d.gender) return saveChain;
+  // 还没选性别时只有微信号：先存在本机草稿里
+  if (!d.gender) { S.me.identity = { ...(S.me.identity || {}), wechat: d.wechat }; saveDraft(); return saveChain; }
   const profile = Object.fromEntries(Object.entries(d.profile).filter(([, v]) => v !== '' && v !== null && v !== undefined));
   return queueSave(async () => {
-    if (!S.me.local) await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname } });
+    if (!S.me.local) await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname, wechat: d.wechat } });
     S.me.gender = d.gender;
     S.me.profile = profile;
-    S.me.identity = { ...(S.me.identity || {}), nickname: d.nickname };
+    S.me.identity = { ...(S.me.identity || {}), nickname: d.nickname, wechat: d.wechat };
     saveDraft();
     S.results = null;
   });
@@ -684,7 +690,9 @@ function profileText(key, v) {
 function renderMeQ(key) {
   const d = pDraft(), f = S.F[key];
   if (!ME_Q[key]) return go('#/me/gender');
-  if (key !== 'gender' && !d.gender) { toast('先选一下你是男生还是女生'); return go('#/me/gender'); }
+  if (key !== 'wechat' && !WECHAT_RE.test(d.wechat)) { toast('先留个微信号'); return go('#/me/wechat'); }
+  if (key !== 'gender' && key !== 'wechat' && !d.gender) { toast('先选一下你是男生还是女生'); return go('#/me/gender'); }
+  if (key === 'wechat') return renderWechat(d);
   const nav = meNav(key);
   const [q, hint] = ME_Q[key];
   const cur = key === 'gender' ? d.gender : d.profile[key];
@@ -759,6 +767,29 @@ function renderMeQ(key) {
   }));
 }
 
+// 第一题：微信号，必填，格式不对不能往下走
+function renderWechat(d) {
+  const nav = meNav('wechat');
+  paint(`${qHead(nav.back, nav.seg, nav.i)}
+    <h1 class="q" id="qt">${ME_Q.wechat[0]}</h1>
+    <p class="qhint">${ic('lock')}${ME_Q.wechat[1]}</p>
+    <input class="text-input" id="wx" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="微信号" value="${esc(d.wechat)}" aria-labelledby="qt">
+    <p class="err" id="wxerr" hidden>微信号是字母开头的 6–20 位字母、数字、- 或 _，也可以填绑定的手机号。</p>
+    <div class="qfoot"><button class="btn primary block" id="ok" disabled>下一步 ${ic('arrow')}</button></div>`);
+  growBar(); bindBack();
+  const wx = document.getElementById('wx'), ok = document.getElementById('ok'), err = document.getElementById('wxerr');
+  const val = () => wx.value.trim();
+  const sync = () => { ok.disabled = !WECHAT_RE.test(val()); if (!ok.disabled) err.hidden = true; };
+  wx.oninput = sync; sync();
+  wx.onblur = () => { if (val() && !WECHAT_RE.test(val())) err.hidden = false; };
+  const submit = () => {
+    if (!WECHAT_RE.test(val())) { err.hidden = false; wx.focus(); return; }
+    d.wechat = val(); saveProfile(); nav.next();
+  };
+  ok.onclick = submit;
+  wx.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+}
+
 function renderMeBreak() {
   paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，都可以不填。填了更准。',
     '这些都选填。别人只看到大概的档位，看不到具体数字。',
@@ -782,9 +813,9 @@ function renderMeReview() {
   if (!S.me.gender) return go('#/me/gender');
   const d = pDraft(); // 本地草稿：答完立即更新，保存在后台排队进行
   const row = (k, i) => {
-    const v = k === 'gender' ? d.gender : d.profile[k];
+    const v = k === 'gender' ? d.gender : k === 'wechat' ? d.wechat : d.profile[k];
     const t = profileText(k, v);
-    return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
+    return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : k === 'wechat' ? '微信号' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
   };
   const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看看结果'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
   if (!/^#\/me\//.test(S.prev || '')) S.meReviewFrom = /^#\/(results|privacy|ideal\/review)/.test(S.prev || '') ? S.prev : '#/';
@@ -1893,18 +1924,18 @@ async function renderAdmin() {
   A.city = data.city;
   const q = A.q.trim();
   const shown = data.people.filter((p) => (A.src === 'all' || (A.src === 'real') === !p.virtual)
-    && (!q || [p.id, p.name, p.city, p.occupation].join(' ').includes(q)));
+    && (!q || [p.id, p.name, p.wechat, p.city, p.occupation].join(' ').includes(q)));
   const real = data.people.filter((p) => !p.virtual);
   const seg = (key, opts) => `<div class="adm-seg" data-k="${key}">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="${A[key] === v}">${t}</button>`).join('')}</div>`;
   const src = (p) => p.virtual ? '<span class="badge sim">虚构</span>' : '<span class="badge">真人</span>';
   const nameBtn = (p) => `<button type="button" class="adm-name" data-id="${esc(p.id)}">${esc(p.name)}</button><span class="mono adm-id" title="${esc(p.id)}">${esc(p.id.length > 10 ? p.id.slice(0, 8) + '…' : p.id)}</span>`;
   const brief = ['年龄', '城市', '职业'];
   const head = A.mode === 'brief'
-    ? `<tr><th>名字 / id</th><th>来源</th><th>性别</th>${brief.map((h) => `<th>${h}</th>`).join('')}<th>要求</th><th>活跃</th><th></th></tr>`
+    ? `<tr><th>名字 / id</th><th>微信</th><th>来源</th><th>性别</th>${brief.map((h) => `<th>${h}</th>`).join('')}<th>要求</th><th>活跃</th><th></th></tr>`
     : (() => { const gs = []; data.fields.forEach((f) => { const l = gs[gs.length - 1]; if (l && l.g === f.group) l.n++; else gs.push({ g: f.group, n: 1 }); });
       return `<tr class="adm-gh"><th colspan="3"></th>${gs.map((x) => `<th colspan="${x.n}">${esc(x.g)}</th>`).join('')}</tr><tr><th>名字 / id</th><th>来源</th><th>性别</th>${data.fields.map((f) => `<th>${esc(f.label)}</th>`).join('')}</tr>`; })();
   const row = (p) => A.mode === 'brief'
-    ? `<tr><td>${nameBtn(p)}</td><td>${src(p)}</td><td>${esc(p.gender)}</td><td>${p.age ?? '—'}</td><td>${esc(p.city || '—')}</td><td>${esc(p.occupation || '—')}</td><td>${p.reqCount}</td><td class="nowrap">${p.virtual ? '—' : fmtTime(p.lastActiveAt)}</td><td>${p.virtual ? '' : `<button class="btn ghost sm" data-del="${esc(p.id)}">删除</button>`}</td></tr>`
+    ? `<tr><td>${nameBtn(p)}</td><td class="mono">${esc(p.wechat || '—')}</td><td>${src(p)}</td><td>${esc(p.gender)}</td><td>${p.age ?? '—'}</td><td>${esc(p.city || '—')}</td><td>${esc(p.occupation || '—')}</td><td>${p.reqCount}</td><td class="nowrap">${p.virtual ? '—' : fmtTime(p.lastActiveAt)}</td><td>${p.virtual ? '' : `<button class="btn ghost sm" data-del="${esc(p.id)}">删除</button>`}</td></tr>`
     : `<tr><td>${nameBtn(p)}</td><td>${src(p)}</td><td>${esc(p.gender)}</td>${data.fields.map((f) => `<td class="${p.facts[f.key] ? '' : 'nf'}">${esc(p.facts[f.key] || '未填写')}</td>`).join('')}</tr>`;
   paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
     ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚构人选。</p>` : ''}
@@ -1965,6 +1996,7 @@ function adminDetail(d) {
     </div>` : '<p class="small muted" style="margin-top:20px">资料或要求没填完，还算不出星空关系。</p>';
   const m = sheet(`<h2>${esc(d.name)} ${d.virtual ? '<span class="badge sim">虚构</span>' : ''}</h2>
     <p class="small muted" style="margin:4px 0 0">${who(d)}</p>
+    ${d.wechat ? `<p style="margin:6px 0 0">微信 <b class="mono">${esc(d.wechat)}</b></p>` : ''}
     <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.virtual ? '' : ` · 注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}${d.recovery ? ' · 存了恢复码' : ''}`}</p>
     ${rel}
     <h3 style="margin:24px 0 6px">本人资料</h3>${table(d.profile, (x) => esc(x.value))}
@@ -2100,7 +2132,7 @@ async function route() {
       S.config = await api('GET', '/api/config');
       S.F = Object.fromEntries(S.config.fields.map((f) => [f.key, f]));
       // 页面比服务端新时（部署间隙），服务端还不认识的题先不问，免得整页报错
-      for (const list of [P1, P2, I1, I2]) for (let i = list.length - 1; i >= 0; i--) if (list[i] !== 'gender' && !S.F[list[i]]) list.splice(i, 1);
+      for (const list of [P1, P2, I1, I2]) for (let i = list.length - 1; i >= 0; i--) if (list[i] !== 'gender' && list[i] !== 'wechat' && !S.F[list[i]]) list.splice(i, 1);
       renderFoot();
       if (gen !== routeGen) return;
     }
