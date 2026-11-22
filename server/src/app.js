@@ -6,6 +6,7 @@ import { FileStore, latestConsent } from './store.js';
 import { loadKey, sha256, safeEqualHex } from './crypto.js';
 import { validateProfile, validateRequirements, ValidationError } from './validate.js';
 import { presentRelations, formatRequirement, formatValue, FIELD_SECTIONS } from './present.js';
+import { namer } from './names.js';
 import { computeRelations } from '../../packages/matching/src/relations.js';
 import { FIELDS, GROUP_LABELS, FIELD_MAP, GENDERS, isUnknown } from '../../packages/schema/fields.js';
 import { generateCityPool } from './sim-generate.js';
@@ -27,6 +28,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
   // 虚拟人选：100 城各 virtualPerCity 人（男女各半），按城首次用到时生成并缓存，可复现
   const cities = JSON.parse(readFileSync(join(root, 'config/cities.json'), 'utf8'));
   const cityByName = new Map(cities.map((c) => [c.name, c]));
+  const cityById = new Map(cities.map((c) => [c.id, c]));
   const virtualCache = new Map();
   function virtualFor(cityName) {
     const n = Number(config.virtualPerCity ?? 1000);
@@ -86,33 +88,52 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     const got = String(req.headers['x-admin-token'] || '');
     return !!expected && !!got && safeEqualHex(sha256(got), sha256(expected));
   }
+  const sectionRows = () => {
+    const listed = new Set(FIELD_SECTIONS.flatMap(([, ks]) => ks));
+    return [...FIELD_SECTIONS.flatMap(([g, ks]) => ks.map((k) => [g, FIELD_MAP[k]])), ...FIELDS.filter((f) => !listed.has(f.key)).map((f) => ['其他', f])];
+  };
+  // 后台用一个常驻的命名器：同一个人始终同名，名字够用时互不重名（总览和详情一致）
+  const adminNamer = namer(key, 'admin');
+  const nameOf = (p, idn) => idn?.nickname || adminNamer(p);
+  function findPerson(id) {
+    if (id.startsWith('u_')) return store.getUser(id);
+    const c = cityById.get(id.split('-SIM-')[0]);
+    return c ? virtualFor(c.name).find((p) => p.id === id) : null;
+  }
+  function adminRow(p, idn) {
+    const c = p.simulated ? null : latestConsent(p);
+    const facts = {};
+    for (const [, f] of sectionRows()) facts[f.key] = isUnknown(p.profile?.[f.key]) ? '' : formatValue(f.key, p.profile[f.key], { full: true });
+    return { ...brief(p), name: nameOf(p, idn), createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
+      filled: !!p.gender && p.requirements.length > 0, pool: p.simulated ? true : !!c?.pool, recovery: !!idn?.recovery, reqCount: p.requirements.length, facts };
+  }
   async function handleAdmin(req, res, path, method) {
     const ip = clientIp(req);
     if (limiter.count('adminFail:' + ip, LIM.adminFail[1]) >= LIM.adminFail[0]) return json(res, 429, { error: '口令错太多次，1 小时后再试' });
     if (!adminOk(req)) { limiter.hit('adminFail:' + ip, Infinity, LIM.adminFail[1]); store.audit('admin.auth_failed', null); return json(res, 401, { error: '管理员口令不对' }); }
     const body = ['POST', 'DELETE'].includes(method) ? await readBody(req) : {};
+    // 总览：全部真人 + 一个城市的虚构人选（标“虚构”）。每人带全部字段，表格的“详细”模式直接用
     if (path === '/api/admin/overview' && method === 'GET') {
-      const users = store.listUserIds().map((id) => store.getUser(id)).filter(Boolean).map((u) => {
-        const c = latestConsent(u), idn = store.getIdentity(u.id);
-        return {
-          ...brief(u), createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
-          filled: !!u.gender && u.requirements.length > 0, pool: !!c?.pool, recovery: !!idn?.recovery,
-        };
-      }).sort((a, b) => Date.parse(b.lastActiveAt) - Date.parse(a.lastActiveAt));
-      return json(res, 200, { testMode, users });
+      const real = store.listUserIds().map((id) => store.getUser(id)).filter(Boolean);
+      const qCity = new URL(req.url, 'http://x').searchParams.get('city');
+      const city = cityByName.has(qCity) ? qCity : (real.find((u) => cityByName.has(u.profile?.city))?.profile.city || '上海');
+      const people = [...real.map((u) => adminRow(u, store.getIdentity(u.id))), ...virtualFor(city).map((p) => adminRow(p))]
+        .sort((a, b) => (a.virtual - b.virtual) || (Date.parse(b.lastActiveAt || 0) - Date.parse(a.lastActiveAt || 0)));
+      return json(res, 200, { testMode, city, cities: cities.map((c) => c.name), fields: sectionRows().map(([g, f]) => ({ group: g, key: f.key, label: f.label })), people });
     }
-    const um = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24})$/);
+    const um = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24}|[A-Za-z0-9]+-SIM-\d+)$/);
     // 单个用户的完整资料：所有字段都列出来（没填的标“未填写”），连同全部要求；每次查看都记审计日志
     if (um && method === 'GET') {
-      const u = store.getUser(um[1]);
+      const u = findPerson(um[1]);
       if (!u) return json(res, 404, { error: '找不到这个用户' });
-      const idn = store.getIdentity(u.id), c = latestConsent(u);
-      store.audit('admin.user_viewed', u.id);
-      const listed = new Set(FIELD_SECTIONS.flatMap(([, ks]) => ks));
-      const rows = [...FIELD_SECTIONS.flatMap(([g, ks]) => ks.map((k) => [g, FIELD_MAP[k]])), ...FIELDS.filter((f) => !listed.has(f.key)).map((f) => ['其他', f])];
+      const idn = u.simulated ? null : store.getIdentity(u.id), c = u.simulated ? null : latestConsent(u);
+      if (!u.simulated) store.audit('admin.user_viewed', u.id);
+      // 这个人的星空关系：和 TA 自己看到的结果同样计算（不受查看次数限制，也不改动 TA 的任何数据）
+      const relations = u.gender && u.requirements.length ? presentRelations(key, u, computeRelations({ me: u, pool: buildPool(u.profile?.city), limits, scorerId: config.scorer.id, params: config.scorer.params }), { nameOf: (p) => nameOf(p, p.simulated ? null : store.getIdentity(p.id)) }) : null;
+      const rows = sectionRows();
       const asked = new Map(u.requirements.map((r) => [r.field, formatRequirement(r)]));
       return json(res, 200, {
-        ...brief(u), nickname: idn?.nickname || '', createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
+        ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
         consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null, recovery: !!idn?.recovery,
         profile: rows.map(([group, f]) => ({ group, label: f.label, value: formatValue(f.key, u.profile?.[f.key], { full: true }), filled: !isUnknown(u.profile?.[f.key]) })),
         requirements: rows.map(([group, f]) => { const r = asked.get(f.key); return { group, label: f.label, text: r ? r.text : '未填写', importance: r ? r.importance : '', filled: !!r }; }),

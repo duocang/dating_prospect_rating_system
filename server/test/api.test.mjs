@@ -170,3 +170,18 @@ test('管理员查看单个用户：全部字段和要求都列出，没填的�
   assert.ok(body.requirements.some((r) => r.filled && r.importance === '必须'));
   assert.ok(body.requirements.some((r) => !r.filled && r.text === '未填写'));
 });
+
+test('管理员总览含虚构人选，虚构人也能看详情和星空关系', async () => {
+  await signup();
+  const h = { headers: { 'x-admin-token': 'admin' } };
+  const o = await (await fetch(`${base}/api/admin/overview?city=上海`, h)).json();
+  const sim = o.people.find((p) => p.virtual);
+  assert.ok(sim && o.people.some((p) => !p.virtual));
+  assert.equal(o.fields.length, Object.keys(sim.facts).length);
+  const d = await (await fetch(`${base}/api/admin/users/${sim.id}`, h)).json();
+  assert.equal(d.virtual, true);
+  assert.ok(d.relations && Array.isArray(d.relations.idealMatches));
+  const real = o.people.find((p) => !p.virtual && p.filled);
+  const r = await (await fetch(`${base}/api/admin/users/${real.id}`, h)).json();
+  assert.ok(r.relations.idealMatches.length > 0);
+});

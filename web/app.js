@@ -1877,43 +1877,58 @@ async function adminApi(method, path, body) {
 const who = (p) => p ? `${p.virtual ? '<span class="badge sim">虚拟</span> ' : ''}${esc([p.gender, p.age && `${p.age} 岁`, p.city, p.occupation].filter(Boolean).join(' · ') || '资料未填')}` : '<span class="muted">已删除</span>';
 const fmtTime = (t) => (t ? new Date(t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 
-function adminUserRow(u) {
-  const tags = [
-    u.pool ? '<span class="badge">在人选池</span>' : '',
-    u.recovery ? '<span class="badge l3">存了恢复码</span>' : '',
-    u.filled ? '' : '<span class="badge">资料未填完</span>',
-  ].join('');
-  return `<div class="pcard admin-user" data-uid="${esc(u.id)}">
-    <div class="row wrap" style="justify-content:space-between"><b>${who(u)}</b><span class="small muted">活跃 ${fmtTime(u.lastActiveAt)}</span></div>
-    <div class="row wrap" style="margin-top:8px;gap:6px">${tags}</div>
-    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(u.id)}</span></p>
-    <div class="row wrap" style="margin-top:10px;gap:8px"><button class="btn sm" data-act="view">查看全部资料</button><button class="btn ghost sm" data-act="delete">删除</button></div></div>`;
-}
-
 async function renderAdmin() {
   let data;
   const gen = routeGen;
-  try { data = await adminApi('GET', '/api/admin/overview'); } catch (e) {
+  try { data = await adminApi('GET', `/api/admin/overview${S.admin?.wantCity ? `?city=${encodeURIComponent(S.admin.wantCity)}` : ''}`); } catch (e) {
     if (gen !== routeGen) return;
     paint(`<h1 class="q" id="qt">管理后台</h1><p class="qhint">${ic('lock')}输入管理员口令（服务器的环境变量 ADMIN_TOKEN；测试环境没设时是 admin）</p>
       <input class="text-input" id="tok" type="password" autocomplete="off"><div class="stack" style="margin-top:12px"><button class="btn primary block" id="go">进入</button></div>${e.status === 401 && store.get('vier.admin') ? '<p class="err">口令不对</p>' : `<p class="err">${e.status === 401 ? '' : esc(e.message)}</p>`}`);
     document.getElementById('go').onclick = () => { store.set('vier.admin', document.getElementById('tok').value.trim()); dir = 'none'; renderAdmin(); };
     return;
   }
-  const q = (S.adminQ || '').trim();
-  const users = data.users.filter((u) => !q || [u.id, u.city, u.occupation].join(' ').includes(q));
   if (gen !== routeGen) return;
-  const counts = { users: data.users.length, pool: data.users.filter((u) => u.pool).length, recovery: data.users.filter((u) => u.recovery).length };
+  const A = (S.admin ||= { mode: 'brief', src: 'all', q: '', n: 200 });
+  A.city = data.city;
+  const q = A.q.trim();
+  const shown = data.people.filter((p) => (A.src === 'all' || (A.src === 'real') === !p.virtual)
+    && (!q || [p.id, p.name, p.city, p.occupation].join(' ').includes(q)));
+  const real = data.people.filter((p) => !p.virtual);
+  const seg = (key, opts) => `<div class="adm-seg" data-k="${key}">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="${A[key] === v}">${t}</button>`).join('')}</div>`;
+  const src = (p) => p.virtual ? '<span class="badge sim">虚构</span>' : '<span class="badge">真人</span>';
+  const nameBtn = (p) => `<button type="button" class="adm-name" data-id="${esc(p.id)}">${esc(p.name)}</button><span class="mono adm-id" title="${esc(p.id)}">${esc(p.id.length > 10 ? p.id.slice(0, 8) + '…' : p.id)}</span>`;
+  const brief = ['年龄', '城市', '职业'];
+  const head = A.mode === 'brief'
+    ? `<tr><th>名字 / id</th><th>来源</th><th>性别</th>${brief.map((h) => `<th>${h}</th>`).join('')}<th>要求</th><th>活跃</th><th></th></tr>`
+    : (() => { const gs = []; data.fields.forEach((f) => { const l = gs[gs.length - 1]; if (l && l.g === f.group) l.n++; else gs.push({ g: f.group, n: 1 }); });
+      return `<tr class="adm-gh"><th colspan="3"></th>${gs.map((x) => `<th colspan="${x.n}">${esc(x.g)}</th>`).join('')}</tr><tr><th>名字 / id</th><th>来源</th><th>性别</th>${data.fields.map((f) => `<th>${esc(f.label)}</th>`).join('')}</tr>`; })();
+  const row = (p) => A.mode === 'brief'
+    ? `<tr><td>${nameBtn(p)}</td><td>${src(p)}</td><td>${esc(p.gender)}</td><td>${p.age ?? '—'}</td><td>${esc(p.city || '—')}</td><td>${esc(p.occupation || '—')}</td><td>${p.reqCount}</td><td class="nowrap">${p.virtual ? '—' : fmtTime(p.lastActiveAt)}</td><td>${p.virtual ? '' : `<button class="btn ghost sm" data-del="${esc(p.id)}">删除</button>`}</td></tr>`
+    : `<tr><td>${nameBtn(p)}</td><td>${src(p)}</td><td>${esc(p.gender)}</td>${data.fields.map((f) => `<td class="${p.facts[f.key] ? '' : 'nf'}">${esc(p.facts[f.key] || '未填写')}</td>`).join('')}</tr>`;
   paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
-    ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚拟人选。</p>` : ''}
-    <div class="admin-stats"><div><b>${counts.users}</b><span>用户</span></div><div><b>${counts.pool}</b><span>在人选池</span></div><div><b>${counts.recovery}</b><span>存了恢复码</span></div></div>
-    <input class="text-input" id="aq" type="search" placeholder="按城市、职业、用户 id 搜索" value="${esc(q)}" style="margin-top:16px">
-    <div class="cards" style="margin-top:12px">${users.map((u) => adminUserRow(u)).join('') || '<p class="muted">没有符合的用户。</p>'}</div>`, { wide: true });
+    ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚构人选。</p>` : ''}
+    <div class="admin-stats"><div><b>${real.length}</b><span>真人</span></div><div><b>${real.filter((u) => u.pool).length}</b><span>在人选池</span></div><div><b>${data.people.length - real.length}</b><span>虚构（${esc(data.city)}）</span></div></div>
+    <div class="adm-bar">
+      <input class="text-input" id="aq" type="search" placeholder="搜名字、城市、职业、id" value="${esc(q)}">
+      ${seg('src', [['all', '全部'], ['real', '真人'], ['sim', '虚构']])}
+      <label class="adm-city">虚构人选城市 <select id="acity">${data.cities.map((c) => `<option${c === data.city ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      ${seg('mode', [['brief', '简洁'], ['full', '详细']])}
+    </div>
+    <p class="small muted" style="margin:8px 0 0">共 ${shown.length} 人${shown.length > A.n ? `，先显示前 ${A.n} 位` : ''}。点名字看完整资料和星空关系。</p>
+    <div class="adm-wrap"><table class="adm-t ${A.mode}"><thead>${head}</thead><tbody>${shown.slice(0, A.n).map(row).join('') || `<tr><td colspan="9" class="muted">没有符合的人。</td></tr>`}</tbody></table></div>
+    ${shown.length > A.n ? '<div class="stack" style="margin-top:12px"><button class="btn block" id="more">再显示 200 位</button></div>' : ''}`, { wide: true });
 
   const again = () => { dir = 'none'; renderAdmin(); };
   document.getElementById('out').onclick = () => { store.del('vier.admin'); again(); };
   const aq = document.getElementById('aq');
-  aq.onchange = () => { S.adminQ = aq.value; again(); };
+  aq.onchange = () => { A.q = aq.value; A.n = 200; again(); };
+  document.getElementById('acity').onchange = (e) => { A.wantCity = e.target.value; A.n = 200; again(); };
+  document.getElementById('more')?.addEventListener('click', () => { A.n += 200; again(); });
+  view.querySelectorAll('.adm-seg').forEach((g) => g.querySelectorAll('button').forEach((b) => (b.onclick = () => { A[g.dataset.k] = b.dataset.v; A.n = 200; again(); })));
+  view.querySelectorAll('.adm-name').forEach((b) => (b.onclick = async () => {
+    b.classList.add('loading');
+    try { adminDetail(await adminApi('GET', `/api/admin/users/${b.dataset.id}`)); } catch (e) { toast(e.message); } finally { b.classList.remove('loading'); }
+  }));
   const ask = (title, text, label, danger, fn) => {
     const m = sheet(`<h2>${title}</h2><p class="lead">${text}</p><input class="text-input" id="why" placeholder="理由（会记入审计日志）"><p class="err" id="whyerr" hidden></p>
       <div class="stack" style="margin-top:12px"><button class="btn ${danger ? 'danger' : 'primary'} block" id="yes">${label}</button><button class="btn block" id="no">取消</button></div>`);
@@ -1923,31 +1938,42 @@ async function renderAdmin() {
       try { await fn(m.el.querySelector('#why').value.trim()); m.close(); } catch (e) { b.classList.remove('loading'); const er = m.el.querySelector('#whyerr'); er.textContent = e.message; er.hidden = false; }
     };
   };
-  view.querySelectorAll('.admin-user [data-act="view"]').forEach((b) => (b.onclick = async () => {
-    const id = b.closest('.admin-user').dataset.uid;
-    b.classList.add('loading');
-    try { adminDetail(await adminApi('GET', `/api/admin/users/${id}`)); } catch (e) { toast(e.message); } finally { b.classList.remove('loading'); }
-  }));
-  view.querySelectorAll('.admin-user [data-act="delete"]').forEach((b) => (b.onclick = () => {
-    const id = b.closest('.admin-user').dataset.uid;
+  view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => {
+    const id = b.dataset.del;
     ask('永久删除这个用户？', '资料、要求、恢复码全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
   }));
 }
 
-// 管理后台：一个用户的全部资料和全部要求，按组列出，没填的灰色显示“未填写”
+// 管理后台：一个人的全部资料、全部要求和 TA 的星空关系（和 TA 自己看到的结果同样计算）
 function adminDetail(d) {
+  // 和结果页对照表同一套分组收起：点组名收起 / 展开
   const table = (rows, val) => {
     let g = '';
-    return `<table class="admin-kv">${rows.map((r) => `${r.group !== g ? `<tr class="ag"><th colspan="2">${esc((g = r.group))}</th></tr>` : ''}<tr class="${r.filled ? '' : 'nf'}"><td>${esc(r.label)}</td><td>${val(r)}</td></tr>`).join('')}</table>`;
+    return `<table class="admin-kv"><tbody>${rows.map((r) => {
+      const head = r.group !== g ? `<tr class="grp"><th colspan="2"><button type="button" class="grp-tog" data-grp="${esc(r.group)}" aria-expanded="${!S.foldGrp.has(r.group)}"><span class="gl">${esc((g = r.group))}</span><span class="chev">${ic('next')}</span></button></th></tr>` : '';
+      return `${head}<tr data-grp="${esc(r.group)}" class="${r.filled ? '' : 'nf'}${S.foldGrp.has(r.group) ? ' gf' : ''}"><td><div class="cx">${esc(r.label)}</div></td><td><div class="cx">${val(r)}</div></td></tr>`;
+    }).join('')}</tbody></table>`;
   };
-  const c = d.consent;
-  const m = sheet(`<h2>${who(d)}</h2>
-    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.nickname ? ` · 昵称 ${esc(d.nickname)}` : ''}</p>
-    <p class="small muted" style="margin:4px 0 0">注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}${d.recovery ? ' · 存了恢复码' : ''}</p>
-    <h3 style="margin:20px 0 6px">本人资料</h3>${table(d.profile, (r) => esc(r.value))}
-    <h3 style="margin:20px 0 6px">对另一半的要求</h3>${table(d.requirements, (r) => esc(r.text) + (r.importance ? ` <span class="badge">${esc(r.importance)}</span>` : ''))}
+  const c = d.consent, r = d.relations;
+  const list = (title, items, pct) => `<div class="adm-rel"><h4>${title}<span class="muted">${items.length} 位</span></h4>${items.length ? `<ol>${items.map((m) => `<li><span>${esc(m.name || m.alias)}${m.simulated ? ' <span class="badge sim">虚构</span>' : ''}</span><b>${pct(m)}%</b></li>`).join('')}</ol>` : '<p class="small muted">暂时没有</p>'}</div>`;
+  const rel = r ? `<h3 style="margin:24px 0 6px">星空关系</h3><div class="relmap eclipse adm-map" id="admmap"></div>
+    <div class="adm-rels">
+      ${list('B · TA 的理想型', r.idealMatches, (m) => Math.round(m.fit?.total?.low || 0))}
+      ${list('D · 想找 TA 这样的人', r.seekers, (m) => Math.round(m.myFitToThem?.total?.low || 0))}
+      ${list('A · TA 理想型的理想型', r.idealOfIdeal || [], (m) => Math.round(m.score?.low || 0))}
+    </div>` : '<p class="small muted" style="margin-top:20px">资料或要求没填完，还算不出星空关系。</p>';
+  const m = sheet(`<h2>${esc(d.name)} ${d.virtual ? '<span class="badge sim">虚构</span>' : ''}</h2>
+    <p class="small muted" style="margin:4px 0 0">${who(d)}</p>
+    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.virtual ? '' : ` · 注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}${d.recovery ? ' · 存了恢复码' : ''}`}</p>
+    ${rel}
+    <h3 style="margin:24px 0 6px">本人资料</h3>${table(d.profile, (x) => esc(x.value))}
+    <h3 style="margin:20px 0 6px">对另一半的要求</h3>${table(d.requirements, (x) => esc(x.text) + (x.importance ? ` <span class="badge">${esc(x.importance)}</span>` : ''))}
     <div class="stack" style="margin-top:16px"><button class="btn block" id="no">关闭</button></div>`);
+  m.el.querySelector('.sheet').classList.add('adm-sheet');
   m.el.querySelector('#no').onclick = m.close;
+  // 星图里的“你”换成 TA：管理员看的是别人
+  const asTA = (n) => { if (n.label === '你') n.label = 'TA'; if (n.hub?.label === '你') n.hub = { ...n.hub, label: 'TA' }; (n.kids || []).forEach(asTA); return n; };
+  if (r) relMap(m.el.querySelector('#admmap'), asTA(resultTree(r)), { esc, still: true, maxH: 360 });
 }
 
 function toggleCard(name, title, text, checked, { required = false, i = 0 } = {}) {

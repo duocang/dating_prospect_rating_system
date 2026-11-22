@@ -20,7 +20,18 @@ const FEMALE = [
   '琥珀', '彩霞', '素云', '宝珠',
 ];
 
-const listFor = (gender) => (gender === 'female' ? FEMALE : MALE);
+// 名著人物不够分：再用常见、好写的姓配上清雅的名，各补几百个（不用冷僻字）
+const SURNAMES = ['林', '苏', '沈', '顾', '陆', '江', '叶', '温', '许', '周', '宋', '唐', '程', '白', '秦',
+  '韩', '谢', '方', '夏', '傅', '萧', '柳', '楚', '安', '姜', '陈', '李', '王', '张', '赵', '孟', '何'];
+const MALE_GIVEN = ['子墨', '清远', '景行', '知远', '思源', '明轩', '云舟', '怀瑾', '承宇', '修远', '文渊', '君浩',
+  '亦辰', '景川', '予安', '嘉树', '书言', '牧之', '星河', '远舟', '晏清', '时安', '致远', '少卿'];
+const FEMALE_GIVEN = ['若溪', '婉清', '静姝', '清欢', '知微', '念安', '书瑶', '映雪', '听澜', '素心', '采薇', '初晴',
+  '锦书', '南乔', '星禾', '雨棠', '晚晴', '清漪', '云舒', '语桐', '安然', '思言', '月白', '如意'];
+const combos = (given, taken) => SURNAMES.flatMap((s) => given.map((g) => s + g)).filter((n) => !taken.includes(n));
+const MALE_ALL = [...MALE, ...combos(MALE_GIVEN, MALE)];
+const FEMALE_ALL = [...FEMALE, ...combos(FEMALE_GIVEN, FEMALE)];
+
+const listFor = (gender) => (gender === 'female' ? FEMALE_ALL : MALE_ALL);
 const start = (key, viewerId, personId) => createHmac('sha256', key).update(`name:${viewerId}:${personId}`).digest().readUInt32BE(0);
 
 export function nameFor(key, viewerId, person) {

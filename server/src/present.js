@@ -97,8 +97,9 @@ export function presentCard(key, viewerId, person, { hideVirtual = false, name =
   };
 }
 
-export function presentRelations(key, viewer, rel, { hideVirtual = false } = {}) {
-  const nm = namer(key, viewer.id);
+// nameOf：管理后台传入，让星空关系里的名字和后台表格里的一致
+export function presentRelations(key, viewer, rel, { hideVirtual = false, nameOf = null } = {}) {
+  const nm = nameOf || namer(key, viewer.id);
   const card = (p) => presentCard(key, viewer.id, p, { hideVirtual, name: nm(p) });
   return {
     scorer: rel.scorer,
