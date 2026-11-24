@@ -40,7 +40,7 @@ const DRAFT_KEYS = ['gender', 'profile', 'requirements', 'consent', 'identity'];
 function loadDraft() {
   let d = {};
   try { d = JSON.parse(store.get('vier.draft') || '{}') || {}; } catch { /* 坏了就当没填过 */ }
-  return { gender: d.gender || null, profile: d.profile || null, requirements: d.requirements || null, consent: d.consent || null, identity: d.identity || {}, hasRecovery: false, local: true };
+  return { gender: d.gender || null, profile: d.profile || null, requirements: d.requirements || null, consent: d.consent || null, identity: d.identity || {}, local: true };
 }
 function saveDraft() {
   if (!S.me?.local) return;
@@ -142,7 +142,7 @@ const IMP_RANK = { 灵活: 1, 重要: 2, 很重要: 3, 必须: 4 }; // 越在意
 const IMP_FROM_SERVER = { 灵活: '有最好', 重要: '在意', 很重要: '很在意', 必须: '必须有' };
 
 // ---------- 题目 ----------
-const P1 = ['wechat', 'gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
+const P1 = ['gender', 'age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 const P2 = ['incomeAnnual', 'housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
 const I1 = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'incomeAnnual', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
 const I2 = ['housing', 'car', 'debt', 'personalNetAssets', 'familyNetAssets', 'familySupport', 'parentsSecurity', 'siblings', 'care', 'parentsMarriage'];
@@ -156,7 +156,6 @@ const SEGS = [
 ];
 
 const ME_Q = {
-  wechat: ['留个微信号', '可以不填。留了以后，换手机也能用微信号找回资料。只有管理员能看到，不会出现在任何人的结果里。'],
   gender: ['你是？', '目前只为男生和女生之间做推荐。'],
   age: ['你今年多大？', '点数字可以直接输入。'],
   heightCm: ['你有多高？', '不穿鞋。点数字可以直接输入。'],
@@ -266,14 +265,14 @@ function canSkip(key, profile) {
 // 用户下一步该去哪：已经填过或跳过的题不再问
 function resumeHash() {
   const p = S.me?.profile || {}, sk = skipped.all();
-  if (!S.me?.identity?.wechat && !sk.has('wechat')) return '#/me/wechat';
-  if (!S.me?.gender) return '#/me/gender';
-  const k = P1.find((x) => x !== 'gender' && x !== 'wechat' && p[x] === undefined && !sk.has(x))
+  if (!S.me || S.me.local) return '#/start';
+  if (!S.me.gender) return '#/me/gender';
+  const k = P1.find((x) => x !== 'gender' && p[x] === undefined && !sk.has(x))
     || (RECALL.filter((x) => isAnswered(p[x])).length < MIN_RECALL ? RECALL.find((x) => P1.includes(x) && !isAnswered(p[x])) : null);
   if (k) return `#/me/${k}`;
   if (!S.me.requirements?.length) return '#/ideal/age';
   if (!S.me.consent?.scoring) return '#/consent';
-  return S.me.local ? '#/verify' : '#/results';
+  return '#/results';
 }
 
 // ---------- 通用界面片段 ----------
@@ -433,8 +432,8 @@ async function renderHome() {
     const st = state();
     const filled = S.me ? Object.keys(S.me.profile || {}).length + (S.me.gender ? 1 : 0) + (S.me.requirements?.length || 0) : 0;
     const actions = {
-      new: `<a class="btn primary block" href="${store.get('vier.intro') ? '#/me/wechat' : '#/intro'}">开始填写 ${ic('arrow')}</a>
-            <a class="btn ghost block" href="#/recover">已经填过？找回我的资料</a>`,
+      new: `<a class="btn primary block" href="#/start">开始填写 ${ic('arrow')}</a>
+            <a class="btn ghost block" href="#/start">已经填过？输入你的号进入</a>`,
       partial: `<a class="btn primary block" href="${resumeHash()}">继续填写 ${ic('arrow')}</a>
             <p class="small muted" style="margin:0">上次已经填了 ${filled} 题，都保存好了。</p>
             <a class="btn block" href="#/me/review">看看我填了什么</a>`,
@@ -484,24 +483,12 @@ async function renderHome() {
       <div class="stack rise" style="--i:2">${actions}</div>
     </section>`);
     if (st !== 'done') relMap(document.getElementById('relmap'), EXAMPLE, { esc });
-    // 已经开始填的人：首页底部可以存恢复码 / 换个人重新开始
+    // 已经开始填的人：首页底部可以退出这台设备（凭号还能再进来）
     if (st !== 'new') {
       const acts = document.querySelector('.hero .stack');
-      // 恢复码要有服务器上的账户：过了验证才能生成
-      acts.insertAdjacentHTML('beforeend', `${S.me.local ? '<p class="small muted" style="margin:0">恢复码完成验证后可以生成。</p>' : `<button class="btn ghost block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '存个恢复码，换手机也能找回'}</button>`}
-        <button class="btn block" id="restart">换个人，从头开始</button>`);
-      const rc = document.getElementById('rcode');
-      if (rc) rc.onclick = () => { openRecovery().onclose = () => { dir = 'none'; draw(); }; };
+      acts.insertAdjacentHTML('beforeend', '<button class="btn block" id="restart">退出，换个人</button>');
       document.getElementById('restart').onclick = () => {
-        if (S.me.local) {
-          const m = askSheet('从头开始？', '这台设备上填的会清掉，服务器上本来就没有。', '从头开始');
-          m.el.querySelector('#yes').onclick = () => { m.close(); resetSession(); dir = 'none'; draw(); };
-          return;
-        }
-        const lose = !S.me.hasRecovery;
-        const m = askSheet('从头开始？', lose ? '你还没存恢复码，资料会丢。想留着就先存一个。' : '这台设备上的资料会清掉。用恢复码可以找回来。',
-          lose ? '不保留，从头开始' : '从头开始', { danger: lose, pre: lose ? '<button class="btn primary block" id="pre-rc">先存恢复码</button>' : '' });
-        m.el.querySelector('#pre-rc')?.addEventListener('click', () => { m.close(); openRecovery(); });
+        const m = askSheet('退出这台设备？', '你的资料都保存在服务器上，下次输入你的号就能回来。', '退出');
         m.el.querySelector('#yes').onclick = () => { m.close(); resetSession(); dir = 'none'; draw(); };
       };
     }
@@ -555,14 +542,14 @@ function heroRoom(el) {
   };
 }
 function paintIntroHome() {
-  const start = store.get('vier.intro') ? '#/me/wechat' : '#/intro';
+  const start = '#/start';
   const orb = planetOrb;
   const check = ic('check');
   paint(`<section class="hero ap-hero">
       <i class="hs hs-top"></i>
       <h1 class="display rise"><span class="nw">你找谁，</span><span class="nw">TA 找谁，</span><span class="nw">谁找你。</span></h1>
       <p class="ap-sub rise" style="--i:1">说说你，和你想找的人。看看谁和你<b>两边都合适</b>。</p>
-      <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button><a class="ap-more ap-back" href="#/recover">已经填过 ${ic('next')}</a></div>
+      <div class="ap-ctas rise" style="--i:3"><a class="btn primary" href="${start}">开始填写</a><button type="button" class="ap-more" data-scroll="ap-how">看看怎么用 ${ic('next')}</button><a class="ap-more ap-back" href="#/start">已经填过 ${ic('next')}</a></div>
       <i class="hs hs-mid"></i>
       <div class="relmap rise eclipse" id="relmap" style="--i:2"></div>
       <i class="hs hs-end"></i>
@@ -605,7 +592,7 @@ function paintIntroHome() {
     <section class="ap-sec ap-last">
       <h2 class="ap-h2 reveal">现在开始。</h2>
       <p class="ap-sub reveal">大约 5 分钟，看看谁适合你。</p>
-      <div class="ap-ctas reveal"><a class="btn primary" href="${start}">开始填写</a><a class="ap-more" href="#/recover">已经填过？找回我的资料 ${ic('next')}</a></div>
+      <div class="ap-ctas reveal"><a class="btn primary" href="${start}">开始填写</a><a class="ap-more" href="#/recover">已经填过？输入你的号进入 ${ic('next')}</a></div>
     </section>`, { wide: true });
   view.querySelectorAll('[data-scroll]').forEach((b) => (b.onclick = () => document.getElementById(b.dataset.scroll)?.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth' })));
   revealOnScroll();
@@ -620,57 +607,22 @@ function revealOnScroll() {
   els.forEach((e) => io.observe(e));
 }
 
-// ---------- 新手引导 ----------
-function renderIntro() {
-  const slides = [
-    ['user', '第一步：说说你自己', `点一点就行，不想答可以跳过。`],
-    ['heart', '第二步：说说你想找的人', '每条要求，说说你有多在意。'],
-    ['users', '第三步：看看你喜欢的人，喜欢谁', '还有谁在找你这样的人。'],
-  ];
-  paint(`<section class="intro">
-    <div class="slides" id="slides">${slides.map(([i, h, p]) => `<div class="slide"><div class="art">${ic(i)}</div><h2>${h}</h2><p>${p}</p></div>`).join('')}</div>
-    <div class="dots" aria-hidden="true">${slides.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
-    <p class="fine">${ic('lock')} 自动保存，随时退出。</p>
-  </section>
-  <div class="qfoot col"><button class="btn primary block" id="nx">下一页 ${ic('arrow')}</button><button class="btn ghost" id="skip">跳过介绍</button></div>`);
-  const box = document.getElementById('slides'), dots = view.querySelectorAll('.dots i'), nx = document.getElementById('nx');
-  let cur = 0, target = -1; // target：按钮触发的滚动目标，滚到之前不被中间位置打断
-  const done = () => { store.set('vier.intro', '1'); go('#/me/wechat'); };
-  const sync = (i) => {
-    cur = i;
-    dots.forEach((d, k) => d.classList.toggle('on', k === i));
-    nx.innerHTML = i === slides.length - 1 ? `好的，开始 ${ic('arrow')}` : `下一页 ${ic('arrow')}`;
-  };
-  box.addEventListener('scroll', () => requestAnimationFrame(() => {
-    const i = Math.round(box.scrollLeft / box.clientWidth);
-    if (target >= 0) { if (i === target) target = -1; else return; }
-    if (i !== cur) sync(i);
-  }), { passive: true });
-  nx.onclick = () => {
-    if (cur === slides.length - 1) return done();
-    target = cur + 1;
-    sync(target);
-    box.scrollTo({ left: target * box.clientWidth, behavior: reduceMotion() ? 'auto' : 'smooth' });
-  };
-  document.getElementById('skip').onclick = done;
-}
-
 // ---------- 第一、二段：关于你（一屏一问，每题自动保存） ----------
 function pDraft() {
-  if (!S.pDraft) S.pDraft = { gender: S.me.gender || '', profile: { ...(S.me.profile || {}) }, nickname: S.me.identity?.nickname || '', wechat: S.me.identity?.wechat || '' };
+  if (!S.pDraft) S.pDraft = { gender: S.me.gender || '', profile: { ...(S.me.profile || {}) }, nickname: S.me.identity?.nickname || '' };
   return S.pDraft;
 }
 
 function saveProfile() {
   const d = pDraft();
   // 还没选性别时只有微信号：先存在本机草稿里
-  if (!d.gender) { S.me.identity = { ...(S.me.identity || {}), wechat: d.wechat }; saveDraft(); return saveChain; }
+  if (!d.gender) return saveChain;
   const profile = Object.fromEntries(Object.entries(d.profile).filter(([, v]) => v !== '' && v !== null && v !== undefined));
   return queueSave(async () => {
-    if (!S.me.local) await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname, wechat: d.wechat } });
+    if (!S.me.local) await api('PUT', '/api/me/profile', { gender: d.gender, profile, identity: { nickname: d.nickname } });
     S.me.gender = d.gender;
     S.me.profile = profile;
-    S.me.identity = { ...(S.me.identity || {}), nickname: d.nickname, wechat: d.wechat };
+    S.me.identity = { ...(S.me.identity || {}), nickname: d.nickname };
     saveDraft();
     S.results = null;
   });
@@ -702,8 +654,7 @@ function profileText(key, v) {
 function renderMeQ(key) {
   const d = pDraft(), f = S.F[key];
   if (!ME_Q[key]) return go('#/me/gender');
-  if (key !== 'gender' && key !== 'wechat' && !d.gender) { toast('先选一下你是男生还是女生'); return go('#/me/gender'); }
-  if (key === 'wechat') return renderWechat(d);
+  if (key !== 'gender' && !d.gender) { toast('先选一下你是男生还是女生'); return go('#/me/gender'); }
   const nav = meNav(key);
   const [q, hint] = ME_Q[key];
   const cur = key === 'gender' ? d.gender : d.profile[key];
@@ -778,30 +729,6 @@ function renderMeQ(key) {
   }));
 }
 
-// 第一题：微信号，可以跳过；填了就要格式对
-function renderWechat(d) {
-  const nav = meNav('wechat');
-  paint(`${qHead(nav.back, nav.seg, nav.i)}
-    <h1 class="q" id="qt">${ME_Q.wechat[0]}</h1>
-    <p class="qhint">${ic('lock')}${ME_Q.wechat[1]}</p>
-    <input class="text-input" id="wx" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" placeholder="微信号" value="${esc(d.wechat)}" aria-labelledby="qt">
-    <p class="err" id="wxerr" hidden>微信号是字母开头的 6–20 位字母、数字、- 或 _，也可以填绑定的手机号。</p>
-    <div class="qfoot"><button class="btn primary block" id="ok" disabled>下一步 ${ic('arrow')}</button><button class="btn block" id="skip">先不留</button></div>`);
-  growBar(); bindBack();
-  document.getElementById('skip').onclick = () => { d.wechat = ''; skipped.set('wechat', true); saveProfile(); nav.next(); };
-  const wx = document.getElementById('wx'), ok = document.getElementById('ok'), err = document.getElementById('wxerr');
-  const val = () => wx.value.trim();
-  const sync = () => { ok.disabled = !WECHAT_RE.test(val()); if (!ok.disabled) err.hidden = true; };
-  wx.oninput = sync; sync();
-  wx.onblur = () => { if (val() && !WECHAT_RE.test(val())) err.hidden = false; };
-  const submit = () => {
-    if (!WECHAT_RE.test(val())) { err.hidden = false; wx.focus(); return; }
-    d.wechat = val(); skipped.set('wechat', false); saveProfile(); nav.next();
-  };
-  ok.onclick = submit;
-  wx.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
-}
-
 function renderMeBreak() {
   paint(milestone('你的情况填好了', '下面几题是<b>你的经济和家庭情况</b>，都可以不填。填了更准。',
     '这些都选填。别人只看到大概的档位，看不到具体数字。',
@@ -825,9 +752,9 @@ function renderMeReview() {
   if (!S.me.gender) return go('#/me/gender');
   const d = pDraft(); // 本地草稿：答完立即更新，保存在后台排队进行
   const row = (k, i) => {
-    const v = k === 'gender' ? d.gender : k === 'wechat' ? d.wechat : d.profile[k];
+    const v = k === 'gender' ? d.gender : d.profile[k];
     const t = profileText(k, v);
-    return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : k === 'wechat' ? '微信号' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
+    return `<button class="sum-item" data-k="${k}" style="--i:${i}"><div class="t"><b>${k === 'gender' ? '性别' : esc(lab(S.F[k].label))}</b><span class="${t ? '' : 'none'}">${esc(t || '没填')}</span></div>${ic('edit')}</button>`;
   };
   const next = S.me.requirements?.length ? (S.me.consent?.scoring ? ['#/results', '看看结果'] : ['#/ideal/review', '下一步：确认我的要求']) : ['#/ideal/age', '下一步：说说我想找的人'];
   if (!/^#\/me\//.test(S.prev || '')) S.meReviewFrom = /^#\/(results|privacy|ideal\/review)/.test(S.prev || '') ? S.prev : '#/';
@@ -1134,9 +1061,6 @@ function renderConsent() {
     ${SEE_CARD()}
     <h2 class="sec-title" id="q-research">2. 用于匿名统计吗？</h2>
     ${choice('research', st.research, '只算很多人加在一起的数', '不参与统计')}
-    <h2 class="sec-title">${ic('lock')}换手机也想找回？</h2>
-    <p class="small muted" style="margin:0 0 10px">存个恢复码。在别的手机上输入，就能回到你的资料。${S.me.local ? '完成验证后可以生成。' : ''}</p>
-    ${S.me.local ? '' : `<div class="stack"><button type="button" class="btn block" id="rcode">${S.me.hasRecovery ? '重新生成恢复码' : '生成恢复码'}</button></div>`}
     <label class="check-row ${c.adult ? 'on' : ''}" id="adult"><input type="checkbox" class="sr"${c.adult ? ' checked' : ''}><span class="mark">${ic('check')}</span><span>我已满 18 岁，同意<a href="#/terms">用户协议</a>和<a href="#/policy">隐私政策</a></span></label>
     <div class="qfoot"><button class="btn primary block" id="go">同意，开始找人 ${ic('arrow')}</button></div>`);
   bindBack();
@@ -1144,8 +1068,6 @@ function renderConsent() {
     st[b.dataset.name] = b.dataset.v;
     selectOne(view.querySelectorAll(`[data-name="${b.dataset.name}"]`), b);
   }));
-  const rc = document.getElementById('rcode');
-  if (rc) rc.onclick = () => openRecovery();
   let adult = !!c.adult;
   const ad = document.getElementById('adult');
   ad.querySelector('input').onchange = (e) => { adult = e.target.checked; ad.classList.toggle('on', adult); };
@@ -1154,7 +1076,6 @@ function renderConsent() {
     if (!adult) { toast('请先勾选“我已满 18 岁”'); ad.classList.add('shake'); setTimeout(() => ad.classList.remove('shake'), 500); return; }
     const consent = { adult: true, scoring: true, pool: st.pool === '1', research: st.research === '1' };
     // 还没过验证：同意先存本机，下一步输验证码，过了才一起交给服务器
-    if (S.me.local) { S.me.consent = consent; saveDraft(); return go('#/verify'); }
     btn.classList.add('loading');
     try {
       await api('PUT', '/api/me/consent', consent);
@@ -1162,58 +1083,6 @@ function renderConsent() {
       go('#/results');
     } catch (e) { btn.classList.remove('loading'); toast(e.message); }
   };
-}
-
-// ---------- 验证码 ----------
-// 填完、同意之后输一次图片验证码；过了才在服务器上建账户，把资料、要求、同意一次存好
-function renderVerify() {
-  if (!S.me.local) return go('#/results');
-  if (resumeHash() !== '#/verify') return go(resumeHash());
-  paint(`${simpleHead('#/consent', '最后一步', '确认一下')}
-    <h1 class="q" id="qt">输入图里的字</h1>
-    <p class="qhint">${ic('shield')}5 个字符，不分大小写。验证后保存你的资料。</p>
-    <div class="cap-card" id="cap">
-      <div class="cap-img" id="capimg" role="img" aria-label="验证码图片"></div>
-      <button type="button" class="btn ghost sm" id="capnew">换一张</button>
-    </div>
-    <input class="text-input mono cap-input" id="capin" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="8" placeholder="·····" aria-label="验证码" aria-describedby="caperr">
-    <p class="err" id="caperr" role="alert" hidden></p>
-    <div class="qfoot"><button class="btn primary block" id="capgo">验证并查看结果 ${ic('arrow')}</button></div>`);
-  bindBack();
-  const card = document.getElementById('cap'), img = document.getElementById('capimg'), input = document.getElementById('capin');
-  const err = document.getElementById('caperr'), btn = document.getElementById('capgo');
-  let id = null;
-  const load = async () => {
-    img.classList.add('loading'); id = null;
-    try { const c = await api('GET', '/api/captcha'); id = c.id; img.innerHTML = c.svg; }
-    catch (e) { img.innerHTML = ''; err.textContent = e.message; err.hidden = false; }
-    img.classList.remove('loading');
-  };
-  const fail = (msg) => {
-    err.textContent = msg; err.hidden = false;
-    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
-    input.value = ''; input.focus();
-    load();
-  };
-  document.getElementById('capnew').onclick = () => { err.hidden = true; input.value = ''; input.focus(); load(); };
-  input.oninput = () => { err.hidden = true; };
-  input.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
-  btn.onclick = async () => {
-    const answer = input.value.trim();
-    if (!answer) { fail('先输入图里的字'); return; }
-    if (!id) return;
-    btn.classList.add('loading'); err.hidden = true;
-    try {
-      const { token } = await api('POST', '/api/session', { captchaId: id, answer, gender: S.me.gender, profile: S.me.profile || {}, requirements: S.me.requirements, consent: S.me.consent, identity: S.me.identity || {} });
-      store.set('vier.token', token);
-      store.del('vier.draft');
-      S.me = await api('GET', '/api/me');
-      S.results = null;
-      go('#/results');
-    } catch (e) { btn.classList.remove('loading'); fail(e.status === 400 && /验证码/.test(e.message) ? '不对，换了一张，再试一次' : e.message); }
-  };
-  input.focus();
-  load();
 }
 
 // ---------- 计算中 ----------
@@ -1858,80 +1727,29 @@ function sheet(html) {
   return m;
 }
 
-// ---------- 恢复码 ----------
-// 没有账号密码：存一个恢复码，换手机时输入就能回到原来的资料。明文只显示这一次。
-function openRecovery() {
-  const again = !!S.me?.hasRecovery;
-  const m = sheet(`<div id="rc"><h2>${again ? '重新生成恢复码' : '恢复码'}</h2>
-    <p class="lead">换手机或清了浏览器，输入恢复码就能找回你的资料。${again ? '生成新的以后，旧的就不能用了。' : ''}</p>
-    <div class="stack"><button class="btn primary block" id="rc-go">${again ? '生成新的恢复码' : '生成恢复码'}</button><button class="btn block" id="rc-no">先不用</button></div></div>`);
-  m.el.querySelector('#rc-no').onclick = m.close;
-  m.el.querySelector('#rc-go').onclick = async (ev) => {
-    const b = ev.currentTarget; b.classList.add('loading');
-    try {
-      const { code } = await api('POST', '/api/me/recovery');
-      S.me.hasRecovery = true;
-      m.el.querySelector('#rc').innerHTML = `<h2>你的恢复码</h2>
-        <p class="rc-code mono" id="rc-code">${esc(code)}</p>
-        <p class="lead">抄下来或截个图。只显示这一次，我们也查不到。谁拿到它，谁就能看到你的资料。</p>
-        <div class="stack"><button class="btn primary block" id="rc-copy">${ic('check')}复制</button><button class="btn block" id="rc-ok">我记好了</button></div>`;
-      m.el.querySelector('#rc-copy').onclick = () => navigator.clipboard?.writeText(code).then(() => toast('已复制'), () => toast('复制不了，请手动抄下来'));
-      m.el.querySelector('#rc-ok').onclick = m.close;
-    } catch (e) { b.classList.remove('loading'); toast(e.message); }
-  };
-  return m;
-}
-
-// 找回资料：用微信号 / 小红书号 / 抖音号（答对 3 道自己填过的题，再输验证码），或者用恢复码
-const FIND_KINDS = [['wechat', '微信号'], ['xhs', '小红书号'], ['douyin', '抖音号'], ['code', '恢复码']];
+// 进入：输入管理员登记过的微信号 / 小红书号 / 抖音号，加一张验证码。
+// 还没填过的直接开始填；已经填过的要答对 3 道自己填过的题（docs/AUTH.md）
+const HANDLE_KINDS = [['wechat', '微信号'], ['xhs', '小红书号'], ['douyin', '抖音号']];
 async function postJson(path, body) {
   const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || '出错了');
+  if (!res.ok) throw Object.assign(new Error(data.error || '出错了'), { status: res.status });
   return data;
 }
-async function foundToken(token) {
+async function enterWith(token) {
   resetSession();
   store.set('vier.token', token);
   await ensureSession();
-  toast('已找回你的资料');
+  S.find = null;
+  if (S.me.gender) toast('欢迎回来');
   go(resumeHash());
 }
-function renderRecover() {
-  const back = S.prev && !/recover/.test(S.prev) ? S.prev : '#/';
-  const lose = !!S.me?.gender;
+function renderStart() {
+  const back = S.prev && !/start/.test(S.prev) ? S.prev : '#/';
   const st = S.find || (S.find = { kind: 'wechat', handle: '' });
-  const head = `${simpleHead(back, '找回资料', '')}`;
-  const loseNote = lose ? '找回后，这台设备上刚填的资料不保留。' : '';
+  const head = simpleHead(back, '开始', '');
 
-  // 第三步：验证码
-  if (st.ticket) {
-    paint(`${head}<h1 class="q" id="qt">最后输一下图里的字</h1>
-      <p class="qhint">${ic('shield')}5 个字符，不分大小写。</p>
-      <div class="cap-card" id="cap"><div class="cap-img" id="capimg" role="img" aria-label="验证码图片"></div><button type="button" class="btn ghost sm" id="capnew">换一张</button></div>
-      <input class="text-input mono cap-input" id="capin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="·····" aria-label="验证码">
-      <p class="err" id="err" role="alert" hidden></p>
-      <div class="qfoot"><button class="btn primary block" id="go">找回 ${ic('arrow')}</button></div>`);
-    bindBack();
-    const img = document.getElementById('capimg'), input = document.getElementById('capin'), err = document.getElementById('err'), btn = document.getElementById('go');
-    let id = null;
-    const load = async () => { id = null; try { const c = await api('GET', '/api/captcha'); id = c.id; img.innerHTML = c.svg; } catch (e) { err.textContent = e.message; err.hidden = false; } };
-    document.getElementById('capnew').onclick = () => { input.value = ''; load(); };
-    input.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
-    btn.onclick = async () => {
-      if (!input.value.trim() || !id) return input.focus();
-      btn.classList.add('loading'); err.hidden = true;
-      try { const { token } = await postJson('/api/find/finish', { ticket: st.ticket, captchaId: id, answer: input.value.trim() }); S.find = null; await foundToken(token); }
-      catch (e) {
-        btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false; input.value = ''; load();
-        if (/重新找/.test(e.message)) { S.find = { kind: st.kind, handle: st.handle }; setTimeout(renderRecover, 1200); }
-      }
-    };
-    input.focus(); load();
-    return;
-  }
-
-  // 第二步：答 3 道题
+  // 已经填过：答 3 道题
   if (st.questions) {
     const field = (k) => {
       const f = S.F[k], q = tx(ME_Q[k]?.[0] || f.label);
@@ -1940,48 +1758,60 @@ function renderRecover() {
         : `<select class="text-input" data-k="${k}" aria-label="${esc(q)}"><option value="">请选择</option>${(f.levels || f.options).map((o) => `<option value="${esc(o)}">${esc(nice(o))}</option>`).join('')}</select>`;
       return `<label class="find-q"><b>${esc(q)}</b>${ctl}</label>`;
     };
-    paint(`${head}<h1 class="q" id="qt">回答 3 个问题</h1>
-      <p class="qhint">${ic('lock')}都是你填资料时答过的。答对了才能找回。</p>
+    paint(`${head}<h1 class="q" id="qt">你之前填过，先确认一下是你</h1>
+      <p class="qhint">${ic('lock')}回答 3 个你填过的问题。连续答错 3 次，这个号要等一天。</p>
       <div class="find-qs">${st.questions.map(field).join('')}</div>
       <p class="err" id="err" role="alert" hidden></p>
-      <div class="qfoot"><button class="btn primary block" id="go">下一步 ${ic('arrow')}</button><button class="btn block" id="redo">换个号找</button></div>`);
+      <div class="qfoot"><button class="btn primary block" id="go">进入 ${ic('arrow')}</button><button class="btn block" id="redo">换个号</button></div>`);
     bindBack();
     const err = document.getElementById('err'), btn = document.getElementById('go');
-    document.getElementById('redo').onclick = () => { S.find = { kind: st.kind, handle: '' }; renderRecover(); };
+    document.getElementById('redo').onclick = () => { S.find = { kind: st.kind, handle: '' }; renderStart(); };
     btn.onclick = async () => {
       const answers = {};
       for (const el of view.querySelectorAll('[data-k]')) { if (!el.value) { err.textContent = '3 道题都要答'; err.hidden = false; return el.focus(); } answers[el.dataset.k] = el.value; }
       btn.classList.add('loading'); err.hidden = true;
-      try { st.ticket = (await postJson('/api/find/check', { kind: st.kind, handle: st.handle, answers })).ticket; renderRecover(); }
-      catch (e) { btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false; }
+      try { await enterWith((await postJson('/api/start/answer', { pass: st.pass, answers })).token); }
+      catch (e) {
+        btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false;
+        if (e.status === 429 || /重新输入/.test(e.message)) btn.disabled = true;
+      }
     };
     return;
   }
 
-  // 第一步：选用哪个号，输入
-  const isCode = st.kind === 'code', name = FIND_KINDS.find(([k]) => k === st.kind)[1];
-  paint(`${head}<h1 class="q" id="qt">找回资料</h1>
-    <div class="seg-switch find-kinds" role="group" aria-label="用什么找回">${FIND_KINDS.map(([k, l]) => `<button type="button" data-kind="${k}" class="${k === st.kind ? 'on' : ''}" aria-pressed="${k === st.kind}">${l}</button>`).join('')}</div>
-    <p class="qhint">${ic('lock')}${isCode ? '12 位，不分大小写。' : `输入${name}，再回答 3 个你填过的问题。同一个号连续答错 3 次，要等一天。`}${loseNote}</p>
-    <input class="text-input${isCode ? ' mono' : ''}" id="in" autocomplete="off" autocapitalize="${isCode ? 'characters' : 'off'}" spellcheck="false" maxlength="30" placeholder="${isCode ? 'XXXX-XXXX-XXXX' : name}" value="${isCode ? '' : esc(st.handle)}" aria-label="${name}">
+  // 输号 + 验证码
+  const name = HANDLE_KINDS.find(([k]) => k === st.kind)[1];
+  paint(`${head}<h1 class="q" id="qt">先输入你的号</h1>
+    <p class="qhint">${ic('lock')}用我们给你登记的微信号、小红书号或抖音号，任选一个。</p>
+    <div class="seg-switch find-kinds" role="group" aria-label="用哪个号">${HANDLE_KINDS.map(([k, l]) => `<button type="button" data-kind="${k}" class="${k === st.kind ? 'on' : ''}" aria-pressed="${k === st.kind}">${l}</button>`).join('')}</div>
+    <input class="text-input" id="in" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" placeholder="${name}" value="${esc(st.handle)}" aria-label="${name}">
+    <div class="cap-card" id="cap" style="margin-top:18px"><div class="cap-img" id="capimg" role="img" aria-label="验证码图片"></div><button type="button" class="btn ghost sm" id="capnew">换一张</button></div>
+    <input class="text-input mono cap-input" id="capin" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="输入图里的字" aria-label="验证码">
     <p class="err" id="err" role="alert" hidden></p>
-    <div class="qfoot"><button class="btn primary block" id="go">${isCode ? '找回' : '下一步'} ${ic('arrow')}</button></div>`);
+    <div class="qfoot"><button class="btn primary block" id="go">下一步 ${ic('arrow')}</button></div>`);
   bindBack();
-  const input = document.getElementById('in'), err = document.getElementById('err'), btn = document.getElementById('go');
-  view.querySelectorAll('[data-kind]').forEach((b) => (b.onclick = () => { S.find = { kind: b.dataset.kind, handle: '' }; renderRecover(); }));
+  const input = document.getElementById('in'), cap = document.getElementById('capin'), img = document.getElementById('capimg');
+  const err = document.getElementById('err'), btn = document.getElementById('go');
+  let id = null;
+  const load = async () => { id = null; cap.value = ''; try { const c = await api('GET', '/api/captcha'); id = c.id; img.innerHTML = c.svg; } catch (e) { err.textContent = e.message; err.hidden = false; } };
+  view.querySelectorAll('[data-kind]').forEach((b) => (b.onclick = () => { S.find = { kind: b.dataset.kind, handle: input.value.trim() }; renderStart(); }));
+  document.getElementById('capnew').onclick = load;
   input.focus();
-  input.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
+  input.onkeydown = (e) => { if (e.key === 'Enter') cap.focus(); };
+  cap.onkeydown = (e) => { if (e.key === 'Enter') btn.click(); };
   btn.onclick = async () => {
-    const v = input.value.trim();
+    const v = input.value.trim(), a = cap.value.trim();
     if (!v) return input.focus();
+    if (!a || !id) return cap.focus();
     btn.classList.add('loading'); err.hidden = true;
     try {
-      if (isCode) return await foundToken((await postJson('/api/recover', { code: v })).token);
-      const { questions } = await postJson('/api/find', { kind: st.kind, handle: v });
-      Object.assign(st, { handle: v, questions });
-      renderRecover();
-    } catch (e) { btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false; }
+      const r = await postJson('/api/start', { kind: st.kind, handle: v, captchaId: id, answer: a });
+      if (r.token) return await enterWith(r.token);
+      Object.assign(st, { handle: v, questions: r.questions, pass: r.pass });
+      renderStart();
+    } catch (e) { btn.classList.remove('loading'); err.textContent = e.message; err.hidden = false; load(); }
   };
+  load();
 }
 
 // ---------- 管理后台：用户列表、删除用户 ----------
@@ -2022,7 +1852,7 @@ async function renderAdmin() {
   const row = (p) => A.mode === 'brief'
     ? `<tr><td>${nameBtn(p)}</td><td class="mono">${esc(p.wechat || '—')}</td><td>${src(p)}</td><td>${esc(p.gender)}</td><td>${p.age ?? '—'}</td><td>${esc(p.city || '—')}</td><td>${esc(p.occupation || '—')}</td><td>${p.reqCount}</td><td class="nowrap">${p.virtual ? '—' : fmtTime(p.lastActiveAt)}</td><td>${p.virtual ? '' : `<button class="btn ghost sm" data-del="${esc(p.id)}">删除</button>`}</td></tr>`
     : `<tr><td>${nameBtn(p)}</td><td class="mono">${esc(p.wechat || '—')}</td><td class="mono">${esc(p.xhs || '—')}</td><td class="mono">${esc(p.douyin || '—')}</td><td>${src(p)}</td><td>${esc(p.gender)}</td>${data.fields.map((f) => `<td class="${p.facts[f.key] ? '' : 'nf'}">${esc(p.facts[f.key] || '未填写')}</td>`).join('')}</tr>`;
-  paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><button class="btn ghost sm" id="out">退出</button></div>
+  paint(`<div class="row" style="justify-content:space-between"><h1 class="q" style="margin:0">管理后台</h1><div class="row" style="gap:8px"><button class="btn primary sm" id="newu">${ic('user')}新建用户</button><button class="btn ghost sm" id="out">退出</button></div></div>
     ${data.testMode ? `<p class="qhint">${ic('info')}测试环境：用户界面不标虚构人选。</p>` : ''}
     <div class="admin-stats"><div><b>${real.length}</b><span>真人</span></div><div><b>${real.filter((u) => u.pool).length}</b><span>在人选池</span></div><div><b>${data.people.length - real.length}</b><span>虚构（${esc(data.city)}）</span></div></div>
     <div class="adm-bar">
@@ -2037,6 +1867,24 @@ async function renderAdmin() {
 
   const again = () => { dir = 'none'; renderAdmin(); };
   document.getElementById('out').onclick = () => { store.del('vier.admin'); again(); };
+  // 新建用户：登记号（至少一个），本人用号进来后自己填资料
+  document.getElementById('newu').onclick = () => {
+    const m = sheet(`<h2>新建用户</h2><p class="lead">登记 TA 的号，至少填一个。TA 在首页点“开始填写”，输入其中任何一个号就能进来填。</p>
+      <form class="adm-new" id="nu">${[['nickname', '称呼（只有后台看到，可不填）'], ['wechat', '微信号'], ['xhs', '小红书号'], ['douyin', '抖音号']].map(([k, l]) => `<label><span>${l}</span><input class="text-input${k === 'nickname' ? '' : ' mono'}" name="${k}" maxlength="${k === 'nickname' ? 20 : 30}" autocomplete="off" spellcheck="false"></label>`).join('')}
+      <p class="err" id="nuerr" hidden></p>
+      <div class="stack"><button class="btn primary block" type="submit">建好了</button><button class="btn block" type="button" id="nuno">取消</button></div></form>`);
+    const f = m.el.querySelector('#nu'), err = m.el.querySelector('#nuerr');
+    m.el.querySelector('#nuno').onclick = m.close;
+    f.nickname.focus();
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const body = Object.fromEntries(['nickname', 'wechat', 'xhs', 'douyin'].map((k) => [k, f[k].value.trim()]));
+      if (!body.wechat && !body.xhs && !body.douyin) { err.textContent = '微信号、小红书号、抖音号至少填一个'; err.hidden = false; return; }
+      const b = f.querySelector('[type=submit]'); b.classList.add('loading'); err.hidden = true;
+      try { await adminApi('POST', '/api/admin/users', body); toast('已新建'); m.onclose = () => renderAdmin(); m.close(); }
+      catch (x) { b.classList.remove('loading'); err.textContent = x.message; err.hidden = false; }
+    };
+  };
   const aq = document.getElementById('aq');
   aq.onchange = () => { A.q = aq.value; A.n = 200; again(); };
   document.getElementById('acity').onchange = (e) => { A.wantCity = e.target.value; A.n = 200; again(); };
@@ -2057,7 +1905,7 @@ async function renderAdmin() {
   };
   view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = () => {
     const id = b.dataset.del;
-    ask('永久删除这个用户？', '资料、要求、恢复码全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
+    ask('永久删除这个用户？', '资料、要求、登记的号全部删除，不能恢复。', '永久删除', true, async (reason) => { await adminApi('DELETE', `/api/admin/users/${id}`, { reason }); toast('已删除'); again(); });
   }));
 }
 
@@ -2082,12 +1930,17 @@ function adminDetail(d) {
   const m = sheet(`<h2>${esc(d.name)} ${d.virtual ? '<span class="badge sim">虚构</span>' : ''}</h2>
     <p class="small muted" style="margin:4px 0 0">${who(d)}</p>
     ${d.virtual ? '' : `<form class="adm-handles" id="hd">${[['wechat', '微信号'], ['xhs', '小红书号'], ['douyin', '抖音号']].map(([k, l]) => `<label><span>${l}</span><input class="text-input mono" name="${k}" value="${esc(d[k] || '')}" maxlength="30" autocomplete="off" spellcheck="false" placeholder="没有"></label>`).join('')}<button class="btn sm" type="submit">保存</button></form><p class="small muted" style="margin:4px 0 0">用户可以凭其中任何一个号找回自己（还要答对 3 道题）。</p>`}
-    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.virtual ? '' : ` · 注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}${d.recovery ? ' · 存了恢复码' : ''}`}</p>
+    <p class="small muted" style="margin:4px 0 0"><span class="mono">${esc(d.id)}</span>${d.virtual ? '' : ` · 注册 ${fmtTime(d.createdAt)} · 活跃 ${fmtTime(d.lastActiveAt)}${c ? ` · ${c.pool ? '同意进人选池' : '不进人选池'}` : ''}`}</p>
     ${rel}
     <h3 style="margin:24px 0 6px">本人资料</h3>${table(d.profile, (x) => esc(x.value))}
     <h3 style="margin:20px 0 6px">对另一半的要求</h3>${table(d.requirements, (x) => esc(x.text) + (x.importance ? ` <span class="badge">${esc(x.importance)}</span>` : ''))}
-    <div class="stack" style="margin-top:16px"><button class="btn block" id="no">关闭</button></div>`);
+    <div class="stack" style="margin-top:16px">${!d.virtual && d.gender ? '<button class="btn block" id="reset">清空资料，让 TA 重填</button>' : ''}<button class="btn block" id="no">关闭</button></div>`);
   m.el.querySelector('.sheet').classList.add('adm-sheet');
+  m.el.querySelector('#reset')?.addEventListener('click', async (e) => {
+    if (!confirm('清空 TA 填的资料、要求和同意记录？登记的号保留，TA 用号进来就能重填。')) return;
+    e.currentTarget.classList.add('loading');
+    try { await adminApi('POST', `/api/admin/users/${d.id}/reset`); toast('已清空'); m.onclose = () => renderAdmin(); m.close(); } catch (err) { toast(err.message); }
+  });
   m.el.querySelector('#no').onclick = m.close;
   const hd = m.el.querySelector('#hd');
   if (hd) hd.onsubmit = async (e) => {
@@ -2120,7 +1973,7 @@ const LEGAL = {
     ['这是什么', 'VIER 帮你看清：你想找的人是谁、谁在找你这样的人。结果只比较条件，不代表一个人好不好，也不保证能成。'],
     ['谁能用', '只给年满 18 岁的人用。目前只为男生和女生之间做推荐。'],
     ['请如实填写', '填假资料会让别人的结果不准。冒充别人、骚扰别人的账户会被暂停或删除。'],
-    ['恢复码', '恢复码等于你的钥匙。谁拿到它，谁就能看到你的资料。请自己保管好，不要发给别人。'],
+    ['你的号', '我们会为你登记微信号、小红书号或抖音号，凭它和你填过的几个问题进入。别把这些答案告诉别人。'],
     ['免费', '全部功能免费，不收钱。'],
     ['不能做的事', '不能批量抓取页面、反复改要求来“扫”别人，不能把看到的信息拿去别处用。'],
     ['改动', '协议改了会在这里更新，重要的改动会提醒你。'],
@@ -2129,7 +1982,7 @@ const LEGAL = {
     ['我们收什么', '你填的资料和要求；你同意了哪些事、什么时候同意的。不收手机号、照片和身份证。'],
     ['为什么收', '只为了帮你找人、帮别人找到你（你同意后），以及你同意的匿名统计。'],
     ['敏感信息', '收入、家里的情况属于敏感信息。别人只能看到大概的档位或“是否符合”，看不到原值。'],
-    ['怎么存', '全部加密存在中国境内的服务器上。恢复码只存加密后的样子，我们也看不到原码。'],
+    ['怎么存', '全部加密存在中国境内的服务器上。'],
     ['谁能看到', '别人只看到你的代号，每个人看到的代号都不一样。不卖给任何第三方。'],
     ['存多久', '一年没用就自动删除。你也可以随时在“我的资料”里下载或永久删除。'],
     ['你的权利', '随时查看、修改、下载、删除你的资料，随时关掉“让别人也能找到我”。'],
@@ -2157,16 +2010,13 @@ function renderPrivacy() {
   const c = S.me.consent || {};
   const st = S.me.gender ? (S.me.requirements?.length && c.scoring ? 'done' : 'partial') : 'new';
   // 从哪来回哪去；从“我的资料”里点进去的子页面（改资料、找回、协议）回来时，不改原来的去处
-  if (!/^#\/(me\/|ideal\/|recover|terms|policy)/.test(S.prev || '')) S.privacyFrom = /^#\/(results|match)/.test(S.prev || '') ? S.prev : (S.prev ? '#/' : (st === 'done' ? '#/results' : '#/'));
+  if (!/^#\/(me\/|ideal\/|start|recover|terms|policy)/.test(S.prev || '')) S.privacyFrom = /^#\/(results|match)/.test(S.prev || '') ? S.prev : (S.prev ? '#/' : (st === 'done' ? '#/results' : '#/'));
   // 还什么都没填：只给“开始填写”和“找回”，别的都用不上
-  if (st === 'new' && !Object.keys(S.me.profile || {}).length && !S.me.identity?.wechat) {
+  if (S.me.local) {
     paint(`<div class="detail-nav"><button class="btn ghost sm" data-back="${S.privacyFrom || '#/'}">${ic('back')}返回</button></div>
       <h1 class="q" id="qt">我的资料</h1>
-      <p class="qhint">你还没填过。填完就能看到结果。</p>
-      <a class="btn primary block" href="${store.get('vier.intro') ? resumeHash() : '#/intro'}" style="margin-bottom:8px">开始填写 ${ic('arrow')}</a>
-      <div class="list-card">
-        <a href="#/recover"><span class="ico">${ic('users')}</span><span class="t">已经填过？找回我的资料<span>用微信号、小红书号、抖音号或恢复码</span></span>${ic('next')}</a>
-      </div>`);
+      <p class="qhint">输入我们给你登记的微信号、小红书号或抖音号，就能开始填写；填过的也从这里进。</p>
+      <a class="btn primary block" href="#/start">开始填写 ${ic('arrow')}</a>`);
     bindBack();
     return;
   }
@@ -2177,8 +2027,7 @@ function renderPrivacy() {
     <div class="list-card">
       <a href="#/me/review"><span class="ico">${ic('user')}</span><span class="t">我填的资料<span>年龄、学历、家庭等，点进去可以改</span></span>${ic('next')}</a>
       <a href="${S.me.requirements?.length ? '#/ideal/review' : '#/ideal/age'}"><span class="ico">${ic('heart')}</span><span class="t">我的要求<span>${S.me.requirements?.length || 0} 条</span></span>${ic('next')}</a>
-      <button id="rcode"${S.me.local ? ' disabled' : ''}><span class="ico">${ic('lock')}</span><span class="t">恢复码<span>${S.me.local ? '完成验证后可以生成' : S.me.hasRecovery ? '已经存过。丢了可以重新生成' : '存一个，换手机也能找回'}</span></span>${ic('next')}</button>
-      <a href="#/recover"><span class="ico">${ic('users')}</span><span class="t">找回资料<span>用微信号、小红书号、抖音号或恢复码</span></span>${ic('next')}</a>
+      ${(() => { const i = S.me.identity || {}, hs = HANDLE_KINDS.filter(([k]) => i[k]).map(([k, l]) => `${l} ${esc(i[k])}`); return hs.length ? `<div class="row-static"><span class="ico">${ic('users')}</span><span class="t">你的号<span class="mono">${hs.join(' · ')}</span></span></div>` : ''; })()}
     </div>
     <h2 class="sec-title">${ic('shield')}你的资料怎么用</h2>
     <form id="f">
@@ -2192,7 +2041,6 @@ function renderPrivacy() {
       <button id="delete" class="danger-row"><span class="ico">${ic('trash')}</span><span class="t">永久删除我的全部资料<span>删除后不能恢复</span></span>${ic('next')}</button>
     </div>`);
   bindBack();
-  document.getElementById('rcode').onclick = () => openRecovery().onclose = () => { dir = 'none'; renderPrivacy(); };
   const form = document.getElementById('f');
   form.addEventListener('change', async () => {
     try {
@@ -2241,16 +2089,18 @@ async function route() {
       S.config = await api('GET', '/api/config');
       S.F = Object.fromEntries(S.config.fields.map((f) => [f.key, f]));
       // 页面比服务端新时（部署间隙），服务端还不认识的题先不问，免得整页报错
-      for (const list of [P1, P2, I1, I2]) for (let i = list.length - 1; i >= 0; i--) if (list[i] !== 'gender' && list[i] !== 'wechat' && !S.F[list[i]]) list.splice(i, 1);
+      for (const list of [P1, P2, I1, I2]) for (let i = list.length - 1; i >= 0; i--) if (list[i] !== 'gender' && !S.F[list[i]]) list.splice(i, 1);
       renderFoot();
       if (gen !== routeGen) return;
     }
     if (a === '') return await renderHome();
-    if (a === 'intro') return renderIntro();
+    if (a === 'intro') return go('#/start'); // 旧链接
     if (a === 'admin') return await renderAdmin();
     if (a === 'terms' || a === 'policy') return renderLegal(a);
-    if (a === 'recover') { if (!/recover/.test(S.prev || '')) S.find = null; return renderRecover(); }
+    if (a === 'start' || a === 'recover') { if (!/start|recover/.test(S.prev || '')) S.find = null; return renderStart(); }
     if (!S.me) { await ensureSession(); if (gen !== routeGen) return; }
+    // 填写、同意、结果都要先用号进入
+    if (S.me.local && ['me', 'ideal', 'consent', 'verify', 'results', 'match', 'calc'].includes(a)) return go('#/start');
     if (a === 'me') {
       if (!b) return go('#/me/gender');
       if (b === 'break') return renderMeBreak();
@@ -2265,7 +2115,6 @@ async function route() {
       return renderIdealQ(b);
     }
     if (a === 'consent') return renderConsent();
-    if (a === 'verify') return renderVerify();
     // 没过验证就没有服务器上的结果：先去把剩下的填完或输验证码
     if (S.me.local && (a === 'results' || a === 'match')) return go(resumeHash());
     if (a === 'results') return await renderResults();

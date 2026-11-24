@@ -22,14 +22,13 @@
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/api/config` | 字段注册表、套餐数量、人选池模式 |
-| POST | `/api/session` | 创建匿名账户，返回令牌 |
+| POST | `/api/start` | 输号 + 验证码进入（见 AUTH.md） |
+| POST | `/api/start/answer` | 填过的人答 3 道题换令牌 |
 | GET | `/api/me` | 自己的资料、理想型、同意、昵称 |
 | PUT | `/api/me/profile` | 保存资料（可带昵称，存入身份库） |
 | PUT | `/api/me/requirements` | 保存理想型 |
 | PUT | `/api/me/consent` | 记录同意（三项） |
 | GET | `/api/me/results` | 计算五组结果（需同意计算） |
-| POST | `/api/me/recovery` | 生成恢复码（旧码作废，见 AUTH.md） |
-| POST | `/api/recover` | 用恢复码换新令牌 |
 | GET | `/api/me/export` | 导出全部自己的资料 |
 | DELETE | `/api/me` | 永久删除 |
 | GET | `/api/stats?field=` | k-匿名分布，仅基础字段 |

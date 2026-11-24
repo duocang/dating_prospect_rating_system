@@ -49,7 +49,7 @@ docker compose cp app:/data ./backup-$(date +%F)
 | 路径 | 内容 |
 |---|---|
 | `web/` | 新网页前端（关于你 → 理想型 → 同意 → 结果 → 人选详情 → 我的数据，每步独立页面） |
-| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层、恢复码 |
+| `server/` | HTTP 服务、加密存储、同意、导出、删除、审计、对外展示的脱敏层、凭号进入 |
 | `packages/schema/` | 字段注册表：资料、要求、评分、隐私分级共用的唯一来源 |
 | `packages/scoring/` | **可替换的评分模块**（当前 `fit-v1`），只通过接口被调用 |
 | `packages/matching/` | 关系引擎：理想型人选、对方的理想型、你符合对方理想型的程度、在找你的人、双向相合 |
@@ -67,5 +67,5 @@ docker compose cp app:/data ./backup-$(date +%F)
 - [新命名（取代 A/B/C/D）](docs/NAMING.md)
 - [评分算法 fit-v1 与替换方法](docs/SCORING.md)
 - [隐私与数据保护](docs/PRIVACY.md)
-- [账户与恢复码](docs/AUTH.md)
+- [账户与进入](docs/AUTH.md)
 - [关键决策与理由](docs/DECISIONS.md)

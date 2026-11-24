@@ -5,7 +5,7 @@ import { join, resolve, extname, normalize, sep } from 'node:path';
 import { FileStore, latestConsent } from './store.js';
 import { createHmac, randomBytes } from 'node:crypto';
 import { loadKey, sha256, safeEqualHex } from './crypto.js';
-import { validateProfile, validateRequirements, ValidationError, checkWechat, checkHandle, checkRecall, HANDLE_KINDS, RECALL_KEYS, recallAnswered } from './validate.js';
+import { validateProfile, validateRequirements, ValidationError, checkHandle, checkRecall, HANDLE_KINDS, RECALL_KEYS, recallAnswered } from './validate.js';
 import { presentRelations, formatRequirement, formatValue, FIELD_SECTIONS } from './present.js';
 import { namer } from './names.js';
 import { computeRelations } from '../../packages/matching/src/relations.js';
@@ -75,36 +75,45 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
   const captcha = createCaptcha({ onIssue: onCaptcha });
   setInterval(() => captcha.sweep(), 60e3).unref();
 
-  // ---------- 用号找回 ----------
-  // 同一个号连续答错 3 次，锁一天（不管这个号存不存在，都一样计数，免得被用来试探谁注册过）
-  const FIND_MAX = 3, FIND_LOCK = 24 * 3600e3;
-  const findFails = new Map(), findTickets = new Map();
+  // ---------- 凭号进入 ----------
+  // 同一个号连续答错 3 次，锁一天（存在内存里，重启清零）
+  const FAIL_MAX = 3, FAIL_LOCK = 24 * 3600e3;
+  const fails = new Map(), passes = new Map();
   setInterval(() => {
     const now = Date.now();
-    for (const [k, f] of findFails) if (f.until && f.until < now) findFails.delete(k);
-    for (const [k, t] of findTickets) if (t.exp < now) findTickets.delete(k);
+    for (const [k, f] of fails) if (f.until && f.until < now) fails.delete(k);
+    for (const [k, t] of passes) if (t.exp < now) passes.delete(k);
   }, 10 * 60e3).unref();
+  const locked = (lockKey) => (fails.get(lockKey)?.until || 0) > Date.now();
   const norm = (h) => String(h || '').trim().toLowerCase();
   function findByHandle(kind, h) {
     const want = norm(h);
     return want ? store.listUserIds().filter((id) => norm(store.getIdentity(id)?.[kind]) === want) : [];
   }
-  function findInput(body) {
+  function handleInput(body) {
     const kind = String(body?.kind || '');
-    if (!HANDLE_KINDS[kind]) throw new HttpError(400, '选一下用哪个号找');
+    if (!HANDLE_KINDS[kind]) throw new HttpError(400, '选一下用哪个号');
     const handle = norm(body.handle);
     if (!handle || handle.length > 30) throw new HttpError(400, `请输入${HANDLE_KINDS[kind]}`);
     const lockKey = `${kind}:${handle}`;
-    if ((findFails.get(lockKey)?.until || 0) > Date.now()) throw new HttpError(429, '这个号答错太多次了，明天再试');
-    // 同一个号对应多人时，取最近用过的那位
-    const uid = findByHandle(kind, handle).map((id) => store.getUser(id)).filter(Boolean).sort((a, b) => Date.parse(b.lastActiveAt || 0) - Date.parse(a.lastActiveAt || 0))[0]?.id || null;
-    return { kind, handle, uid, lockKey };
+    if (locked(lockKey)) throw new HttpError(429, '这个号答错太多次了，明天再试');
+    return { kind, handle, lockKey, uid: findByHandle(kind, handle)[0] || null };
   }
-  // 问哪 3 道：从 TA 答过的题里按密钥固定挑出来，每次问的都一样；号不存在时按号挑 3 道假题，看起来没有区别
-  function recallQuestions({ kind, handle, uid }) {
-    const pick = (list, seed) => list.map((k) => [createHmac('sha256', key).update(seed + ':' + k).digest('hex'), k]).sort().slice(0, 3).map(([, k]) => k).sort((a, b) => RECALL_KEYS.indexOf(a) - RECALL_KEYS.indexOf(b));
-    const answered = uid ? recallAnswered(store.getUser(uid)?.profile) : [];
-    return answered.length >= 3 ? pick(answered, 'recall:' + uid) : pick(RECALL_KEYS, `recall:${kind}:${handle}`);
+  // 问哪 3 道：从 TA 答过的题里按密钥固定挑出，每次问的都一样
+  function recallQuestions(u) {
+    const answered = recallAnswered(u.profile);
+    return answered.map((k) => [createHmac('sha256', key).update(`recall:${u.id}:${k}`).digest('hex'), k]).sort().slice(0, 3).map(([, k]) => k).sort((a, b) => RECALL_KEYS.indexOf(a) - RECALL_KEYS.indexOf(b));
+  }
+  // 管理员登记号：至少一个；同一个号不能给两个人
+  function checkHandles(body, selfId) {
+    const out = {};
+    for (const k of Object.keys(HANDLE_KINDS)) {
+      if (body[k] === undefined) continue;
+      const h = checkHandle(k, body[k]);
+      if (h && findByHandle(k, h).some((x) => x !== selfId)) throw new HttpError(409, `这个${HANDLE_KINDS[k]}已经登记给别人了`);
+      out[k] = h;
+    }
+    return out;
   }
   // 年龄、身高差 1 也算对（年龄会长）
   const sameAnswer = (want, got) => (typeof want === 'number' ? Math.abs(Number(got) - want) <= 1 : want !== undefined && String(got ?? '') === String(want));
@@ -140,7 +149,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     const facts = {};
     for (const [, f] of sectionRows()) facts[f.key] = isUnknown(p.profile?.[f.key]) ? '' : formatValue(f.key, p.profile[f.key], { full: true });
     return { ...brief(p), name: nameOf(p, idn), wechat: idn?.wechat || '', xhs: idn?.xhs || '', douyin: idn?.douyin || '', createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
-      filled: !!p.gender && p.requirements.length > 0, pool: p.simulated ? true : !!c?.pool, recovery: !!idn?.recovery, reqCount: p.requirements.length, facts };
+      filled: !!p.gender && p.requirements.length > 0, pool: p.simulated ? true : !!c?.pool, reqCount: p.requirements.length, facts };
   }
   async function handleAdmin(req, res, path, method) {
     const ip = clientIp(req);
@@ -169,26 +178,35 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       const asked = new Map(u.requirements.map((r) => [r.field, formatRequirement(r)]));
       return json(res, 200, {
         ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', wechat: idn?.wechat || '', xhs: idn?.xhs || '', douyin: idn?.douyin || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
-        consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null, recovery: !!idn?.recovery,
+        consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null,
         profile: rows.map(([group, f]) => ({ group, label: f.label, value: formatValue(f.key, u.profile?.[f.key], { full: true }), filled: !isUnknown(u.profile?.[f.key]) })),
         requirements: rows.map(([group, f]) => { const r = asked.get(f.key); return { group, label: f.label, text: r ? r.text : '未填写', importance: r ? r.importance : '', filled: !!r }; }),
       });
     }
-    // 管理员给用户填微信号、小红书号、抖音号：用户可以凭其中任何一个找回自己。同一个号不能给两个人
-    const hm = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24})\/handles$/);
-    if (hm && method === 'PUT') {
-      const id = hm[1];
-      if (!store.getUser(id)) return json(res, 404, { error: '找不到这个用户' });
-      const cur = store.getIdentity(id) || {}, next = { ...cur };
-      for (const k of Object.keys(HANDLE_KINDS)) {
-        if (body[k] === undefined) continue;
-        const h = checkHandle(k, body[k]);
-        if (h && findByHandle(k, h).some((x) => x !== id)) return json(res, 409, { error: `这个${HANDLE_KINDS[k]}已经是别人的了` });
-        next[k] = h;
-      }
+    // 新建用户：只登记号（微信号、小红书号、抖音号至少一个），资料由本人进来后填
+    if (path === '/api/admin/users' && method === 'POST') {
+      const hs = checkHandles(body);
+      if (!Object.values(hs).some(Boolean)) throw new ValidationError('微信号、小红书号、抖音号至少填一个');
+      const { id } = store.createUser();
+      store.saveIdentity(id, { nickname: String(body.nickname || '').trim().slice(0, 20), ...hs });
+      store.audit('admin.user_created', id);
+      return json(res, 201, { id });
+    }
+    // 改号：本人可以凭其中任何一个号进入
+    const hm = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24})\/(handles|reset)$/);
+    if (hm && !store.getUser(hm[1])) return json(res, 404, { error: '找不到这个用户' });
+    if (hm?.[2] === 'handles' && method === 'PUT') {
+      const id = hm[1], next = { ...(store.getIdentity(id) || {}), ...checkHandles(body, id) };
+      if (typeof body.nickname === 'string') next.nickname = body.nickname.trim().slice(0, 20);
       store.saveIdentity(id, next);
       store.audit('admin.handles_saved', id);
-      return json(res, 200, { wechat: next.wechat || '', xhs: next.xhs || '', douyin: next.douyin || '' });
+      return json(res, 200, { nickname: next.nickname || '', wechat: next.wechat || '', xhs: next.xhs || '', douyin: next.douyin || '' });
+    }
+    // 清空重填：资料、要求、同意记录清掉，号保留，已登录的设备退出（被人冒填时用）
+    if (hm?.[2] === 'reset' && method === 'POST') {
+      store.resetUser(hm[1]);
+      store.audit('admin.user_reset', hm[1]);
+      return json(res, 200, { ok: true });
     }
     if (um && method === 'DELETE') {
       const id = um[1];
@@ -279,71 +297,42 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       limit('captcha', clientIp(req));
       return json(res, 200, captcha.issue());
     }
-    // 过了验证码才建账户：资料、要求、同意记录一次存好；没过验证的人在服务器上不留任何记录
-    if (path === '/api/session' && method === 'POST') {
+    // 进入：只有管理员登记过号的人能进（docs/AUTH.md）。先过验证码再查号，每查一次都要一张新验证码
+    //   还没填过的账户 → 直接发令牌，开始填写
+    //   已经填过的账户 → 要答对 3 道 TA 自己填过的题，才发令牌
+    if (path === '/api/start' && method === 'POST') {
       limit('session', clientIp(req));
-      const body = await readBody(req);
+      const body = await readBody(req), h = handleInput(body);
       if (!body.captchaId || !body.answer) throw new HttpError(400, '请先输入验证码');
       if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
-      // 先全部校验，再建账户：任何一项不对都不落盘
-      const prof = validateProfile(body);
-      checkRecall(prof.profile);
-      const wechat = checkWechat(body.identity?.wechat);
-      const reqs = validateRequirements(body.requirements);
-      const c = body.consent || {};
-      if (!c.scoring) throw new ValidationError('需要先同意“用你的资料计算结果”');
-      const consent = makeConsent(c);
-      const { id, token } = store.createUser();
-      try {
-        store.saveProfile(id, prof);
-        store.saveIdentity(id, { nickname: String(body.identity?.nickname || '').slice(0, 20), wechat });
-        store.saveRequirements(id, reqs);
-        store.saveConsents(id, consent);
-      } catch (e) { store.deleteUser(id); throw e; }
-      return json(res, 201, { token: `${id}.${token}` });
-    }
-    // 用恢复码在另一台设备找回账户：发新令牌，旧设备上的令牌失效
-    if (path === '/api/recover' && method === 'POST') {
-      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
-      const body = await readBody(req);
-      const id = store.findByRecoveryCode(String(body.code || ''));
-      if (!id) throw new HttpError(400, '恢复码不对');
-      return json(res, 200, { token: `${id}.${store.issueToken(id)}` });
-    }
-
-    // 用微信号 / 小红书号 / 抖音号找回：先答对 3 道自己填过的题，再输验证码（docs/AUTH.md）
-    if (path === '/api/find' && method === 'POST') {
-      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
-      const body = await readBody(req), h = findInput(body);
-      return json(res, 200, { questions: recallQuestions(h) });
-    }
-    if (path === '/api/find/check' && method === 'POST') {
-      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
-      const body = await readBody(req), h = findInput(body);
-      const uid = h.uid, keys = recallQuestions(h), ans = body.answers || {};
-      const right = uid && keys.every((k) => sameAnswer(store.getUser(uid)?.profile?.[k], ans[k]));
-      if (!right) {
-        const f = findFails.get(h.lockKey) || { n: 0, until: 0 };
-        f.n++;
-        if (f.n >= FIND_MAX) { f.n = 0; f.until = Date.now() + FIND_LOCK; }
-        findFails.set(h.lockKey, f);
-        throw new HttpError(400, f.until > Date.now() ? '答错 3 次了，这个号明天才能再找' : `答案不对，还能试 ${FIND_MAX - f.n} 次`);
+      const u = h.uid && store.getUser(h.uid);
+      if (!u) throw new HttpError(404, `这个${HANDLE_KINDS[h.kind]}还没登记，请联系我们`);
+      if (!u.gender) {
+        store.audit('user.started', u.id);
+        return json(res, 200, { token: `${u.id}.${store.issueToken(u.id)}` });
       }
-      findFails.delete(h.lockKey);
-      const ticket = randomBytes(18).toString('base64url');
-      findTickets.set(ticket, { uid, exp: Date.now() + 10 * 60e3 });
-      return json(res, 200, { ticket });
+      const questions = recallQuestions(u);
+      if (!questions.length) throw new HttpError(403, '这个账户没法自己进入，请联系我们');
+      const pass = randomBytes(18).toString('base64url');
+      passes.set(pass, { uid: u.id, lockKey: h.lockKey, questions, exp: Date.now() + 10 * 60e3 });
+      return json(res, 200, { questions, pass });
     }
-    if (path === '/api/find/finish' && method === 'POST') {
-      limit('session', clientIp(req));
-      const body = await readBody(req);
-      const t = findTickets.get(String(body.ticket || ''));
-      if (!t || t.exp < Date.now() || !store.getUser(t.uid)) throw new HttpError(400, '时间太久了，请重新找');
-      if (!body.captchaId || !body.answer) throw new HttpError(400, '请先输入验证码');
-      if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
-      findTickets.delete(body.ticket);
-      store.audit('user.found_by_handle', t.uid);
-      return json(res, 200, { token: `${t.uid}.${store.issueToken(t.uid)}` });
+    if (path === '/api/start/answer' && method === 'POST') {
+      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
+      const body = await readBody(req), p = passes.get(String(body.pass || ''));
+      if (!p || p.exp < Date.now()) throw new HttpError(400, '时间太久了，请重新输入你的号');
+      if (locked(p.lockKey)) { passes.delete(body.pass); throw new HttpError(429, '这个号答错太多次了，明天再试'); }
+      const ans = body.answers || {}, prof = store.getUser(p.uid)?.profile || {};
+      if (!p.questions.every((k) => sameAnswer(prof[k], ans[k]))) {
+        const f = fails.get(p.lockKey) || { n: 0, until: 0 };
+        f.n++;
+        if (f.n >= FAIL_MAX) { f.n = 0; f.until = Date.now() + FAIL_LOCK; passes.delete(body.pass); }
+        fails.set(p.lockKey, f);
+        throw new HttpError(f.until > Date.now() ? 429 : 400, f.until > Date.now() ? '答错 3 次了，这个号明天才能再试' : `答案不对，还能试 ${FAIL_MAX - f.n} 次`);
+      }
+      fails.delete(p.lockKey); passes.delete(body.pass);
+      store.audit('user.returned', p.uid);
+      return json(res, 200, { token: `${p.uid}.${store.issueToken(p.uid)}` });
     }
 
     if (path.startsWith('/api/admin/')) return await handleAdmin(req, res, path, method);
@@ -355,11 +344,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     if (path === '/api/me' && method === 'GET') {
       const u = store.getUser(uid);
       const idn = store.getIdentity(uid);
-      return json(res, 200, { gender: u.gender, profile: u.profile, requirements: u.requirements, consent: latestConsent(u), identity: { nickname: idn?.nickname, wechat: idn?.wechat || '' }, hasRecovery: !!idn?.recovery });
-    }
-    // 生成恢复码：明文只在这次返回，服务端只存带密钥的哈希；再生成一次，旧码作废
-    if (path === '/api/me/recovery' && method === 'POST') {
-      return json(res, 201, { code: store.newRecoveryCode(uid) });
+      return json(res, 200, { gender: u.gender, profile: u.profile, requirements: u.requirements, consent: latestConsent(u), identity: { nickname: idn?.nickname, wechat: idn?.wechat || '', xhs: idn?.xhs || '', douyin: idn?.douyin || '' } });
     }
     if (path === '/api/me/profile' && method === 'PUT') {
       const prof = validateProfile(body);
@@ -368,8 +353,8 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       store.saveProfile(uid, prof);
       if (body.identity) {
         const cur = store.getIdentity(uid) || {};
-        const wechat = body.identity.wechat === undefined ? cur.wechat : checkWechat(body.identity.wechat);
-        store.saveIdentity(uid, { ...cur, nickname: String(body.identity.nickname || '').slice(0, 20), wechat });
+        // 号由管理员登记，本人这里只能改昵称
+        if (typeof body.identity.nickname === 'string') store.saveIdentity(uid, { ...cur, nickname: body.identity.nickname.slice(0, 20) });
       }
       return json(res, 200, { ok: true });
     }
@@ -381,6 +366,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     if (path === '/api/me/consent' && method === 'PUT') {
       // 只服务成年人：同意时必须确认已满 18 岁（资料里的年龄也限定 18 岁起）
       const c = makeConsent(body, latestConsent(store.getUser(uid))?.adult);
+      if (c.scoring) checkRecall(store.getUser(uid).profile);
       store.saveConsents(uid, c);
       return json(res, 200, { ok: true, consent: c });
     }
@@ -398,7 +384,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     if (path === '/api/me/export' && method === 'GET') {
       const u = store.getUser(uid);
       store.audit('data.exported', uid);
-      const { recovery, ...identity } = store.getIdentity(uid) || {};
+      const identity = store.getIdentity(uid) || {};
       return json(res, 200, { exportedAt: new Date().toISOString(), account: u, identity });
     }
     if (path === '/api/me' && method === 'DELETE') {

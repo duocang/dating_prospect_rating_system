@@ -35,12 +35,22 @@ const requirements = [
 ];
 
 const consent = { adult: true, scoring: true, pool: false, research: false };
-// 新流程：先拿验证码，再一次提交验证码 + 全部资料
-async function session(body = {}, answer) {
+const admin = async (method, path, body) => { const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', 'x-admin-token': 'admin' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, body: await r.json() }; };
+// 新流程：管理员登记号 → 本人输号 + 验证码进入 → 填资料、要求、同意
+async function enter(kind, handle, answer) {
   const c = await call('GET', '/api/captcha');
-  return call('POST', '/api/session', null, { captchaId: c.body.id, answer: answer ?? answers.get(c.body.id), ...body });
+  return call('POST', '/api/start', null, { kind, handle, captchaId: c.body.id, answer: answer ?? answers.get(c.body.id) });
 }
-const signup = (extra = {}) => session({ ...profile, requirements, consent, ...extra });
+let seq = 0;
+async function signup({ identity = {}, consent: cs = consent, ...extra } = {}) {
+  const wechat = identity.wechat || `user_test_${++seq}`;
+  const { body: { id } } = await admin('POST', '/api/admin/users', { wechat, nickname: identity.nickname ?? profile.identity.nickname });
+  const { body: { token } } = await enter('wechat', wechat);
+  await call('PUT', '/api/me/profile', token, { gender: profile.gender, profile: profile.profile, ...extra });
+  await call('PUT', '/api/me/requirements', token, { requirements });
+  await call('PUT', '/api/me/consent', token, cs);
+  return { id, wechat, body: { token } };
+}
 
 test('验证码是画出来的 SVG，没有 <text>，也不带答案', async () => {
   const r = await call('GET', '/api/captcha');
@@ -53,36 +63,39 @@ test('验证码是画出来的 SVG，没有 <text>，也不带答案', async () 
   assert.deepEqual(Object.keys(r.body).sort(), ['id', 'svg']);
 });
 
-test('没有验证码、答错、重复用同一张都建不了账户', async () => {
-  const before = readdirSync(join(dataDir, 'users')).length;
-  assert.equal((await call('POST', '/api/session', null, { ...profile, requirements, consent })).status, 400);
-  assert.equal((await call('POST', '/api/session')).status, 400);
+test('凭号进入：没验证码、答错、重复用同一张、没登记的号都进不去', async () => {
+  const { body: { id } } = await admin('POST', '/api/admin/users', { xhs: 'Gate_01' });
+  assert.equal((await call('POST', '/api/start', null, { kind: 'xhs', handle: 'gate_01' })).status, 400);
   const c = await call('GET', '/api/captcha');
   const right = answers.get(c.body.id);
   const wrong = right.slice(0, 4) + (right[4] === '2' ? '3' : '2');
-  const r1 = await call('POST', '/api/session', null, { captchaId: c.body.id, answer: wrong, ...profile, requirements, consent });
+  const r1 = await call('POST', '/api/start', null, { kind: 'xhs', handle: 'gate_01', captchaId: c.body.id, answer: wrong });
   assert.equal(r1.status, 400);
   assert.match(r1.body.error, /验证码/);
   // 答错后这张就作废了，答对也不行
-  assert.equal((await call('POST', '/api/session', null, { captchaId: c.body.id, answer: right, ...profile, requirements, consent })).status, 400);
-  // 答对但资料不合格：也不落盘
-  assert.equal((await session({ ...profile, requirements, consent: { scoring: true } })).status, 400);
-  assert.equal((await session({ gender: 'x', profile: {}, requirements, consent })).status, 400);
-  assert.equal(readdirSync(join(dataDir, 'users')).length, before);
+  assert.equal((await call('POST', '/api/start', null, { kind: 'xhs', handle: 'gate_01', captchaId: c.body.id, answer: right })).status, 400);
+  const none = await enter('xhs', 'not_registered');
+  assert.equal(none.status, 404);
+  assert.match(none.body.error, /还没登记/);
+  // 空账户：大小写不同也认，直接拿到令牌，就是管理员建的那个账户
+  const ok = await enter('xhs', 'GATE_01');
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.token.split('.')[0], id);
+  assert.equal((await call('GET', '/api/me', ok.body.token)).body.identity.xhs, 'Gate_01');
 });
 
-test('答对验证码：一次建好账户，资料、要求、同意都在', async () => {
-  const c = await call('GET', '/api/captcha');
-  const r = await call('POST', '/api/session', null, { captchaId: c.body.id, answer: answers.get(c.body.id).toLowerCase(), ...profile, requirements, consent: { ...consent, research: true } });
-  assert.equal(r.status, 201);
-  const me = await call('GET', '/api/me', r.body.token);
-  assert.equal(me.body.gender, 'female');
-  assert.equal(me.body.profile.age, 29);
-  assert.equal(me.body.requirements.length, 3);
-  assert.equal(me.body.consent.research, true);
-  assert.equal(me.body.identity.nickname, '小测');
-  // 同一张不能再用
-  assert.equal((await call('POST', '/api/session', null, { captchaId: c.body.id, answer: answers.get(c.body.id), ...profile, requirements, consent })).status, 400);
+test('后台建号：至少一个号，同一个号不能给两个人，格式要对', async () => {
+  assert.equal((await admin('POST', '/api/admin/users', {})).status, 400);
+  assert.equal((await admin('POST', '/api/admin/users', { wechat: '12ab' })).status, 400);
+  assert.equal((await admin('POST', '/api/admin/users', { douyin: '有中文' })).status, 400);
+  const a = (await admin('POST', '/api/admin/users', { douyin: 'dy.only' })).body.id;
+  assert.equal((await admin('POST', '/api/admin/users', { douyin: 'DY.ONLY' })).status, 409);
+  const b = (await admin('POST', '/api/admin/users', { wechat: 'second_one' })).body.id;
+  assert.equal((await admin('PUT', `/api/admin/users/${b}/handles`, { douyin: 'dy.only' })).status, 409);
+  const r = await admin('PUT', `/api/admin/users/${a}/handles`, { xhs: 'Hong_shu88' });
+  assert.equal(r.body.xhs, 'Hong_shu88');
+  assert.equal((await admin('GET', `/api/admin/users/${a}`)).body.douyin, 'dy.only');
+  assert.equal((await fetch(`${base}/api/admin/users`, { method: 'POST', headers: { 'x-admin-token': 'no' } })).status, 401);
 });
 
 test('完整流程：注册、填写、同意、结果、导出、删除', async () => {
@@ -186,59 +199,42 @@ test('管理员总览含虚构人选，虚构人也能看详情和星空关系',
   assert.ok(r.relations.idealMatches.length > 0);
 });
 
-test('微信号可以不填；格式不对建不了；介绍自己少于 3 题建不了', async () => {
-  assert.equal((await session({ ...profile, identity: { nickname: '小测' }, requirements, consent })).status, 201);
-  assert.equal((await session({ ...profile, identity: { wechat: '12ab' }, requirements, consent })).status, 400);
-  const few = await session({ ...profile, profile: { age: 29, incomeAnnual: 180000, personalNetAssets: '50–100万元' }, requirements, consent });
-  assert.equal(few.status, 400);
-  assert.match(few.body.error, /至少要答 3 道/);
-  const { body: { token } } = await signup();
-  const me = await call('GET', '/api/me', token);
-  assert.equal(me.body.identity.wechat, 'xiaoce_2026');
-  const d = await (await fetch(`${base}/api/admin/users/${token.split('.')[0]}`, { headers: { 'x-admin-token': 'admin' } })).json();
-  assert.equal(d.wechat, 'xiaoce_2026');
+test('介绍自己少于 3 题不能同意计算；号只能管理员改', async () => {
+  const wechat = 'few_answers';
+  await admin('POST', '/api/admin/users', { wechat });
+  const { body: { token } } = await enter('wechat', wechat);
+  await call('PUT', '/api/me/profile', token, { gender: 'female', profile: { age: 29, incomeAnnual: 180000 }, identity: { wechat: 'hacked_1', nickname: 'x' } });
+  const c = await call('PUT', '/api/me/consent', token, consent);
+  assert.equal(c.status, 400);
+  assert.match(c.body.error, /至少要答 3 道/);
+  assert.equal((await call('GET', '/api/me', token)).body.identity.wechat, wechat);
 });
 
-const admin = async (method, path, body) => { const r = await fetch(base + path, { method, headers: { 'content-type': 'application/json', 'x-admin-token': 'admin' }, body: body ? JSON.stringify(body) : undefined }); return { status: r.status, body: await r.json() }; };
-
-test('管理员填小红书号、抖音号；同一个号不能给两个人', async () => {
-  const a = (await signup({ identity: { nickname: 'A' } })).body.token.split('.')[0];
-  const b = (await signup({ identity: { nickname: 'B' } })).body.token.split('.')[0];
-  const r = await admin('PUT', `/api/admin/users/${a}/handles`, { xhs: 'Hong_shu88', douyin: 'dy.123' });
-  assert.equal(r.status, 200);
-  assert.equal(r.body.xhs, 'Hong_shu88');
-  assert.equal((await admin('GET', `/api/admin/users/${a}`)).body.douyin, 'dy.123');
-  assert.equal((await admin('PUT', `/api/admin/users/${b}/handles`, { xhs: 'hong_shu88' })).status, 409);
-  assert.equal((await admin('PUT', `/api/admin/users/${b}/handles`, { douyin: '有中文' })).status, 400);
-  assert.equal((await fetch(`${base}/api/admin/users/${b}/handles`, { method: 'PUT', headers: { 'x-admin-token': 'no' } })).status, 401);
-});
-
-test('用号找回：答对 3 道题再过验证码；连错 3 次锁一天；不存在的号看起来一样', async () => {
-  const uid = (await signup({ identity: { nickname: '找' } })).body.token.split('.')[0];
-  await admin('PUT', `/api/admin/users/${uid}/handles`, { douyin: 'zhao_me_01' });
-  const q = await call('POST', '/api/find', null, { kind: 'douyin', handle: 'ZHAO_ME_01' });
+test('填过的人再进来：答对 3 道题；连错 3 次锁一天；管理员可以清空重填', async () => {
+  const { id, wechat, body: { token: old } } = await signup({ identity: { nickname: '找' } });
+  const q = await enter('wechat', wechat.toUpperCase());
   assert.equal(q.status, 200);
   assert.equal(q.body.questions.length, 3);
-  const ghost = await call('POST', '/api/find', null, { kind: 'douyin', handle: 'nobody_here' });
-  assert.equal(ghost.body.questions.length, 3);
+  assert.ok(!q.body.token);
   const right = Object.fromEntries(q.body.questions.map((k) => [k, profile.profile[k]]));
   const wrong = { ...right, [q.body.questions[0]]: 'x' };
   // 答错两次，答对一次会清零
-  for (let i = 0; i < 2; i++) assert.equal((await call('POST', '/api/find/check', null, { kind: 'douyin', handle: 'zhao_me_01', answers: wrong })).status, 400);
-  const ok = await call('POST', '/api/find/check', null, { kind: 'douyin', handle: 'zhao_me_01', answers: right });
+  for (let i = 0; i < 2; i++) assert.equal((await call('POST', '/api/start/answer', null, { pass: q.body.pass, answers: wrong })).status, 400);
+  const ok = await call('POST', '/api/start/answer', null, { pass: q.body.pass, answers: right });
   assert.equal(ok.status, 200);
-  // 验证码错了不给令牌，票还能再用
-  assert.equal((await call('POST', '/api/find/finish', null, { ticket: ok.body.ticket, captchaId: 'c_x', answer: 'AAAAA' })).status, 400);
-  const c = await call('GET', '/api/captcha');
-  const fin = await call('POST', '/api/find/finish', null, { ticket: ok.body.ticket, captchaId: c.body.id, answer: answers.get(c.body.id) });
-  assert.equal(fin.status, 200);
-  assert.equal((await call('GET', '/api/me', fin.body.token)).body.identity.nickname, '找');
-  // 票只能用一次
-  const c2 = await call('GET', '/api/captcha');
-  assert.equal((await call('POST', '/api/find/finish', null, { ticket: ok.body.ticket, captchaId: c2.body.id, answer: answers.get(c2.body.id) })).status, 400);
-  // 连错 3 次：锁住，答对也不行
-  for (let i = 0; i < 3; i++) await call('POST', '/api/find/check', null, { kind: 'douyin', handle: 'zhao_me_01', answers: wrong });
-  const locked = await call('POST', '/api/find/check', null, { kind: 'douyin', handle: 'zhao_me_01', answers: right });
-  assert.equal(locked.status, 429);
-  assert.equal((await call('POST', '/api/find', null, { kind: 'douyin', handle: 'zhao_me_01' })).status, 429);
+  assert.equal((await call('GET', '/api/me', ok.body.token)).body.identity.nickname, '找');
+  assert.equal((await call('GET', '/api/me', old)).status, 401, '旧设备退出');
+  // 通行证只能用一次
+  assert.equal((await call('POST', '/api/start/answer', null, { pass: q.body.pass, answers: right })).status, 400);
+  // 连错 3 次：锁住，换新验证码也进不去
+  const q2 = await enter('wechat', wechat);
+  for (let i = 0; i < 2; i++) assert.equal((await call('POST', '/api/start/answer', null, { pass: q2.body.pass, answers: wrong })).status, 400);
+  assert.equal((await call('POST', '/api/start/answer', null, { pass: q2.body.pass, answers: wrong })).status, 429);
+  assert.equal((await enter('wechat', wechat)).status, 429);
+  // 清空重填：资料没了、令牌作废、号还在
+  assert.equal((await admin('POST', `/api/admin/users/${id}/reset`)).status, 200);
+  assert.equal((await call('GET', '/api/me', ok.body.token)).status, 401);
+  const d = await admin('GET', `/api/admin/users/${id}`);
+  assert.equal(d.body.wechat, wechat);
+  assert.ok(d.body.profile.every((r) => !r.filled));
 });

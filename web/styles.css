@@ -245,17 +245,6 @@ h1 .seal { top: 0; font-size: 9.5px; }
 .backdrop i:last-child { background: var(--gold-soft); bottom: -30vmax; left: -25vmax; opacity: .35; }
 .sim { margin: 0 auto 4px; width: fit-content; max-width: calc(100% - 32px); text-align: center; }
 .hero { text-align: center; padding: 18px 0 8px; }
-.intro { text-align: center; padding-top: 10px; }
-.slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin: 0 -16px; }
-.slides::-webkit-scrollbar { display: none; }
-.slide { flex: 0 0 100%; scroll-snap-align: center; padding: 10px 28px 0; }
-.slide .art { width: 180px; height: 180px; margin: 10px auto 22px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 30% 30%, var(--surface), var(--brand-soft)); box-shadow: var(--shadow); }
-.slide .art .ic { width: 76px; height: 76px; stroke-width: 1.5; }
-.slide h2 { font-family: var(--serif); font-size: var(--t-1); }
-.slide p { color: var(--ink-2); margin: 12px auto 0; max-width: 20em; }
-.dots { display: flex; justify-content: center; gap: 8px; margin: 24px 0 0; }
-.dots i { width: 8px; height: 8px; border-radius: 99px; background: var(--line); transition: width .4s var(--ease), background .4s; }
-.dots i.on { width: 26px; background: var(--brand); }
 .milestone { text-align: center; padding: 24px 0 0; }
 .done-ring { width: 120px; height: 120px; margin: 0 auto 22px; }
 .done-ring circle { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 3; stroke-dasharray: 330; stroke-dashoffset: 330; animation: draw .8s var(--ease) .1s forwards; }
@@ -1087,3 +1076,6 @@ select.text-input { appearance: none; background-image: linear-gradient(45deg, t
 .adm-handles .text-input { font-size: 14px; padding: 8px 10px; min-height: 0; }
 @media (max-width: 560px) { .adm-handles { grid-template-columns: 1fr; } }
 .ap-more.ap-back { color: var(--ink-2); }
+.adm-new { display: grid; gap: 12px; margin-top: 16px; }
+.adm-new label { display: grid; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.list-card .row-static { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 12px 16px; }

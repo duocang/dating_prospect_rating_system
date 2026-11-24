@@ -2,25 +2,14 @@
 //
 // 目录结构（data/ 不进 git）
 //   data/users/<id>.json   账户：性别方向、同意记录为明文；资料（L1+L2）与择偶要求整体加密
-//   data/vault/<id>.json   L3 身份库：昵称等，整体加密，与资料分开存放
+//   data/vault/<id>.json   L3 身份库：昵称、微信号、小红书号、抖音号，整体加密，与资料分开存放
 //   data/audit.log         审计日志（JSON Lines），主体只记哈希，不记资料内容
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, readdirSync, rmSync, appendFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIELD_MAP } from '../../packages/schema/fields.js';
-import { createHmac, randomInt } from 'node:crypto';
 import { encryptJson, decryptJson, newId, newToken, sha256, safeEqualHex, auditSubject } from './crypto.js';
 
 const ID_RE = /^u_[0-9a-f]{24}$/;
-
-// 恢复码：12 位，去掉 0/O、1/I/L 这些容易看错的字符，显示成 XXXX-XXXX-XXXX；输入时不分大小写、不管横线空格
-const RECOVERY_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-const RECOVERY_LEN = 12;
-export const normalizeRecoveryCode = (code) => String(code || '').toUpperCase().replace(/[^0-9A-Z]/g, '');
-function makeRecoveryCode() {
-  let s = '';
-  for (let i = 0; i < RECOVERY_LEN; i++) s += RECOVERY_ALPHABET[randomInt(RECOVERY_ALPHABET.length)];
-  return s.match(/.{4}/g).join('-');
-}
 
 export class FileStore {
   constructor(dir, key) {
@@ -59,41 +48,13 @@ export class FileStore {
     return { id, token };
   }
 
-  // ---------- 恢复码 ----------
-  // 换设备找回用。索引只存带密钥的哈希 → 用户 id，明文只在生成时给用户看一次
-  #recoveryKey(code) { return createHmac('sha256', this.key).update('recovery:' + normalizeRecoveryCode(code)).digest('hex'); }
-  #recoveryIndexPath() { return join(this.dir, 'recovery-index.json'); }
-  #recoveryIndex() { const p = this.#recoveryIndexPath(); return existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {}; }
-  newRecoveryCode(id) {
-    const code = makeRecoveryCode();
-    const idx = this.#recoveryIndex();
-    // 一人只有一个有效恢复码：先删掉旧的
-    for (const [k, v] of Object.entries(idx)) if (v === id) delete idx[k];
-    idx[this.#recoveryKey(code)] = id;
-    this.#write(this.#recoveryIndexPath(), idx);
-    this.saveIdentity(id, { ...this.getIdentity(id), recovery: true });
-    this.audit('recovery.created', id);
-    return code;
-  }
-  findByRecoveryCode(code) {
-    if (normalizeRecoveryCode(code).length !== RECOVERY_LEN) return null;
-    const id = this.#recoveryIndex()[this.#recoveryKey(code)];
-    return id && existsSync(this.#userPath(id)) ? id : null;
-  }
   // 换设备后发新令牌；旧设备上的令牌失效
   issueToken(id) {
     const token = newToken();
     this.#mutate(id, (raw) => { raw.tokenHash = sha256(token); });
-    this.audit('user.recovered', id);
+    this.audit('user.token_issued', id);
     return token;
   }
-  #dropRecovery(id) {
-    const idx = this.#recoveryIndex();
-    let changed = false;
-    for (const [k, v] of Object.entries(idx)) if (v === id) { delete idx[k]; changed = true; }
-    if (changed) this.#write(this.#recoveryIndexPath(), idx);
-  }
-
   authenticate(id, token) {
     if (!id || !token || !ID_RE.test(id)) return null;
     const p = this.#userPath(id);
@@ -149,8 +110,6 @@ export class FileStore {
   }
 
   saveIdentity(id, identity) {
-    // 改昵称时保留“已生成恢复码”的标记
-    if (!identity.recovery && existsSync(this.#vaultPath(id))) { const cur = this.getIdentity(id); if (cur?.recovery) identity = { ...identity, recovery: true }; }
     this.#write(this.#vaultPath(id), { box: encryptJson(this.key, identity) });
     this.audit('identity.saved', id);
   }
@@ -161,8 +120,13 @@ export class FileStore {
   }
 
   // 彻底删除：资料、要求、同意记录与身份库一起删除；审计只留哈希化主体
+  // 清空重填：资料、要求、同意记录清掉，身份库（号、昵称）保留，令牌作废
+  resetUser(id) {
+    this.#mutate(id, (raw) => { Object.assign(raw, { gender: null, seeks: [], profile: null, requirements: null, consents: [], tokenHash: '' }); });
+    this.audit('user.reset', id);
+  }
+
   deleteUser(id) {
-    this.#dropRecovery(id);
     for (const p of [this.#userPath(id), this.#vaultPath(id)]) if (existsSync(p)) rmSync(p);
     this.version++;
     this.audit('user.deleted', id);
@@ -183,16 +147,5 @@ export class FileStore {
     return n;
   }
 }
-
-// 开了会话却一题没填、也没生成恢复码的空账户，几天后删掉，免得被人刷出大量空文件
-FileStore.prototype.purgeEmpty = function purgeEmpty(days) {
-  const cutoff = Date.now() - days * 86400000;
-  let n = 0;
-  for (const id of this.listUserIds()) {
-    const u = this.getUser(id);
-    if (u && !u.gender && Date.parse(u.lastActiveAt) < cutoff && !this.getIdentity(id)?.recovery) { this.deleteUser(id); n++; }
-  }
-  return n;
-};
 
 export const latestConsent = (user) => user?.consents?.[user.consents.length - 1] || null;
