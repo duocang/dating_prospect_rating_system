@@ -17,3 +17,7 @@
 | DELETE | `/api/admin/users/<id>` | 删除 `{ reason }` |
 
 所有请求带请求头 `x-admin-token`。
+
+## 填号
+
+详情面板顶部可以填写或修改用户的微信号、小红书号、抖音号（`PUT /api/admin/users/:id/handles`），每次保存记审计 `admin.handles_saved`。同一个号不能同时给两个人。详细表格里也有这三列。

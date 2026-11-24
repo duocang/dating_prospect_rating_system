@@ -1074,3 +1074,16 @@ html.vt-pick .screen { animation: none; }
 .grp-tog:hover .chev { background: var(--line); }
 .cmp-block .cmp tbody tr.grp th { padding-top: 14px !important; }
 .admin-kv tr.grp th { padding-top: 16px; }
+
+/* ===== 找回资料：用哪个号、3 道题；后台填号 ===== */
+.find-kinds { display: flex; width: 100%; margin: 18px 0 6px; }
+.find-kinds button { flex: 1; }
+.find-qs { display: grid; gap: 18px; margin-top: 22px; }
+.find-q { display: grid; gap: 8px; }
+.find-q b { font-size: var(--t-3); font-weight: 600; }
+select.text-input { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%); background-position: calc(100% - 22px) 50%, calc(100% - 16px) 50%; background-size: 6px 6px; background-repeat: no-repeat; padding-right: 40px; }
+.adm-handles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px; align-items: end; margin-top: 12px; }
+.adm-handles label { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); }
+.adm-handles .text-input { font-size: 14px; padding: 8px 10px; min-height: 0; }
+@media (max-width: 560px) { .adm-handles { grid-template-columns: 1fr; } }
+.ap-more.ap-back { color: var(--ink-2); }

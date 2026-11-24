@@ -72,11 +72,28 @@ export function validateRequirements(list) {
   });
 }
 
-// 微信号：必填。字母开头 6–20 位（字母、数字、- _），或者绑定的 11 位手机号
+// 微信号：选填。字母开头 6–20 位（字母、数字、- _），或者绑定的 11 位手机号
 const WECHAT_RE = /^([a-zA-Z][-_a-zA-Z0-9]{5,19}|1\d{10})$/;
 export function checkWechat(v) {
   const w = String(v ?? '').trim();
-  if (!w) fail('请先留下微信号');
-  if (!WECHAT_RE.test(w)) fail('微信号格式不对');
+  if (w && !WECHAT_RE.test(w)) fail('微信号格式不对');
   return w;
+}
+
+// 小红书号、抖音号：只有管理员能填。字母、数字、_ . -，2–30 位
+const HANDLE_RE = /^[A-Za-z0-9_.-]{2,30}$/;
+export const HANDLE_KINDS = { wechat: '微信号', xhs: '小红书号', douyin: '抖音号' };
+export function checkHandle(kind, v) {
+  if (kind === 'wechat') return checkWechat(v);
+  const h = String(v ?? '').trim();
+  if (h && !HANDLE_RE.test(h)) fail(`${HANDLE_KINDS[kind]}格式不对`);
+  return h;
+}
+
+// 找回用的题：自我介绍第一页里能客观回答的题。至少要答 3 道，找回时才有题可问
+export const RECALL_KEYS = ['age', 'heightCm', 'city', 'settlement', 'education', 'occupation', 'maritalStatus', 'childrenStatus', 'marriagePlan', 'childrenPlan', 'personality', 'lifestyle', 'looksCare'];
+export const MIN_RECALL = 3;
+export const recallAnswered = (profile = {}) => RECALL_KEYS.filter((k) => FIELD_MAP[k] && profile[k] !== undefined && profile[k] !== null && !UNKNOWN_VALUES.includes(profile[k]));
+export function checkRecall(profile) {
+  if (recallAnswered(profile).length < MIN_RECALL) fail(`介绍自己的题至少要答 ${MIN_RECALL} 道`);
 }

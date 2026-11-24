@@ -3,8 +3,9 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync, statSync } from 'node:fs';
 import { join, resolve, extname, normalize, sep } from 'node:path';
 import { FileStore, latestConsent } from './store.js';
+import { createHmac, randomBytes } from 'node:crypto';
 import { loadKey, sha256, safeEqualHex } from './crypto.js';
-import { validateProfile, validateRequirements, ValidationError, checkWechat } from './validate.js';
+import { validateProfile, validateRequirements, ValidationError, checkWechat, checkHandle, checkRecall, HANDLE_KINDS, RECALL_KEYS, recallAnswered } from './validate.js';
 import { presentRelations, formatRequirement, formatValue, FIELD_SECTIONS } from './present.js';
 import { namer } from './names.js';
 import { computeRelations } from '../../packages/matching/src/relations.js';
@@ -73,6 +74,40 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
   // 图片验证码：过了验证才建账户（docs/AUTH.md）。onCaptcha 只有进程内的测试会传
   const captcha = createCaptcha({ onIssue: onCaptcha });
   setInterval(() => captcha.sweep(), 60e3).unref();
+
+  // ---------- 用号找回 ----------
+  // 同一个号连续答错 3 次，锁一天（不管这个号存不存在，都一样计数，免得被用来试探谁注册过）
+  const FIND_MAX = 3, FIND_LOCK = 24 * 3600e3;
+  const findFails = new Map(), findTickets = new Map();
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, f] of findFails) if (f.until && f.until < now) findFails.delete(k);
+    for (const [k, t] of findTickets) if (t.exp < now) findTickets.delete(k);
+  }, 10 * 60e3).unref();
+  const norm = (h) => String(h || '').trim().toLowerCase();
+  function findByHandle(kind, h) {
+    const want = norm(h);
+    return want ? store.listUserIds().filter((id) => norm(store.getIdentity(id)?.[kind]) === want) : [];
+  }
+  function findInput(body) {
+    const kind = String(body?.kind || '');
+    if (!HANDLE_KINDS[kind]) throw new HttpError(400, '选一下用哪个号找');
+    const handle = norm(body.handle);
+    if (!handle || handle.length > 30) throw new HttpError(400, `请输入${HANDLE_KINDS[kind]}`);
+    const lockKey = `${kind}:${handle}`;
+    if ((findFails.get(lockKey)?.until || 0) > Date.now()) throw new HttpError(429, '这个号答错太多次了，明天再试');
+    // 同一个号对应多人时，取最近用过的那位
+    const uid = findByHandle(kind, handle).map((id) => store.getUser(id)).filter(Boolean).sort((a, b) => Date.parse(b.lastActiveAt || 0) - Date.parse(a.lastActiveAt || 0))[0]?.id || null;
+    return { kind, handle, uid, lockKey };
+  }
+  // 问哪 3 道：从 TA 答过的题里按密钥固定挑出来，每次问的都一样；号不存在时按号挑 3 道假题，看起来没有区别
+  function recallQuestions({ kind, handle, uid }) {
+    const pick = (list, seed) => list.map((k) => [createHmac('sha256', key).update(seed + ':' + k).digest('hex'), k]).sort().slice(0, 3).map(([, k]) => k).sort((a, b) => RECALL_KEYS.indexOf(a) - RECALL_KEYS.indexOf(b));
+    const answered = uid ? recallAnswered(store.getUser(uid)?.profile) : [];
+    return answered.length >= 3 ? pick(answered, 'recall:' + uid) : pick(RECALL_KEYS, `recall:${kind}:${handle}`);
+  }
+  // 年龄、身高差 1 也算对（年龄会长）
+  const sameAnswer = (want, got) => (typeof want === 'number' ? Math.abs(Number(got) - want) <= 1 : want !== undefined && String(got ?? '') === String(want));
   // 同意记录：用于计算结果时必须确认已满 18 岁
   function makeConsent(body, prevAdult) {
     const adult = body.adult === true || prevAdult === true;
@@ -104,14 +139,14 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     const c = p.simulated ? null : latestConsent(p);
     const facts = {};
     for (const [, f] of sectionRows()) facts[f.key] = isUnknown(p.profile?.[f.key]) ? '' : formatValue(f.key, p.profile[f.key], { full: true });
-    return { ...brief(p), name: nameOf(p, idn), wechat: idn?.wechat || '', createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
+    return { ...brief(p), name: nameOf(p, idn), wechat: idn?.wechat || '', xhs: idn?.xhs || '', douyin: idn?.douyin || '', createdAt: p.createdAt || null, lastActiveAt: p.lastActiveAt || null,
       filled: !!p.gender && p.requirements.length > 0, pool: p.simulated ? true : !!c?.pool, recovery: !!idn?.recovery, reqCount: p.requirements.length, facts };
   }
   async function handleAdmin(req, res, path, method) {
     const ip = clientIp(req);
     if (limiter.count('adminFail:' + ip, LIM.adminFail[1]) >= LIM.adminFail[0]) return json(res, 429, { error: '口令错太多次，1 小时后再试' });
     if (!adminOk(req)) { limiter.hit('adminFail:' + ip, Infinity, LIM.adminFail[1]); store.audit('admin.auth_failed', null); return json(res, 401, { error: '管理员口令不对' }); }
-    const body = ['POST', 'DELETE'].includes(method) ? await readBody(req) : {};
+    const body = ['POST', 'PUT', 'DELETE'].includes(method) ? await readBody(req) : {};
     // 总览：全部真人 + 一个城市的虚构人选（标“虚构”）。每人带全部字段，表格的“详细”模式直接用
     if (path === '/api/admin/overview' && method === 'GET') {
       const real = store.listUserIds().map((id) => store.getUser(id)).filter(Boolean);
@@ -133,11 +168,27 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       const rows = sectionRows();
       const asked = new Map(u.requirements.map((r) => [r.field, formatRequirement(r)]));
       return json(res, 200, {
-        ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', wechat: idn?.wechat || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
+        ...brief(u), name: nameOf(u, idn), nickname: idn?.nickname || '', wechat: idn?.wechat || '', xhs: idn?.xhs || '', douyin: idn?.douyin || '', relations, createdAt: u.createdAt, lastActiveAt: u.lastActiveAt,
         consent: c ? { scoring: !!c.scoring, pool: !!c.pool, adult: !!c.adult, at: c.at || null } : null, recovery: !!idn?.recovery,
         profile: rows.map(([group, f]) => ({ group, label: f.label, value: formatValue(f.key, u.profile?.[f.key], { full: true }), filled: !isUnknown(u.profile?.[f.key]) })),
         requirements: rows.map(([group, f]) => { const r = asked.get(f.key); return { group, label: f.label, text: r ? r.text : '未填写', importance: r ? r.importance : '', filled: !!r }; }),
       });
+    }
+    // 管理员给用户填微信号、小红书号、抖音号：用户可以凭其中任何一个找回自己。同一个号不能给两个人
+    const hm = path.match(/^\/api\/admin\/users\/(u_[0-9a-f]{24})\/handles$/);
+    if (hm && method === 'PUT') {
+      const id = hm[1];
+      if (!store.getUser(id)) return json(res, 404, { error: '找不到这个用户' });
+      const cur = store.getIdentity(id) || {}, next = { ...cur };
+      for (const k of Object.keys(HANDLE_KINDS)) {
+        if (body[k] === undefined) continue;
+        const h = checkHandle(k, body[k]);
+        if (h && findByHandle(k, h).some((x) => x !== id)) return json(res, 409, { error: `这个${HANDLE_KINDS[k]}已经是别人的了` });
+        next[k] = h;
+      }
+      store.saveIdentity(id, next);
+      store.audit('admin.handles_saved', id);
+      return json(res, 200, { wechat: next.wechat || '', xhs: next.xhs || '', douyin: next.douyin || '' });
     }
     if (um && method === 'DELETE') {
       const id = um[1];
@@ -236,6 +287,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
       // 先全部校验，再建账户：任何一项不对都不落盘
       const prof = validateProfile(body);
+      checkRecall(prof.profile);
       const wechat = checkWechat(body.identity?.wechat);
       const reqs = validateRequirements(body.requirements);
       const c = body.consent || {};
@@ -259,6 +311,41 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       return json(res, 200, { token: `${id}.${store.issueToken(id)}` });
     }
 
+    // 用微信号 / 小红书号 / 抖音号找回：先答对 3 道自己填过的题，再输验证码（docs/AUTH.md）
+    if (path === '/api/find' && method === 'POST') {
+      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
+      const body = await readBody(req), h = findInput(body);
+      return json(res, 200, { questions: recallQuestions(h) });
+    }
+    if (path === '/api/find/check' && method === 'POST') {
+      limit('recover', clientIp(req), '试得太多了，1 小时后再试');
+      const body = await readBody(req), h = findInput(body);
+      const uid = h.uid, keys = recallQuestions(h), ans = body.answers || {};
+      const right = uid && keys.every((k) => sameAnswer(store.getUser(uid)?.profile?.[k], ans[k]));
+      if (!right) {
+        const f = findFails.get(h.lockKey) || { n: 0, until: 0 };
+        f.n++;
+        if (f.n >= FIND_MAX) { f.n = 0; f.until = Date.now() + FIND_LOCK; }
+        findFails.set(h.lockKey, f);
+        throw new HttpError(400, f.until > Date.now() ? '答错 3 次了，这个号明天才能再找' : `答案不对，还能试 ${FIND_MAX - f.n} 次`);
+      }
+      findFails.delete(h.lockKey);
+      const ticket = randomBytes(18).toString('base64url');
+      findTickets.set(ticket, { uid, exp: Date.now() + 10 * 60e3 });
+      return json(res, 200, { ticket });
+    }
+    if (path === '/api/find/finish' && method === 'POST') {
+      limit('session', clientIp(req));
+      const body = await readBody(req);
+      const t = findTickets.get(String(body.ticket || ''));
+      if (!t || t.exp < Date.now() || !store.getUser(t.uid)) throw new HttpError(400, '时间太久了，请重新找');
+      if (!body.captchaId || !body.answer) throw new HttpError(400, '请先输入验证码');
+      if (!captcha.verify(body.captchaId, body.answer)) throw new HttpError(400, '验证码不对，换一张再试');
+      findTickets.delete(body.ticket);
+      store.audit('user.found_by_handle', t.uid);
+      return json(res, 200, { token: `${t.uid}.${store.issueToken(t.uid)}` });
+    }
+
     if (path.startsWith('/api/admin/')) return await handleAdmin(req, res, path, method);
     const uid = auth(req);
     if (!uid) return json(res, 401, { error: '请先开始测试' });
@@ -275,7 +362,10 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
       return json(res, 201, { code: store.newRecoveryCode(uid) });
     }
     if (path === '/api/me/profile' && method === 'PUT') {
-      store.saveProfile(uid, validateProfile(body));
+      const prof = validateProfile(body);
+      // 改资料时不能把“介绍自己”答过的题删到 3 道以下（早期账户不够 3 道的，只要不比原来少就行）
+      if (recallAnswered(prof.profile).length < recallAnswered(store.getUser(uid)?.profile).length) checkRecall(prof.profile);
+      store.saveProfile(uid, prof);
       if (body.identity) {
         const cur = store.getIdentity(uid) || {};
         const wechat = body.identity.wechat === undefined ? cur.wechat : checkWechat(body.identity.wechat);
