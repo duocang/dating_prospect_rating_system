@@ -1,0 +1,2102 @@
+[
+ {
+  "id": "SH",
+  "name": "上海",
+  "univ_per_100k": 33872,
+  "highschool_per_100k": 19020,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 89477,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202105/t20210511_1817201.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: 2023 municipal 就业人员 figure not located before search budget ran out; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "BJ",
+  "name": "北京",
+  "univ_per_100k": 41980,
+  "highschool_per_100k": 17593,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 88650,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202105/t20210511_1817201.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: only 在岗职工 218312 (third-party gotohui) and 全口径 141133 found; 非私营就业人员 not confirmed; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "SZ",
+  "name": "深圳",
+  "univ_per_100k": 28849,
+  "highschool_per_100k": 20695,
+  "wage": 171854,
+  "wage_year": 2023,
+  "disp_income": 76910,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/tjsj/tjgb/content/post_8772099.html",
+   "wage": "https://www.sz.gov.cn/cn/xxgk/zfxxgj/tjsj/tjgb/content/post_11398823.html",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "CQ",
+  "name": "重庆",
+  "univ_per_100k": 15412,
+  "highschool_per_100k": 15956,
+  "wage": 113653,
+  "wage_year": 2023,
+  "disp_income": 47435,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202105/t20210511_1817201.html",
+   "wage": "https://tjj.cq.gov.cn/zwgk_233/fdzdgknr/tjxx/sjzl_55471/tjgb_55472/202406/t20240605_13268712.html",
+   "disp_income": "https://tjj.cq.gov.cn/zwgk_233/fdzdgknr/tjxx/sjzl_55471/tjgb_55472/202403/t20240326_13084652_wap.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "univ is whole 直辖市 (province-level table 6-1)"
+ },
+ {
+  "id": "GZ",
+  "name": "广州",
+  "univ_per_100k": 27277,
+  "highschool_per_100k": 22005,
+  "wage": 154475,
+  "wage_year": 2023,
+  "disp_income": 80501,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.gz.gov.cn/zwgk/sjfb/tjgb/content/post_7286230.html",
+   "wage": "http://tjj.gz.gov.cn/stats_newtjyw/tjsj/tjgb/qtgb/content/post_9720205.html",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "SUZ",
+  "name": "苏州",
+  "univ_per_100k": 22514,
+  "highschool_per_100k": 16813,
+  "wage": 137092,
+  "wage_year": 2023,
+  "disp_income": 82989,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://www.suzhou.gov.cn/szsrmzf/dstx/202407/95bd2b457f0c4045b5545f921ab6b141.shtml",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "univ from 江苏人口普查年鉴 附录 表5-1; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "CD",
+  "name": "成都",
+  "univ_per_100k": 25582,
+  "highschool_per_100k": 16186,
+  "wage": 125448,
+  "wage_year": 2023,
+  "disp_income": 54489,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://cdstats.chengdu.gov.cn/cdstjj/uploads/20230222161410v3u450loect.pdf",
+   "wage": "https://zc.51shebao.com/detail/822247",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "news"
+  },
+  "note": "wage quotes 成都市统计局公告 via reprint; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "HZ",
+  "name": "杭州",
+  "univ_per_100k": 29317,
+  "highschool_per_100k": 15366,
+  "wage": 158121,
+  "wage_year": 2023,
+  "disp_income": 80587,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hangzhou.gov.cn/art/2021/5/17/art_1229279682_3872469.html",
+   "wage": "https://tjj.hangzhou.gov.cn/art/2024/7/19/art_1229279682_4285094.html",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "wage labelled 非私营单位就业人员; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "WH",
+  "name": "武汉",
+  "univ_per_100k": 33867,
+  "highschool_per_100k": 19690,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 61693,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.wuhan.gov.cn/tjfw/tjgb/202105/t20210528_1707414.shtml",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: only 城镇单位在岗职工 110134 (2023, tjj.wuhan.gov.cn/xwzx/tzgg/202406/t20240617_2417065.shtml) found; 非私营就业人员 not found; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "NJ",
+  "name": "南京",
+  "univ_per_100k": 35229,
+  "highschool_per_100k": 17201,
+  "wage": 154206,
+  "wage_year": 2023,
+  "disp_income": 79858,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://tjj.nanjing.gov.cn/bmfw/njsj/202406/t20240626_4699840.html",
+   "disp_income": "https://tjj.nanjing.gov.cn/bmfw/njsj/202406/t20240626_4699840.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage labelled 从业人员; disp_income 79858 from same 南京市统计局 page"
+ },
+ {
+  "id": "NB",
+  "name": "宁波",
+  "univ_per_100k": 17838,
+  "highschool_per_100k": 13797,
+  "wage": 133967,
+  "wage_year": 2023,
+  "disp_income": 80144,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.ningbo.gov.cn/art/2021/5/17/art_1229629384_58914636.html",
+   "wage": "http://tjj.ningbo.gov.cn/art/2024/7/22/art_1229629384_58920247.html",
+   "disp_income": "http://tjj.ningbo.gov.cn/art/2024/2/8/art_1229042823_58919685.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage labelled 非私营单位从业人员"
+ },
+ {
+  "id": "TJ",
+  "name": "天津",
+  "univ_per_100k": 26940,
+  "highschool_per_100k": 17719,
+  "wage": 138007,
+  "wage_year": 2023,
+  "disp_income": 55355,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.stats.gov.cn/xxgk/sjfb/zxfb2020/202105/t20210511_1817201.html",
+   "wage": "https://stats.tj.gov.cn/sy_51953/jjxx/202406/t20240607_6645403.html",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "QD",
+  "name": "青岛",
+  "univ_per_100k": 22551,
+  "highschool_per_100k": 17543,
+  "wage": 129241,
+  "wage_year": 2023,
+  "disp_income": 65751,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/pcsj/2020/zk/html/fu0505.pdf",
+   "wage": "http://qdtj.qingdao.gov.cn/tongjisj/zxfbyjd/202407/t20240709_8119240.shtml",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "univ from 山东人口普查年鉴 附录; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "WX",
+  "name": "无锡",
+  "univ_per_100k": 21867,
+  "highschool_per_100k": 16888,
+  "wage": 136947,
+  "wage_year": 2023,
+  "disp_income": 76644,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://tj.wuxi.gov.cn/doc/2024/07/01/4340992.shtml",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "CS",
+  "name": "长沙",
+  "univ_per_100k": 27453,
+  "highschool_per_100k": 19602,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 67276,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/pcgbv/202105/t20210519_19069459.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "univ from 湖南省七普公报 表5-1; wage: only 在岗职工 125213 (2023) seen via aggregator, 就业人员 not found; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "ZZ",
+  "name": "郑州",
+  "univ_per_100k": 28992,
+  "highschool_per_100k": 18436,
+  "wage": 102921,
+  "wage_year": 2023,
+  "disp_income": 48740,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.zhengzhou.gov.cn/tjgb/5012723.jhtml",
+   "wage": "https://zhengguannews.cn/news/379665.html",
+   "disp_income": "https://tjj.zhengzhou.gov.cn/tjgb/8324080.jhtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "FZ",
+  "name": "福州",
+  "univ_per_100k": 18589,
+  "highschool_per_100k": 17644,
+  "wage": 119840,
+  "wage_year": 2023,
+  "disp_income": 58009,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.fujian.gov.cn/tongjinianjian/rk2020/html/fu0202.pdf",
+   "wage": "https://tjj.fuzhou.gov.cn/zwgk/wjtz/202406/t20240625_4848583.htm",
+   "disp_income": "http://www.tjcn.org/tjgb/13fj/37750.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "univ from 福建人口普查年鉴 附录 表2-4; disp_income from 福州市2023年统计公报 as reprinted by tjcn.org (gotohui lists 58031)"
+ },
+ {
+  "id": "JN",
+  "name": "济南",
+  "univ_per_100k": 25931,
+  "highschool_per_100k": 15810,
+  "wage": 129222,
+  "wage_year": 2023,
+  "disp_income": 62506,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/pcsj/2020/zk/html/fu0505.pdf",
+   "wage": "http://jntj.jinan.gov.cn/art/2024/7/16/art_18265_4751629.html",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "HF",
+  "name": "合肥",
+  "univ_per_100k": 26390,
+  "highschool_per_100k": null,
+  "wage": 119182,
+  "wage_year": 2023,
+  "disp_income": 59609,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://api.app.anhuinews.com/content/5879925.html",
+   "wage": "https://finance.sina.com.cn/jjxw/2024-08-05/doc-inchrcxz7582887.shtml",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "news",
+   "disp_income": "news"
+  },
+  "note": "univ: 安徽省统计局 page returned 403; 高中 per-100k not published in source; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "XA",
+  "name": "西安",
+  "univ_per_100k": 30999,
+  "highschool_per_100k": 18563,
+  "wage": 123670,
+  "wage_year": 2023,
+  "disp_income": 51178,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.jiemian.com/article/6167218.html",
+   "wage": "https://tjj.xa.gov.cn/tjsj/tjsj/ndsj/2023/1.html",
+   "disp_income": "https://www.shaanxi.gov.cn/zfxxgk/fdzdgknr/tjxx/tjgb_240/sqgb/202404/t20240411_2325804_wap.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "QZ",
+  "name": "泉州",
+  "univ_per_100k": 10495,
+  "highschool_per_100k": 12341,
+  "wage": 92858,
+  "wage_year": 2023,
+  "disp_income": 60697,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.fujian.gov.cn/tongjinianjian/rk2020/html/fu0202.pdf",
+   "wage": "https://qzgjj.quanzhou.gov.cn/zt/lhjy/202411/t20241127_3110081.htm",
+   "disp_income": "https://www.quanzhou.gov.cn/zfb/xxgk/zfxxgkzl/qzdt/qzyw/202402/t20240201_3001131.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage cited by 泉州公积金中心 notice quoting 统计局"
+ },
+ {
+  "id": "FS",
+  "name": "佛山",
+  "univ_per_100k": 16143,
+  "highschool_per_100k": 20556,
+  "wage": 114384,
+  "wage_year": 2023,
+  "disp_income": 68600,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": "https://www.thepaper.cn/newsDetail_forward_27944746",
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "news"
+  },
+  "note": "univ from 广东省七普公报第五号 表5-1; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "NT",
+  "name": "南通",
+  "univ_per_100k": 14904,
+  "highschool_per_100k": 15134,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 62512,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: web search budget exhausted; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "DG",
+  "name": "东莞",
+  "univ_per_100k": 13241,
+  "highschool_per_100k": 22279,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 68670,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: web search budget exhausted; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "YT",
+  "name": "烟台",
+  "univ_per_100k": 16572,
+  "highschool_per_100k": 17885,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 59126,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/pcsj/2020/zk/html/fu0505.pdf",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "wage: web search budget exhausted; disp_income from gotohui.com 2023 top-50 city table (third-party aggregator of 统计局 data; matches official where cross-checked: SUZ/NJ/NB/QZ/NT/QD/JN/YT)"
+ },
+ {
+  "id": "CZ",
+  "name": "常州",
+  "univ_per_100k": 20690,
+  "highschool_per_100k": 16306,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 71744,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://tj.jiangsu.gov.cn/2024/nj05/nj0517.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: Jiangsu Statistical Yearbook 2024 table 5-17 (urban households by region, 2023)."
+ },
+ {
+  "id": "TS",
+  "name": "唐山",
+  "univ_per_100k": 14404,
+  "highschool_per_100k": 15665,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 52497,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11809.html",
+   "wage": null,
+   "disp_income": "https://163.com/dy/article/JFCV530I05563SPX.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: NetEase repost citing Tangshan stats bureau; official bulletin not reached."
+ },
+ {
+  "id": "WZ",
+  "name": "温州",
+  "univ_per_100k": 12637,
+  "highschool_per_100k": 14431,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 77973,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.zj.gov.cn/art/2022/7/22/art_1229129214_4956161.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "ZJ figures from Zhejiang stats bureau 七普系列分析之五 表5-3 (read via lib.zjsru.edu.cn mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income 2023: aggregator ranking (gotohui/news); could not confirm against official bulletin within search budget."
+ },
+ {
+  "id": "DL",
+  "name": "大连",
+  "univ_per_100k": 23593,
+  "highschool_per_100k": 16095,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://www.thepaper.cn/newsDetail_forward_13098274",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "XZ",
+  "name": "徐州",
+  "univ_per_100k": 12969,
+  "highschool_per_100k": 13887,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 44796,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://tj.jiangsu.gov.cn/2024/nj05/nj0517.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: Jiangsu Statistical Yearbook 2024 table 5-17 (urban households by region, 2023)."
+ },
+ {
+  "id": "SY",
+  "name": "沈阳",
+  "univ_per_100k": 27471,
+  "highschool_per_100k": 16721,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://www.shenyang.gov.cn/zwgk/fdzdgknr/tjxx/tjgb/202201/t20220123_2653146.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "XM",
+  "name": "厦门",
+  "univ_per_100k": 26940,
+  "highschool_per_100k": 16168,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjj.fujian.gov.cn/tongjinianjian/rk2020/html/fu0202.pdf",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "SX",
+  "name": "绍兴",
+  "univ_per_100k": 15248,
+  "highschool_per_100k": 15240,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 80392,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.zj.gov.cn/art/2022/7/22/art_1229129214_4956161.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "ZJ figures from Zhejiang stats bureau 七普系列分析之五 表5-3 (read via lib.zjsru.edu.cn mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income 2023: aggregator ranking (gotohui/news); could not confirm against official bulletin within search budget."
+ },
+ {
+  "id": "SJZ",
+  "name": "石家庄",
+  "univ_per_100k": 20118,
+  "highschool_per_100k": 16550,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11689.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "KM",
+  "name": "昆明",
+  "univ_per_100k": 24235,
+  "highschool_per_100k": 14568,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/12323.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "WF",
+  "name": "潍坊",
+  "univ_per_100k": 14451,
+  "highschool_per_100k": 14888,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "NC",
+  "name": "南昌",
+  "univ_per_100k": 25024,
+  "highschool_per_100k": 16382,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11403.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. NC figures from Jiangxi provincial census bulletin city table (mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "YZ",
+  "name": "扬州",
+  "univ_per_100k": 17465,
+  "highschool_per_100k": 15444,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 56781,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://tj.jiangsu.gov.cn/2024/nj05/nj0517.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: Jiangsu Statistical Yearbook 2024 table 5-17 (urban households by region, 2023)."
+ },
+ {
+  "id": "YC",
+  "name": "盐城",
+  "univ_per_100k": 10691,
+  "highschool_per_100k": 16016,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 48526,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://tj.jiangsu.gov.cn/2024/nj05/nj0517.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: Jiangsu Statistical Yearbook 2024 table 5-17 (urban households by region, 2023)."
+ },
+ {
+  "id": "CC",
+  "name": "长春",
+  "univ_per_100k": 22217,
+  "highschool_per_100k": 16042,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/12418.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "JX",
+  "name": "嘉兴",
+  "univ_per_100k": 15250,
+  "highschool_per_100k": 13137,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 75909,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.zj.gov.cn/art/2022/7/22/art_1229129214_4956161.html",
+   "wage": null,
+   "disp_income": "https://www.gotohui.com/life/topic-3526"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "news"
+  },
+  "note": "ZJ figures from Zhejiang stats bureau 七普系列分析之五 表5-3 (read via lib.zjsru.edu.cn mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income 2023: aggregator ranking (gotohui/news); could not confirm against official bulletin within search budget."
+ },
+ {
+  "id": "YL",
+  "name": "榆林",
+  "univ_per_100k": 15154,
+  "highschool_per_100k": 11921,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11494.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "JH",
+  "name": "金华",
+  "univ_per_100k": 13396,
+  "highschool_per_100k": 15637,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.zj.gov.cn/art/2022/7/22/art_1229129214_4956161.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "ZJ figures from Zhejiang stats bureau 七普系列分析之五 表5-3 (read via lib.zjsru.edu.cn mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "TZ",
+  "name": "泰州",
+  "univ_per_100k": 15119,
+  "highschool_per_100k": 15330,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 59604,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": null,
+   "disp_income": "https://tj.jiangsu.gov.cn/2024/nj05/nj0517.htm"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: Jiangsu Statistical Yearbook 2024 table 5-17 (urban households by region, 2023)."
+ },
+ {
+  "id": "TAIZ",
+  "name": "台州",
+  "univ_per_100k": 11565,
+  "highschool_per_100k": 14323,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.zj.gov.cn/art/2022/7/22/art_1229129214_4956161.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "ZJ figures from Zhejiang stats bureau 七普系列分析之五 表5-3 (read via lib.zjsru.edu.cn mirror). wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "LY",
+  "name": "临沂",
+  "univ_per_100k": 8721,
+  "highschool_per_100k": 9990,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "YI",
+  "name": "宜昌",
+  "univ_per_100k": 15077,
+  "highschool_per_100k": 22856,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.hubei.gov.cn/tjsj/tjgb/pcgb/wnpc/qrp/202105/t20210526_3560295.shtml",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "HUI",
+  "name": "惠州",
+  "univ_per_100k": 12322,
+  "highschool_per_100k": 16220,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "NN",
+  "name": "南宁",
+  "univ_per_100k": 18845,
+  "highschool_per_100k": 15698,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11889.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "HRB",
+  "name": "哈尔滨",
+  "univ_per_100k": 20455,
+  "highschool_per_100k": 15708,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/11699.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ figure from a third-party mirror (tjgb.hongheiku.com) of the official city census bulletin; official page not reached. wage: not found (web search budget exhausted before wage lookup; only Changzhou 在岗职工 134829 seen, different metric, not used). disp_income: 2023 city bulletin/provincial table not found via search (searched, no result)."
+ },
+ {
+  "id": "LUO",
+  "name": "洛阳",
+  "univ_per_100k": 13339,
+  "highschool_per_100k": 17436,
+  "wage": 88700,
+  "wage_year": 2023,
+  "disp_income": 45727,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://news.qq.com/rain/a/20210522A00JFY00",
+   "wage": "https://m.ly.bendibao.com/news/29212.shtm",
+   "disp_income": "https://lytjj.ly.gov.cn/2024/04-30/277015.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "ZHZ",
+  "name": "漳州",
+  "univ_per_100k": 9912,
+  "highschool_per_100k": 11310,
+  "wage": 99454,
+  "wage_year": 2023,
+  "disp_income": 48736,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.fujian.gov.cn/tongjinianjian/rk2020/html/fu0202.pdf",
+   "wage": "http://zhangzhou.bendibao.com/news/2024828/13645.shtm",
+   "disp_income": "http://tjj.zhangzhou.gov.cn/cms/html/zzstjj/2024-03-19/1278846256.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "JI",
+  "name": "济宁",
+  "univ_per_100k": 11061,
+  "highschool_per_100k": 13368,
+  "wage": 97167,
+  "wage_year": 2023,
+  "disp_income": 45055,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/12920.html",
+   "wage": "https://tjj.jining.gov.cn/art/2024/7/11/art_6827_2706377.html",
+   "disp_income": "https://www.jining.gov.cn/module/download/down.jsp?i_ID=2885957&colID=65804"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "EED",
+  "name": "鄂尔多斯",
+  "univ_per_100k": 21267,
+  "highschool_per_100k": 13905,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 58615,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://www.ordos.gov.cn/ordosml/xxgk_new/fdzdgknr/sjfb/202106/t20210602_2902377.html",
+   "wage": null,
+   "disp_income": "https://tjj.ordos.gov.cn/dhtjsj/tjgb_78354/202403/t20240325_3585477.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: 2023 城镇非私营单位 figure not found (内蒙古统计局 per-盟市 page returned 403)"
+ },
+ {
+  "id": "XY",
+  "name": "襄阳",
+  "univ_per_100k": 10769,
+  "highschool_per_100k": 16868,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 46110,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.hubei.gov.cn/tjsj/tjgb/pcgb/wnpc/qrp/202105/t20210526_3560295.shtml",
+   "wage": null,
+   "disp_income": "http://www.xiangyang.gov.cn/szf/zfxxgk/fdzdgknr/tjxx/tjgb/202405/t20240514_3609083.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: non-private figure not found; only 全部在岗职工 77943 (2023, 人社 caliber) seen, not used"
+ },
+ {
+  "id": "GY",
+  "name": "贵阳",
+  "univ_per_100k": 23440,
+  "highschool_per_100k": 14728,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 48364,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.guiyang.gov.cn/ztzlsjtj/ztzlsjtjtjsj/202105/t20210531_68342009.html",
+   "wage": null,
+   "disp_income": "https://www.guiyang.gov.cn/zwgk/zfxxgks/fdzdgknr/tjxx/tjgb/202405/t20240516_84640698.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: official non-private figure not found; gov only publishes 全口径 99864 (2023); third-party 113829 unverified, not used"
+ },
+ {
+  "id": "ZJ",
+  "name": "镇江",
+  "univ_per_100k": 19134,
+  "highschool_per_100k": 17308,
+  "wage": 112925,
+  "wage_year": 2023,
+  "disp_income": 64602,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://www.sohu.com/a/874612368_121725332",
+   "disp_income": "https://tjgb.hongheiku.com/djs/55535.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "news"
+  },
+  "note": "wage cited by news from 江苏统计年鉴2024"
+ },
+ {
+  "id": "HA",
+  "name": "淮安",
+  "univ_per_100k": 12825,
+  "highschool_per_100k": 15458,
+  "wage": 93605,
+  "wage_year": 2023,
+  "disp_income": 48498,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://ssl.huaian.gov.cn/letterClientController/info.do?letterId=2c94938e99ed1970019ae3723ee27482&view=/cms/letter/client/sz/hasmh/hasmh_letterInfo.jsp",
+   "disp_income": "http://tjj.huaian.gov.cn/tjgb/content/17119008/1713490147078pkbORni7.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage from 市统计局 reply on gov message board"
+ },
+ {
+  "id": "WUH",
+  "name": "芜湖",
+  "univ_per_100k": 17336,
+  "highschool_per_100k": 13576,
+  "wage": 101541,
+  "wage_year": 2023,
+  "disp_income": 54189,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://m.wuhu.bendibao.com/news/12480.shtm",
+   "wage": "https://tljq.gov.cn/openness/OpennessContent/show/1029264.html",
+   "disp_income": "https://tjj.wuhu.gov.cn/tjxx/tjgb/8602348.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage from 安徽省统计局 per-city table reposted on a district gov site"
+ },
+ {
+  "id": "YY",
+  "name": "岳阳",
+  "univ_per_100k": 9691,
+  "highschool_per_100k": 25642,
+  "wage": 75454,
+  "wage_year": 2023,
+  "disp_income": 44045,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/pcgbv/202105/t20210519_19069459.html",
+   "wage": "https://www.yueyang.gov.cn/webapp/yueyang/email/viewPublic.jsp?id=197330",
+   "disp_income": "https://tjj.yueyang.gov.cn/22746/22751/content_2182197.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage from gov message-board reply (非私营单位从业人员), caliber not fully documented"
+ },
+ {
+  "id": "TY",
+  "name": "太原",
+  "univ_per_100k": 30861,
+  "highschool_per_100k": 18418,
+  "wage": 108110,
+  "wage_year": 2023,
+  "disp_income": 45835,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://stats.taiyuan.gov.cn/tjgb/20210601/1059695.html",
+   "wage": "https://m12333.cn/pingjungongzi/taiyuan.aspx",
+   "disp_income": "https://m12333.cn/pingjungongzi/taiyuan.aspx"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "news"
+  },
+  "note": "wage & disp income via repost of 太原市统计局 releases"
+ },
+ {
+  "id": "GAN",
+  "name": "赣州",
+  "univ_per_100k": 9346,
+  "highschool_per_100k": 15413,
+  "wage": 88761,
+  "wage_year": 2023,
+  "disp_income": 44200,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjgb.hongheiku.com/12962.html",
+   "wage": "http://www.jxxf.gov.cn/xfxxxgk/tjixxx/202406/8eeab550ad15496789dddfcef8f05324.shtml",
+   "disp_income": "https://news.qq.com/rain/a/20240511A04P3Y00"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "disp income only reported rounded as 4.42万元"
+ },
+ {
+  "id": "ZY",
+  "name": "遵义",
+  "univ_per_100k": 9343,
+  "highschool_per_100k": 10082,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 44573,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.zunyi.gov.cn/sjfb/tjxx/pcgb_5860127/202106/t20210616_68761944.html",
+   "wage": null,
+   "disp_income": "https://www.zunyi.gov.cn/sjfb/tjxx/tjgb_5860123/202405/t20240515_84637966.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: official non-private figure not found; gov 全口径 91274 (2023); third-party 113369 unverified, not used"
+ },
+ {
+  "id": "NY",
+  "name": "南阳",
+  "univ_per_100k": 7271,
+  "highschool_per_100k": 12923,
+  "wage": 68582,
+  "wage_year": 2023,
+  "disp_income": 39814,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.nanyang.gov.cn/2021/10-18/322332.html",
+   "wage": "https://tj.nanyang.gov.cn/2024/07-29/540445.html",
+   "disp_income": "https://tj.nanyang.gov.cn/2024/04-08/402988.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "ZB",
+  "name": "淄博",
+  "univ_per_100k": 18729,
+  "highschool_per_100k": 19054,
+  "wage": 99981,
+  "wage_year": 2023,
+  "disp_income": 55181,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.zibo.gov.cn/module/download/downfile.jsp?classid=0&filename=80674865a70c42678a2eddfbcb714269.pdf",
+   "wage": "https://tj.zibo.gov.cn/gongkai/channel_63a2a772e365c6544d5a7d0f/doc_668ce2a5e576812fb8b5286e.html",
+   "disp_income": "https://tj.zibo.gov.cn/gongkai/channel_c_5f9fa491ab327f36e4c13077_n_1605682680.3204/doc_66067c018940ec8b68715343_665303a8578b276146cfbeed997a0fe4.pdf"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "SQ",
+  "name": "宿迁",
+  "univ_per_100k": 10884,
+  "highschool_per_100k": 16826,
+  "wage": 92759,
+  "wage_year": 2023,
+  "disp_income": 38756,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "https://cxoy.gdcenn.cn/a/202407/640829.html",
+   "disp_income": "https://tjj.suqian.gov.cn/stjj/tzgg/202403/bc8fb2bc51614fb89b3d45181cf9bc8b.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": "wage: 宿迁市统计局 figure via news repost"
+ },
+ {
+  "id": "BD",
+  "name": "保定",
+  "univ_per_100k": 11723,
+  "highschool_per_100k": 13291,
+  "wage": 88123,
+  "wage_year": 2023,
+  "disp_income": 41334,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hebei.gov.cn/extra/col20/rkpc2020/zk/html/fu0105.pdf",
+   "wage": "http://tjj.hebei.gov.cn/hbstjj/sj/zxfb/101718186669762.html",
+   "disp_income": "https://news.qq.com/rain/a/20240401A06L4200"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": "保定 excludes 定州/雄安 in edu and wage (wage incl. them: 89124)"
+ },
+ {
+  "id": "HZE",
+  "name": "菏泽",
+  "univ_per_100k": 7087,
+  "highschool_per_100k": 10185,
+  "wage": 85032,
+  "wage_year": 2023,
+  "disp_income": 35454,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.163.com/dy/article/GC74R03705149A14.html",
+   "wage": "http://hztj.heze.gov.cn/2c908088819842f701819a29fa34002a/1810848833744334848.html",
+   "disp_income": "https://tjgb.hongheiku.com/djs/55558.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": "gov",
+   "disp_income": "news"
+  },
+  "note": ""
+ },
+ {
+  "id": "CANG",
+  "name": "沧州",
+  "univ_per_100k": 8962,
+  "highschool_per_100k": 10992,
+  "wage": 94809,
+  "wage_year": 2023,
+  "disp_income": 44294,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hebei.gov.cn/extra/col20/rkpc2020/zk/html/fu0105.pdf",
+   "wage": "http://tjj.hebei.gov.cn/hbstjj/sj/zxfb/101718186669762.html",
+   "disp_income": "https://tj.cangzhou.gov.cn/tj/c101217/202401/a3a560bdecf848749fa4189cc7c85c29.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "HD",
+  "name": "邯郸",
+  "univ_per_100k": 7849,
+  "highschool_per_100k": 13186,
+  "wage": 89861,
+  "wage_year": 2023,
+  "disp_income": 42267,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hebei.gov.cn/extra/col20/rkpc2020/zk/html/fu0105.pdf",
+   "wage": "http://tjj.hebei.gov.cn/hbstjj/sj/zxfb/101718186669762.html",
+   "disp_income": "https://www.hd.gov.cn/hdyw/bddt/202403/t20240311_2026617.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "LYG",
+  "name": "连云港",
+  "univ_per_100k": 14661,
+  "highschool_per_100k": 18593,
+  "wage": 106532,
+  "wage_year": 2023,
+  "disp_income": 43769,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tj.jiangsu.gov.cn/2020pcnj/zk/html/fu0105.pdf",
+   "wage": "http://tjj.lyg.gov.cn/tjxxw/tjxx/content/41e954aa-9071-4087-83bc-7f12313c227a.shtml",
+   "disp_income": "https://www.lyg.gov.cn/zglygzfmhwz/gcyw/content/652c8632-41db-4874-b8d9-ab2c40d384c5.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "CHD",
+  "name": "常德",
+  "univ_per_100k": 10542,
+  "highschool_per_100k": 18361,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 42155,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/pcgbv/202105/t20210519_19069459.html",
+   "wage": null,
+   "disp_income": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/szgb/cds_1/202404/t20240402_33268373.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: 2023 non-private figure not found"
+ },
+ {
+  "id": "BT",
+  "name": "包头",
+  "univ_per_100k": 23318,
+  "highschool_per_100k": 17553,
+  "wage": 109566,
+  "wage_year": 2023,
+  "disp_income": 58663,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.baotou.gov.cn/ztzl/dqcrkpcygd/202508/t20250811_174078.html",
+   "wage": "https://m.163.com/dy/article/JS0Q82OB05563SPX.html",
+   "disp_income": "https://tjj.baotou.gov.cn/tjyw/tjgb/202508/t20250811_173641.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": "wage from a news ranking article; official 内蒙古统计局 page 403"
+ },
+ {
+  "id": "HY",
+  "name": "衡阳",
+  "univ_per_100k": 8919,
+  "highschool_per_100k": 16182,
+  "wage": 82173,
+  "wage_year": 2023,
+  "disp_income": 45864,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/pcgbv/202105/t20210519_19069459.html",
+   "wage": "https://www.hengyang.gov.cn/hystjj/sjfb/sjkx/20240626/i3399476.html",
+   "disp_income": "https://www.hengyang.gov.cn/hystjj/tjgb/20240403/i3305827.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": ""
+ },
+ {
+  "id": "WLMQ",
+  "name": "乌鲁木齐",
+  "univ_per_100k": null,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 49034,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": null,
+   "wage": null,
+   "disp_income": "https://www.urumqi.gov.cn/wlmqs/c119360/202401/b081d5405c984747bde604d5de497fae.shtml"
+  },
+  "source_type": {
+   "univ": null,
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ/highschool: 乌鲁木齐 七普 per-100k figure not found (新疆 bulletin only gives region-level); wage: not found. disp income per 2023 公报 (also reported by sina/sohu)"
+ },
+ {
+  "id": "MY",
+  "name": "绵阳",
+  "univ_per_100k": 12959,
+  "highschool_per_100k": 13759,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjj.sc.gov.cn/scstjj/c111702/2021/5/26/b67c52f1479341939c88e144832960ab.shtml",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out; disp_income: 2023 bulletin PDF is image-only; a 39489 figure seen in a yearbook snippet conflicts with 2022's 45131, so left null; disp_income follow-up: 2023 bulletin PDF image-only; city figure not found in searched sources"
+ },
+ {
+  "id": "ZH",
+  "name": "珠海",
+  "univ_per_100k": 25752,
+  "highschool_per_100k": 21575,
+  "wage": 132169,
+  "wage_year": 2023,
+  "disp_income": 67773,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": "https://www.chaozhoudaily.com/content/202407/05/c26015912.html",
+   "disp_income": "https://tjj.zhuhai.gov.cn/attachment/0/373/373713/3658459.pdf"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "news",
+   "disp_income": "gov"
+  },
+  "note": "disp_income from 珠海2023统计公报 PDF: https://tjj.zhuhai.gov.cn/attachment/0/373/373713/3658459.pdf"
+ },
+ {
+  "id": "DY",
+  "name": "东营",
+  "univ_per_100k": 21994,
+  "highschool_per_100k": 17079,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 62175,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": null,
+   "disp_income": "http://dystjj.dongying.gov.cn/art/2024/2/2/art_203347_10280866.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out; disp_income from 东营市统计局 2023 annual economy release (not the bulletin itself)"
+ },
+ {
+  "id": "HUZ",
+  "name": "湖州",
+  "univ_per_100k": 13669,
+  "highschool_per_100k": 14033,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 74400,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://tjj.huzhou.gov.cn/art/2021/5/20/art_1229208272_58869943.html",
+   "wage": null,
+   "disp_income": "https://tjj.huzhou.gov.cn/art/2024/3/19/art_1229208256_58871905.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out"
+ },
+ {
+  "id": "JM",
+  "name": "江门",
+  "univ_per_100k": 11839,
+  "highschool_per_100k": 20653,
+  "wage": 100827,
+  "wage_year": 2024,
+  "disp_income": 47727,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": "http://www.jiangmen.gov.cn/newzwgk/sjfb/tjgb/content/post_3326063.html",
+   "disp_income": "http://www.jiangmen.gov.cn/home/tzgg/content/post_3072610.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage is 2024 (2023 not found)"
+ },
+ {
+  "id": "HHHT",
+  "name": "呼和浩特",
+  "univ_per_100k": 30415,
+  "highschool_per_100k": 15675,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 57085,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.huhhot.gov.cn/tjyw/tjsj/tjgb/202105/t20210527_943455.html",
+   "wage": null,
+   "disp_income": "http://tjj.huhhot.gov.cn/tjyw/tjsj/tjgb/202405/t20240524_1716676.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out"
+ },
+ {
+  "id": "ZS",
+  "name": "中山",
+  "univ_per_100k": 13356,
+  "highschool_per_100k": 19601,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 64856,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": null,
+   "disp_income": "https://www.zs.gov.cn/zwgk/sjfb/tjgb/content/post_2415429.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out"
+ },
+ {
+  "id": "ND",
+  "name": "宁德",
+  "univ_per_100k": 9834,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.ningde.gov.cn/xxgk/tjxx/tjgb/202106/t20210615_1486325.htm",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ from search snippet of 宁德七普公报 (page 403 to direct fetch); highschool per 100k not given; wage: no wage figure found before WebSearch budget ran out; disp_income: no 2023 disp_income found before WebSearch budget ran out (2022 bulletin: 42749); disp_income follow-up: 2023 bulletin not found in search results"
+ },
+ {
+  "id": "JJ",
+  "name": "九江",
+  "univ_per_100k": 13296,
+  "highschool_per_100k": 16425,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 47392,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.yichun.gov.cn/yctjj/tjgb/202105/3aab82e47f124384bd020d07ea4ec7f8.shtml",
+   "wage": null,
+   "disp_income": "https://www.jiujiang.gov.cn/sjkf/tjgb/202410/t20241009_6728755.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ from 江西省七普公报(第四号) table via search snippet; wage: no wage figure found before WebSearch budget ran out"
+ },
+ {
+  "id": "CHU",
+  "name": "滁州",
+  "univ_per_100k": 12939,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 43423,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.ah.gov.cn/ssah/qwfbjd/tjgb/sjtjgb/145782451.html",
+   "wage": null,
+   "disp_income": "https://tjj.chuzhou.gov.cn/sjfb/tjgb/czs/1104360618.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ from 安徽七普公报表5-1 via search snippet (page 403); wage: no wage figure found before WebSearch budget ran out"
+ },
+ {
+  "id": "DZ",
+  "name": "德州",
+  "univ_per_100k": 9233,
+  "highschool_per_100k": 13542,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out (2021: 78045); disp_income: no 2023 disp_income found before WebSearch budget ran out; disp_income follow-up: only 1-9月 2023 (27284) found, no full-year"
+ },
+ {
+  "id": "YB",
+  "name": "宜宾",
+  "univ_per_100k": 9621,
+  "highschool_per_100k": 12325,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjj.sc.gov.cn/scstjj/c111702/2021/5/26/b67c52f1479341939c88e144832960ab.shtml",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage: no wage figure found before WebSearch budget ran out; disp_income: 2023 bulletin body is PDF-only, not readable; disp_income follow-up: bulletin body PDF-only; only growth rate 5.1% found"
+ },
+ {
+  "id": "MM",
+  "name": "茂名",
+  "univ_per_100k": 8074,
+  "highschool_per_100k": 15107,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 35348,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://stats.gd.gov.cn/attachment/0/421/421312/3283433.pdf",
+   "wage": null,
+   "disp_income": "http://www.maoming.gov.cn/zwgk/zfgzbg/content/post_1295546.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage/disp_income: not found before WebSearch budget ran out; disp_income: value from 茂名2024年政府工作报告 (2023 actual); bulletin text not directly read"
+ },
+ {
+  "id": "ZHU",
+  "name": "株洲",
+  "univ_per_100k": 15053,
+  "highschool_per_100k": 17970,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjj.hunan.gov.cn/hntj/tjfx/tjgb/pcgbv/202105/t20210519_19069459.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "wage/disp_income: not searched before WebSearch budget ran out; disp_income follow-up: 2023 bulletin not found"
+ },
+ {
+  "id": "LF",
+  "name": "廊坊",
+  "univ_per_100k": 15114,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 53459,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.lf.gov.cn/Item/110732.aspx",
+   "wage": null,
+   "disp_income": "https://www.lf.gov.cn/Item/138287.aspx"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ from search snippet of 廊坊市政府 page; wage/disp_income: not searched (budget)"
+ },
+ {
+  "id": "ZHJ",
+  "name": "湛江",
+  "univ_per_100k": 8817,
+  "highschool_per_100k": 13986,
+  "wage": 108797,
+  "wage_year": 2024,
+  "disp_income": 37498,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.zhanjiang.gov.cn/zjsfw/bmdh/tjxxw/zwgk/tjsjzl/tjgb/content/post_1454759.html",
+   "wage": "https://www.zhanjiang.gov.cn/zwgk/sjfb/tjgb/content/post_2058220.html",
+   "disp_income": "https://www.zhanjiang.gov.cn/zjsfw/bmdh/tjxxw/zwgk/tjsjzl/tjgb/content/post_1889917.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage is 2024 (2023 not found); disp_income not found (budget)"
+ },
+ {
+  "id": "SR",
+  "name": "上饶",
+  "univ_per_100k": 8616,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 47001,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.zgsr.gov.cn/tjj/rkpc/202106/cd3d3bcc267740ac92f7facef353ab6b.shtml",
+   "wage": null,
+   "disp_income": "http://tjj.zgsr.gov.cn/tjj/ndtjgb/202411/f1c50dc0ec55466db1fdc90036145418.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ via search snippet; wage/disp_income not found (budget)"
+ },
+ {
+  "id": "YIC",
+  "name": "宜春",
+  "univ_per_100k": 8635,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 43573,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://www.yichun.gov.cn/yctjj/tjgb/202106/3196fae93f6d47d797435d8e8efa72b5.shtml",
+   "wage": null,
+   "disp_income": "https://www.yichun.gov.cn/yctjj/tjgb/202405/190ff1597bab44e88923cf2923b0c050.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ via search snippet; wage/disp_income not found (budget)"
+ },
+ {
+  "id": "LZ",
+  "name": "兰州",
+  "univ_per_100k": 28584,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": null,
+  "disp_income_year": null,
+  "sources": {
+   "univ": "https://tjj.lanzhou.gov.cn/art/2021/5/28/art_6379_1006797.html",
+   "wage": null,
+   "disp_income": null
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": null
+  },
+  "note": "univ via search snippet (page 412 to direct fetch); wage/disp_income not searched (budget); disp_income follow-up: only H1 2023 found"
+ },
+ {
+  "id": "WEI",
+  "name": "威海",
+  "univ_per_100k": 16779,
+  "highschool_per_100k": 18679,
+  "wage": 92558,
+  "wage_year": 2023,
+  "disp_income": 58799,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": "https://tjj.weihai.gov.cn/art/2024/7/8/art_12007_4722387.html",
+   "disp_income": "https://www.weihai.gov.cn/attach/0/128eab17a266417a87cd67aae515e216.pdf"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage = 城镇非私营单位从业人员平均工资; disp_income not searched (budget); disp_income: from 威海统计年鉴2024 (reprints 2023 bulletin)"
+ },
+ {
+  "id": "ZK",
+  "name": "周口",
+  "univ_per_100k": 6085,
+  "highschool_per_100k": 11902,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 33084,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.zhoukou.gov.cn/sitesources/tjj/page_pc/tjfw/zxfbyjd/articleABE9E26A29D14AC48892BBB05E568085.html",
+   "wage": null,
+   "disp_income": "http://tjj.zhoukou.gov.cn/sitesources/tjj/upload/ec7c7a8ea63e538969333a72c15a9ad5/1714386214131.pdf"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage/disp_income not searched (budget)"
+ },
+ {
+  "id": "TA",
+  "name": "泰安",
+  "univ_per_100k": 13107,
+  "highschool_per_100k": 13559,
+  "wage": 88619,
+  "wage_year": 2023,
+  "disp_income": 45955,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.shandong.gov.cn/art/2021/5/21/art_156112_10287521.html",
+   "wage": "https://tjj.taian.gov.cn/art/2024/7/12/art_91218_10295289.html",
+   "disp_income": "https://www.taian.gov.cn/art/2024/4/22/art_347164_10350033.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": "gov",
+   "disp_income": "gov"
+  },
+  "note": "wage = 从业人员年平均工资; disp_income not searched (budget)"
+ },
+ {
+  "id": "FY",
+  "name": "阜阳",
+  "univ_per_100k": 6853,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 41359,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://m.fy.gov.cn/policyContent/detail/21/618de1d0886688ad168b4567.html",
+   "wage": null,
+   "disp_income": "https://m.fy.gov.cn/openness/detail/content/662b2329886688146d8b4569.html"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ via search snippet (阜阳七普解读 + 安徽表5-1); wage/disp_income not searched (budget)"
+ },
+ {
+  "id": "QJ",
+  "name": "曲靖",
+  "univ_per_100k": 9558,
+  "highschool_per_100k": null,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 45051,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "https://maptable.com/tjgb/2020/%E4%BA%91%E5%8D%97%E7%9C%81/%E6%9B%B2%E9%9D%96%E5%B8%82/report/yun-nan-sheng-qu-jing-shi-di-qi-ci-quan-guo-ren-kou-pu-cha-zhu-yao-shu-ju-gong-bao-2",
+   "wage": null,
+   "disp_income": "https://www.qj.gov.cn/html/2024/tjxx_0415/265564.html"
+  },
+  "source_type": {
+   "univ": "news",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "univ from third-party bulletin repost (Maptable/红黑统计公报库), official page not reached; wage/disp_income not searched (budget)"
+ },
+ {
+  "id": "JZ",
+  "name": "荆州",
+  "univ_per_100k": 10225,
+  "highschool_per_100k": 15098,
+  "wage": null,
+  "wage_year": null,
+  "disp_income": 43018,
+  "disp_income_year": 2023,
+  "sources": {
+   "univ": "http://tjj.hubei.gov.cn/tjsj/tjgb/pcgb/wnpc/qrp/202105/t20210526_3560295.shtml",
+   "wage": null,
+   "disp_income": "http://www.jingzhou.gov.cn/jzoverview/yxjz/202304/t20230403_824206.shtml"
+  },
+  "source_type": {
+   "univ": "gov",
+   "wage": null,
+   "disp_income": "gov"
+  },
+  "note": "wage/disp_income not searched (budget); disp_income: from 荆州市情 page, not the bulletin; another 经济概况 page lists 44872 labelled 2023 (likely 2024), so verify"
+ }
+]

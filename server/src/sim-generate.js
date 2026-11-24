@@ -2,6 +2,7 @@
 // 一个城市一个种子，同一城市每次生成同样的 500 人；纯同步、无 I/O，只做内存计算。
 // 输出形状与 server/seed/sim-pool.json 中每个人完全一致：{ id, simulated, gender, seeks, profile, requirements }。
 import { FIELD_MAP, UNKNOWN_VALUES } from '../../packages/schema/fields.js';
+import { singleAgeWeights, maritalShares, HEIGHT, educationShares, cityTargets, INCOME_SIGMA, EDU_PREMIUM } from './sim-calibration.js';
 
 const LEVELS = ['高中及以下', '大专', '本科', '硕士', '博士'];
 const HOMES = ['合租', '整租', '与父母同住', '自有住房（有贷款）', '自有住房（无贷款）', '单位宿舍'];
@@ -20,27 +21,6 @@ const IMPORTANCE_KEYS = ['年龄', '身高', '收入', '学历', '住房', '定�
 const IMP_KEYS = { age: '年龄', heightCm: '身高', incomeAnnual: '收入', education: '学历', housing: '住房', settlement: '定居', familySupport: '家庭支持', marriagePlan: '婚姻', childrenPlan: '育儿', personality: '性格', lifestyle: '生活方式' };
 const GENDER = { 女: 'female', 男: 'male' };
 
-// 年收入四档权重：3–7 万 / 8–20 万 / 21–35 万 / 36–65 万。baseline 为冻结生成器原值。
-const INCOME_BANDS = {
-  baseline: [10, 68, 18, 4],
-  metro: [4, 50, 34, 12],
-  strong: [6, 56, 30, 8],
-  solid: [8, 62, 24, 6],
-  mid: [18, 68, 12, 2],
-  low: [32, 60, 7, 1],
-  private: [14, 66, 16, 4],
-  resource: [24, 38, 18, 20], // 资源型：高收入与低收入两头偏多
-};
-const INCOME_RANGES = [[3, 7], [8, 20], [21, 35], [36, 65]];
-// 学历权重：base 为冻结生成器原值（本科出现 3 次），其余按倾向重排。
-const EDU_WEIGHTS = {
-  base: [['高中及以下', 1], ['大专', 1], ['本科', 3], ['硕士', 1], ['博士', 1]],
-  high: [['高中及以下', 4], ['大专', 10], ['本科', 42], ['硕士', 30], ['博士', 14]],
-  mid: [['高中及以下', 10], ['大专', 18], ['本科', 46], ['硕士', 20], ['博士', 6]],
-  low: [['高中及以下', 18], ['大专', 30], ['本科', 44], ['硕士', 6], ['博士', 2]],
-};
-// 年龄范围：standard 为冻结生成器原值 22–39。
-const AGE_RANGE = { standard: [22, 45], young: [22, 38], midyoung: [22, 42], mature: [25, 48] };
 // 职业倾向：命中的职业权重抬高，其余保持 1。
 const OCC_BOOST = {
   finance: ['财务与商务'], public: ['行政与运营', '教育与培训'], tech: ['软件与技术'],
@@ -99,9 +79,11 @@ function hashUnit(id, salt) {
   for (const ch of salt + id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
   return ((h >>> 0) % 10000) / 10000;
 }
+// 婚姻状况按七普分年龄、性别的比例抽（只在单身的人里：未婚 / 离异 / 丧偶）
 function maritalOf(p) {
-  const u = hashUnit(p.id, 'm'), older = p.age >= 30;
-  const status = u < (older ? 0.82 : 0.95) ? '未婚' : u < (older ? 0.98 : 0.995) ? '离异' : '丧偶';
+  const u = hashUnit(p.id, 'm');
+  const [[, pu], [, pd]] = maritalShares(p.gender === '女' ? 'female' : 'male', p.age);
+  const status = u < pu ? '未婚' : u < pu + pd ? '离异' : '丧偶';
   const k = hashUnit(p.id, 'k');
   const kids = status === '未婚' ? '没有孩子' : k < 0.5 ? '没有孩子' : k < 0.8 ? '有孩子，跟我生活' : '有孩子，不跟我生活';
   // 要求：约六成只接受未婚，约两成接受未婚或离异，其余不限；孩子：约一半要求对方没有孩子
@@ -153,15 +135,15 @@ function convert(p) {
   };
 }
 
-// 生成一座城市的人选池。count 默认 500；城市参数缺省时退回冻结生成器的原始分布。
-export function generateCityPool({ cityId, cityName, count = 500, incomeBand = 'baseline', eduTilt = 'base', ageSkew = 'standard', occ, seed } = {}) {
+// 生成一座城市的人选池。年龄、身高、学历、收入、婚姻状况按公开统计数据校准（sim-calibration.js、docs/DATA.md）。
+export function generateCityPool({ cityId, cityName, count = 500, occ, seed } = {}) {
   const actualSeed = seed != null ? seed : (cityId === 'SH' ? 20261113 : seedFromCity(cityId || ''));
   const rng = makeRng(actualSeed);
   const int = (a, b) => a + Math.floor(rng() * (b - a + 1));
   const pick = (list) => list[Math.floor(rng() * list.length)];
-  const incomeWeights = INCOME_BANDS[incomeBand] || INCOME_BANDS.baseline;
-  const eduEntries = EDU_WEIGHTS[eduTilt] || EDU_WEIGHTS.base;
-  const [ageLo, ageHi] = AGE_RANGE[ageSkew] || AGE_RANGE.standard;
+  // 校准目标：这座城市的大专及以上比例、在业者平均年收入（docs/DATA.md）
+  const target = cityTargets(cityId);
+  const ageBands = { 女: singleAgeWeights('female').map((b) => [b, b.w]), 男: singleAgeWeights('male').map((b) => [b, b.w]) };
   const occBoost = new Set(OCC_BOOST[occ] || []);
   const occEntries = OCCUPATIONS.map((o) => [o, occBoost.has(o) ? 4 : 1]);
   const femaleCount = Math.floor(count / 2);
@@ -169,13 +151,17 @@ export function generateCityPool({ cityId, cityName, count = 500, incomeBand = '
   const raw = Array.from({ length: count }, (_, i) => {
     const gender = i < femaleCount ? '女' : '男';
     // 抽取顺序与冻结生成器保持一致，保证种子与分布口径可复现。
-    // 年龄：两头少、中间多（大致集中在 26–34 岁）；身高按性别取近似正态分布
-    const tri = (lo, hi) => Math.round(lo + (hi - lo) * ((rng() + rng() + rng()) / 3));
-    const age = tri(ageLo, ageHi);
-    const normal = (mean, sd) => Math.round(mean + sd * ((rng() + rng() + rng() + rng() + rng() + rng()) - 3) / 0.7071);
-    const height = gender === '男' ? Math.min(195, Math.max(158, normal(173, 6))) : Math.min(182, Math.max(148, normal(161, 5)));
-    const band = pickWeighted(rng, [[0, incomeWeights[0]], [1, incomeWeights[1]], [2, incomeWeights[2]], [3, incomeWeights[3]]]);
-    const income = int(INCOME_RANGES[band][0], INCOME_RANGES[band][1]) * 10000;
+    // 年龄：按七普各年龄段的单身人数抽；身高：按营养报告的平均身高取正态分布
+    const ab = pickWeighted(rng, ageBands[gender]);
+    const age = int(ab.lo, ab.hi);
+    const z = () => ((rng() + rng() + rng() + rng() + rng() + rng()) - 3) / 0.7071;
+    const h = HEIGHT[gender === '男' ? 'male' : 'female'];
+    const height = gender === '男' ? Math.min(198, Math.max(155, Math.round(h.mean + h.sd * z()))) : Math.min(185, Math.max(145, Math.round(h.mean + h.sd * z())));
+    // 学历：城市七普大专以上比例，换算到这个年龄、性别
+    const education = pickWeighted(rng, educationShares(gender === '男' ? 'male' : 'female', age, target.tertiary));
+    // 收入：对数正态，学历和年龄带来差别；最后整体缩放到城市目标均值
+    const logInc = INCOME_SIGMA * z() + EDU_PREMIUM[education] + 0.25 * Math.min(1, (age - 22) / 12) - (gender === '女' ? 0.12 : 0);
+    const income = Math.exp(logInc);
     const housing = pick(HOMES);
     const familySupport = pick(SUPPORT);
     const parentsHousing = pick(['自有住房无贷款', '自有住房有贷款', '租住', '与亲属同住', '不清楚', '不愿透露']);
@@ -194,7 +180,7 @@ export function generateCityPool({ cityId, cityName, count = 500, incomeBand = '
       seeks,
       age,
       heightCm: height,
-      education: pickWeighted(rng, eduEntries),
+      education,
       occupation: pickWeighted(rng, occEntries),
       annualIncomeRmb: income,
       incomeBasis: '最近12个月税前个人劳动收入（含奖金及兼职；不含家庭转移、房产与投资收益），模拟值',
@@ -259,5 +245,8 @@ export function generateCityPool({ cityId, cityName, count = 500, incomeBand = '
       debtImp: 1 + Math.floor(rng3() * 3),
     };
   }
+  // 整体缩放：全城平均年收入等于目标；取整到千元，下限 2 万
+  const mean = raw.reduce((a, p) => a + p.annualIncomeRmb, 0) / raw.length;
+  for (const p of raw) p.annualIncomeRmb = Math.max(20000, Math.round((p.annualIncomeRmb * target.income) / mean / 1000) * 1000);
   return raw.map(convert);
 }

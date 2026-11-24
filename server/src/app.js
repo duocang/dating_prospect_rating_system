@@ -35,7 +35,7 @@ export function createApp({ root, dataDir, configPath, onCaptcha }) {
     const n = Number(config.virtualPerCity ?? 1000);
     const c = cityByName.get(cityName) || cityByName.get('上海');
     if (!n || !c) return [];
-    if (!virtualCache.has(c.id)) virtualCache.set(c.id, generateCityPool({ cityId: c.id, cityName: c.name, count: n, incomeBand: c.incomeBand, eduTilt: c.eduTilt, ageSkew: c.ageSkew, occ: c.occ }));
+    if (!virtualCache.has(c.id)) virtualCache.set(c.id, generateCityPool({ cityId: c.id, cityName: c.name, count: n, occ: c.occ }));
     return virtualCache.get(c.id);
   }
   const webRoot = resolve(root, 'web');
